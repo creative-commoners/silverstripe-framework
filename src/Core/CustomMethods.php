@@ -145,7 +145,15 @@ trait CustomMethods
      */
     public function hasMethod($method)
     {
-        return method_exists($this, $method) || $this->getExtraMethodConfig($method);
+        $hasMethod = method_exists($this, $method) || $this->getExtraMethodConfig($method);
+
+        if (!$hasMethod) {
+            // Re-define methods in case configuration has changed since extra methods were first defined
+            $this->defineMethods();
+            $hasMethod = method_exists($this, $method) || $this->getExtraMethodConfig($method);
+        }
+
+        return $hasMethod;
     }
 
     /**
