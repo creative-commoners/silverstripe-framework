@@ -1414,7 +1414,7 @@ class DataObject extends ViewableData implements DataObjectInterface, i18nEntity
         // attempt an update, as though it were a normal update.
         $manipulation[$table]['command'] = $isNewRecord ? 'insert' : 'update';
         $manipulation[$table]['class'] = $class;
-        $manipulation[$table]['id'] = (int) $this->record['ID'];
+        $manipulation[$table]['id'] = isset($this->record['ID']) ? $this->record['ID'] : 0;
     }
 
     /**
