@@ -286,9 +286,8 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
 
         /** @var GridFieldDetailForm $component */
         $component = $this->gridField->getConfig()->getComponentByType(GridFieldDetailForm::class);
-        $paginator = $this->getGridField()->getConfig()->getComponentByType(GridFieldPaginator::class);
         $gridState = $this->getRequest()->requestVar('gridState');
-        if ($component && $paginator && $component->getShowPagination()) {
+        if ($component && $component->getShowPagination()) {
             $previousIsDisabled = !$this->getPreviousRecordID();
             $nextIsDisabled = !$this->getNextRecordID();
 
