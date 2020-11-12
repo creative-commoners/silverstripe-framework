@@ -199,13 +199,14 @@ class DataObject extends ViewableData implements DataObjectInterface, i18nEntity
 
     /**
      * Value for 2nd argument to constructor, indicating that a record is being hydrated from the database
-     * Neither setters and nor default population will be called
+     * Setter methods are not called, and population via private static $defaults will not occur.
      */
     const CREATE_HYDRATED = 2;
 
     /**
      * Value for 2nd argument to constructor, indicating that a record is being hydrated from memory. This can be used
-     * to initialised a record that doesn't yet have an ID. Neither setters and nor default population will be called.
+     * to initialised a record that doesn't yet have an ID. Setter methods are not called, and population via private
+     * static $defaults will not occur.
      */
     const CREATE_MEMORY_HYDRATED = 3;
 
@@ -346,7 +347,7 @@ class DataObject extends ViewableData implements DataObjectInterface, i18nEntity
      *
      * @param array $record Initial record content, or rehydrated record content, depending on $creationType
      * @param int|boolean $creationType Set to DataObject::CREATE_OBJECT, DataObject::CREATE_HYDRATED,
-     *   DataObject::CREATE_MEMORY_HYDRATED or DataObject::CREATE_SINGLETON. Used by Silverstripe internals as best
+     *   DataObject::CREATE_MEMORY_HYDRATED or DataObject::CREATE_SINGLETON. Used by Silverstripe internals and best
      *   left as the default by regular users.
      * @param array $queryParams List of DataQuery params necessary to lazy load, or load related objects.
      */

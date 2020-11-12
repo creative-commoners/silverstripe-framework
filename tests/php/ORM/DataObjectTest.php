@@ -1691,7 +1691,7 @@ class DataObjectTest extends SapphireTest
 
         $this->assertInstanceOf(DataObjectTest\SubTeam::class, $changedDO);
         $this->assertEquals($changedDO->ClassName, DataObjectTest\SubTeam::class);
-        $this->assertNotEmpty($changedDO->ID, );
+        $this->assertNotEmpty($changedDO->ID, 'New class instance got an ID generated on write');
     }
 
     public function testMultipleManyManyWithSameClass()
