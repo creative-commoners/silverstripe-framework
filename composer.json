@@ -38,7 +38,7 @@
         "silverstripe/vendor-plugin": "^1.6",
         "sminnee/callbacklist": "^0.1",
         "swiftmailer/swiftmailer": "^6.2",
-        "symfony/cache": "^3.4 || ^4.0",
+        "symfony/cache": "^6.1",
         "symfony/config": "^3.4 || ^4.0",
         "symfony/filesystem": "^5.4 || ^6.0",
         "symfony/translation": "^3.4 || ^4.0",

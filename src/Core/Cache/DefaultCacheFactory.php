@@ -2,17 +2,18 @@
 
 namespace SilverStripe\Core\Cache;
 
+use InvalidArgumentException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Injector\Injector;
-use Symfony\Component\Cache\Simple\FilesystemCache;
-use Symfony\Component\Cache\Simple\ApcuCache;
-use Symfony\Component\Cache\Simple\ChainCache;
-use Symfony\Component\Cache\Simple\PhpFilesCache;
 use Symfony\Component\Cache\Adapter\ApcuAdapter;
+use Symfony\Component\Cache\Adapter\ChainAdapter;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
+use Symfony\Component\Cache\Psr16Cache;
 
 /**
  * Returns the most performant combination of caches available on the system:
@@ -66,11 +67,11 @@ class DefaultCacheFactory implements CacheFactory
 
         // If apcu isn't supported, phpfiles is the next best preference
         if (!$apcuSupported && $phpFilesSupported) {
-            return $this->createCache(PhpFilesCache::class, [$namespace, $defaultLifetime, $directory]);
+            return $this->createCache(PhpFilesAdapter::class, [$namespace, $defaultLifetime, $directory]);
         }
 
         // Create filesystem cache
-        $fs = $this->createCache(FilesystemCache::class, [$namespace, $defaultLifetime, $directory]);
+        $fs = $this->createCache(FilesystemAdapter::class, [$namespace, $defaultLifetime, $directory]);
         if (!$apcuSupported) {
             return $fs;
         }
@@ -79,9 +80,9 @@ class DefaultCacheFactory implements CacheFactory
         // Note that the cache lifetime will be shorter there by default, to ensure there's enough
         // resources for "hot cache" items in APCu as a resource constrained in memory cache.
         $apcuNamespace = $namespace . ($namespace ? '_' : '') . md5(BASE_PATH);
-        $apcu = $this->createCache(ApcuCache::class, [$apcuNamespace, (int) $defaultLifetime / 5, $version]);
+        $apcu = $this->createCache(ApcuAdapter::class, [$apcuNamespace, (int) $defaultLifetime / 5, $version]);
 
-        return $this->createCache(ChainCache::class, [[$apcu, $fs]]);
+        return $this->createCache(ChainAdapter::class, [[$apcu, $fs]]);
     }
 
     /**
@@ -114,20 +115,48 @@ class DefaultCacheFactory implements CacheFactory
     }
 
     /**
-     * @param string $class
-     * @param array $args
-     * @return CacheInterface
+     * Creates an object with a PSR-16 interface from a PSR-6 class name
+     *
+     * Quick explanation of caching standards:
+     * - Symfony cache implements the PSR-6 standard
+     * - Symfony provides adapters wrap a PSR-6 backend with a PSR-16 interface
+     * - Silverstripe uses the PSR-16 to interface with caches
+     * - Psr\SimpleCache\CacheInterface is the php interface of the PSR-16 standard
+     *
+     * Further reading:
+     * - https://symfony.com/doc/current/components/cache/psr6_psr16_adapters.html#using-a-psr-6-cache-object-as-a-psr-16-cache
+     * - https://github.com/php-fig/simple-cache
      */
-    protected function createCache($class, $args)
+    public function createCache(string $psr6Class, array $args, bool $useInjector = true): CacheInterface
     {
-        /** @var CacheInterface $cache */
-        $cache = Injector::inst()->createWithArgs($class, $args);
-
-        // Assign cache logger
-        if ($this->logger && $cache instanceof LoggerAwareInterface) {
-            $cache->setLogger($this->logger);
+        if (!is_a($psr6Class, CacheItemPoolInterface::class)) {
+            throw new InvalidArgumentException(sprintf(
+                'class %s should be PSR-6 compatible and implement %s',
+                $psr6Class,
+                CacheItemPoolInterface::class
+            ));
+        }
+        // Create the PSR-6 class
+        if ($useInjector) {
+            // Injector is used for in most instances to allow modification of the cache implementations
+            $psr6Cache = Injector::inst()->createWithArgs($psr6Class, $args);
+        } else {
+            // ManifestCacheFactory cannot use Injector because config is not available at that point
+            $psr6Cache = new $psr6Class(...$args);
         }
 
-        return $cache;
+        // Assign cache logger
+        if ($this->logger && $psr6Cache instanceof LoggerAwareInterface) {
+            $psr6Cache->setLogger($this->logger);
+        }
+
+        // Wrap the PSR-6 class inside a class with a PSR-16 interface
+        if ($useInjector) {
+            $psr16Cache = Injector::inst()->createWithArgs(Psr16Cache::class, [$psr6Cache]);
+        } else {
+            $psr16Cache = new Psr16Cache($psr6Cache);
+        }
+
+        return $psr16Cache;
     }
 }

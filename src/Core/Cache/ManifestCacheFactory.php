@@ -6,12 +6,14 @@ use BadMethodCallException;
 use Monolog\Handler\ErrorLogHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
-use ReflectionClass;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Environment;
+use Symfony\Component\Cache\Adapter\ApcuAdapter;
+use Symfony\Component\Cache\Adapter\ChainAdapter;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 
 /**
  * Assists with building of manifest cache prior to config being available
@@ -49,6 +51,8 @@ class ManifestCacheFactory extends DefaultCacheFactory
             return parent::create($service, $params);
         }
 
+        $cacheClass = $this->convertLegacyClassName($cacheClass);
+
         // Check if SS_MANIFESTCACHE is a factory
         if (is_a($cacheClass, CacheFactory::class, true)) {
             /** @var CacheFactory $factory */
@@ -60,7 +64,7 @@ class ManifestCacheFactory extends DefaultCacheFactory
         if (is_a($cacheClass, CacheInterface::class, true)) {
             $args = array_merge($this->args, $params);
             $namespace = isset($args['namespace']) ? $args['namespace'] : '';
-            return $this->createCache($cacheClass, [$namespace]);
+            return $this->createCache($cacheClass, [$namespace], false);
         }
 
         // Validate type
@@ -70,23 +74,21 @@ class ManifestCacheFactory extends DefaultCacheFactory
     }
 
     /**
-     * Create cache directly without config / injector
-     *
-     * @param string $class
-     * @param array $args
-     * @return CacheInterface
+     * Convert class names of PSR-16 implementaions that were in symfony 4.x though removed in symfony 5.x
      */
-    public function createCache($class, $args)
+    private function convertLegacyClassName(string $cacheClass): string
     {
-        /** @var CacheInterface $cache */
-        $reflection = new ReflectionClass($class);
-        $cache = $reflection->newInstanceArgs($args);
-
-        // Assign cache logger
-        if ($this->logger && $cache instanceof LoggerAwareInterface) {
-            $cache->setLogger($this->logger);
+        $map = [
+            'PhpFilesCache' => PhpFilesAdapter::class,
+            'FilesystemCache' => FilesystemAdapter::class,
+            'ApcuCache' => ApcuAdapter::class,
+            'ChainCache' => ChainAdapter::class,
+        ];
+        foreach ($map as $match => $newClass) {
+            if ($match === "Symfony\\Component\\Cache\\Simple\\$match") {
+                return $newClass;
+            }
         }
-
-        return $cache;
+        return $cacheClass;
     }
 }
