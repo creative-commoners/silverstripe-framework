@@ -11,6 +11,7 @@ use SilverStripe\Core\Manifest\ModuleLoader;
 use SilverStripe\Dev\Debug;
 use SilverStripe\Control\Director;
 use ReflectionClass;
+use SilverStripe\Core\Path;
 use SilverStripe\Dev\Deprecation;
 use SilverStripe\i18n\i18n;
 use SilverStripe\i18n\i18nEntityProvider;
@@ -95,6 +96,8 @@ class i18nTextCollector
      */
     protected $fileExtensions = ['php', 'ss'];
 
+    protected $jsFileExtensions = ['js', 'jsx', 'jsm', 'ts', 'tsx'];
+
     /**
      * @param $locale
      */
@@ -152,6 +155,8 @@ class i18nTextCollector
         return $this;
     }
 
+    private array $jsEntitiesByModule = [];
+
     /**
      * This is the main method to build the master string tables with the
      * original strings. It will search for existent modules that use the
@@ -170,9 +175,6 @@ class i18nTextCollector
     public function run($restrictToModules = null, $mergeWithExisting = false)
     {
         $entitiesByModule = $this->collect($restrictToModules, $mergeWithExisting);
-        if (empty($entitiesByModule)) {
-            return;
-        }
 
         // Write each module language file
         foreach ($entitiesByModule as $moduleName => $entities) {
@@ -184,8 +186,30 @@ class i18nTextCollector
             // Clean sorting prior to writing
             ksort($entities);
             $module = ModuleLoader::inst()->getManifest()->getModule($moduleName);
-            $this->write($module, $entities);
+            // $this->write($module, $entities);
         }
+
+        foreach ($this->jsEntitiesByModule as $moduleName => $entities) {
+            // Skip empty translations
+            if (empty($entities)) {
+                continue;
+            }
+
+            // Clean sorting prior to writing
+            ksort($entities);
+            $masterFile = Path::join(
+                ModuleLoader::inst()->getManifest()->getModule($moduleName)->getPath(),
+                'client',
+                'lang',
+                'src',
+                $this->defaultLocale . '.json'
+            );
+            $content = json_encode($entities, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
+            file_put_contents($masterFile, $content);
+        }
+        echo '<pre>';
+        var_dump(array_keys($this->jsEntitiesByModule));
+        echo '</pre>';
     }
 
     /**
@@ -199,12 +223,20 @@ class i18nTextCollector
     {
         $entitiesByModule = $this->getEntitiesByModule();
 
+        $jsEntitiesByModule = [];
+        $modules = ModuleLoader::inst()->getManifest()->getModules();
+        foreach ($modules as $module) {
+            $jsEntitiesByModule[$module->getName()] = $this->processModuleForJs($module);
+        }
+
         // Resolve conflicts between duplicate keys across modules
         $entitiesByModule = $this->resolveDuplicateConflicts($entitiesByModule);
+        $jsEntitiesByModule = $this->resolveDuplicateConflicts($jsEntitiesByModule);
 
         // Optionally merge with existing master strings
         if ($mergeWithExisting) {
             $entitiesByModule = $this->mergeWithExisting($entitiesByModule);
+            $jsEntitiesByModule = $this->mergeJsWithExisting($jsEntitiesByModule);
         }
 
         // Restrict modules we update to just the specified ones (if any passed)
@@ -218,7 +250,11 @@ class i18nTextCollector
             foreach (array_diff(array_keys($entitiesByModule ?? []), $modules) as $module) {
                 unset($entitiesByModule[$module]);
             }
+            foreach (array_diff(array_keys($jsEntitiesByModule ?? []), $modules) as $module) {
+                unset($jsEntitiesByModule[$module]);
+            }
         }
+        $this->jsEntitiesByModule = $jsEntitiesByModule;
         return $entitiesByModule;
     }
 
@@ -388,6 +424,40 @@ class i18nTextCollector
     }
 
     /**
+     * Merge all JS entities with existing strings
+     *
+     * @param array $entitiesByModule
+     * @return array
+     */
+    protected function mergeJsWithExisting($entitiesByModule)
+    {
+        // For each module do a simple merge of the default yml with these strings
+        foreach ($entitiesByModule as $module => $messages) {
+            // Load existing localisations
+            $masterFile = Path::join(
+                ModuleLoader::inst()->getManifest()->getModule($module)->getPath(),
+                'client',
+                'lang',
+                'src',
+                $this->defaultLocale . '.json'
+            );
+            if (!file_exists($masterFile)) {
+                continue;
+            }
+            $existingMessages = json_decode(file_get_contents($masterFile), true);
+
+            // Merge
+            if ($existingMessages) {
+                $entitiesByModule[$module] = array_merge(
+                    $messages,
+                    $existingMessages
+                );
+            }
+        }
+        return $entitiesByModule;
+    }
+
+    /**
      * Collect all entities grouped by module
      *
      * @return array
@@ -498,6 +568,76 @@ class i18nTextCollector
         ksort($entities);
 
         return $entities;
+    }
+
+    protected function processModuleForJs(Module $module)
+    {
+        $entities = [];
+
+        // Search for calls in code files if these exists
+        $fileList = $this->getJSFileListForModule($module);
+        foreach ($fileList as $filePath) {
+            // We don't want to capture from the pre-existing translation definitions.
+            if (preg_match('%/lang/%', $filePath)) {
+                // continue;
+            }
+
+            $extension = pathinfo($filePath ?? '', PATHINFO_EXTENSION);
+            $content = file_get_contents($filePath ?? '');
+
+            if (!$content) {
+                continue;
+            }
+
+            if (in_array($extension, $this->jsFileExtensions)) {
+                $entities = array_merge($entities, $this->collectFromJavascript($content, $filePath, $module));
+            }
+        }
+
+        // sort for easier lookup and comparison with translated files
+        ksort($entities);
+
+        return $entities;
+    }
+
+    private function collectFromJavascript(string $content)
+    {
+        $result = [];
+        // Note: We don't check for backtick strings here for the same reason we're not checking for concatenation
+        // this is a bare-bones capture of javascript translation strings - we're not looking to build a javascript parser here.
+        $quoteTypes = ["'", '"'];
+        $strRegex = [];
+        foreach ($quoteTypes as $quote) {
+            // "([^"\\]*(?:\\.[^"\\]*)*)"
+            // '([^'\\]*(?:\\.[^'\\]*)*)'
+            // `([^`\\]*(?:\\.[^`\\]*)*)`
+            $strRegex[] = $quote . '(?<%1$s>[^' . $quote . '\\\\]*(?:\\\\.[^' . $quote . '\\\\]*)*)' . $quote;
+        }
+        $strRegex = '(?|' . implode('|', $strRegex) . ')';
+        $keyRegex = sprintf($strRegex, 'key');
+        $valRegex = sprintf($strRegex, 'value');
+        $i18nRegex = "/i18n\._t\(\s*$keyRegex,\s*$valRegex\s*\)/";
+
+        if (!preg_match_all($i18nRegex, $content, $matches)) {
+            return $result;
+        }
+
+        foreach ($matches['key'] as $i => $key) {
+            $result[$key] = $matches['value'][$i];
+        }
+
+        return $result;
+    }
+
+    protected function getJSFileListForModule(Module $module)
+    {
+        $files = [];
+
+        foreach ($this->jsFileExtensions as $ext) {
+            $files = array_merge($files, $this->getFilesRecursive($module->getPath(), null, $ext));
+        }
+
+        return $files;
     }
 
     /**
@@ -986,8 +1126,8 @@ class i18nTextCollector
 
             // Check if this extension is included
             $extension = pathinfo($path ?? '', PATHINFO_EXTENSION);
-            if (in_array($extension, $this->fileExtensions ?? [])
-                && (!$type || $type === $extension)
+            if (($type && $type === $extension)
+                || (!$type && in_array($extension, $this->fileExtensions ?? []))
             ) {
                 $fileList[$path] = $path;
             }
