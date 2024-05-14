@@ -304,6 +304,8 @@ class SSViewer_Scope
             // Item may be an array or a regular IteratorAggregate
             if (is_array($this->item)) {
                 $this->itemIterator = new ArrayIterator($this->item);
+            } elseif ($this->item instanceof Iterator) {
+                $this->itemIterator = $this->item;
             } else {
                 $this->itemIterator = $this->item->getIterator();
 
