@@ -5,6 +5,11 @@ namespace SilverStripe\View;
 use ArrayIterator;
 use Countable;
 use Iterator;
+use LogicException;
+use SilverStripe\ORM\FieldType\DBBoolean;
+use SilverStripe\ORM\FieldType\DBFloat;
+use SilverStripe\ORM\FieldType\DBInt;
+use SilverStripe\ORM\FieldType\DBText;
 
 /**
  * This tracks the current scope for an SSViewer instance. It has three goals:
@@ -117,11 +122,11 @@ class SSViewer_Scope
     /**
      * Returns the current "active" item
      *
-     * @return object
+     * @return object|null
      */
     public function getItem()
     {
-        return $this->itemIterator ? $this->itemIterator->current() : $this->item;
+        return $this->wrapScalarValue($this->itemIterator ? $this->itemIterator->current() : $this->item);
     }
 
     /**
@@ -176,7 +181,7 @@ class SSViewer_Scope
      */
     public function getObj($name, $arguments = [], $cache = false, $cacheName = null)
     {
-        $on = $this->itemIterator ? $this->itemIterator->current() : $this->item;
+        $on = $this->getItem();
         return $on->obj($name, $arguments, $cache, $cacheName);
     }
 
@@ -240,7 +245,7 @@ class SSViewer_Scope
      */
     public function self()
     {
-        $result = $this->itemIterator ? $this->itemIterator->current() : $this->item;
+        $result = $this->getItem();
         $this->resetLocalScope();
 
         return $result;
@@ -338,11 +343,27 @@ class SSViewer_Scope
      */
     public function __call($name, $arguments)
     {
-        $on = $this->itemIterator ? $this->itemIterator->current() : $this->item;
+        $on = $this->getItem();
+
         $retval = $on ? $on->$name(...$arguments) : null;
 
         $this->resetLocalScope();
         return $retval;
+    }
+
+    private function wrapScalarValue(mixed $value): mixed
+    {
+        if (!is_scalar($value)) {
+            return $value;
+        }
+        $type = gettype($value);
+        return match ($type) {
+            'boolean' => DBBoolean::create()->setValue($value),
+            'string' => DBText::create()->setValue($value),
+            'double' => DBFloat::create()->setValue($value),
+            'integer' => DBInt::create()->setValue($value),
+            default => throw new LogicException("Unexpected primitive type '$type'"),
+        };
     }
 
     /**
