@@ -603,11 +603,6 @@ abstract class DBField extends ViewableData implements DBIndexable
 DBG;
     }
 
-    public function __toString()
-    {
-        return (string)$this->forTemplate();
-    }
-
     /**
      * @return array
      */

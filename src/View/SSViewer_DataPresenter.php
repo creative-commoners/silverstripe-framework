@@ -111,7 +111,7 @@ class SSViewer_DataPresenter extends SSViewer_Scope
      * @var boolean $createObject
      * @return array
      */
-    protected function getPropertiesFromProvider($interfaceToQuery, $variableMethod, $createObject = false)
+    public function getPropertiesFromProvider($interfaceToQuery, $variableMethod, $createObject = false)
     {
         $methods = [];
 

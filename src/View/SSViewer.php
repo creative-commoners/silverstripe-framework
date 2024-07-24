@@ -15,6 +15,9 @@ use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Security\Permission;
 use InvalidArgumentException;
+use PageController;
+use SilverStripe\Control\Controller;
+use SilverStripe\View\TemplateEngine\TwigBridge;
 
 /**
  * Parses a template file with an *.ss file extension.
@@ -596,56 +599,64 @@ class SSViewer implements Flushable
      */
     public function process($item, $arguments = null, $inheritedScope = null)
     {
+        $useTwig = Controller::has_curr() && Controller::curr() instanceof PageController;
+        if ($useTwig) {
+            $twigBridge = new TwigBridge(basename($this->chosen, '.ss') . '.twig');
+            $output = $twigBridge->process($item, $arguments, $inheritedScope);
+        }
+
         // Set hashlinks and temporarily modify global state
         $rewrite = $this->getRewriteHashLinks();
         $origRewriteDefault = static::getRewriteHashLinksDefault();
         static::setRewriteHashLinksDefault($rewrite);
 
-        SSViewer::$topLevel[] = $item;
+        if (!$useTwig) {
+            SSViewer::$topLevel[] = $item;
 
-        $template = $this->chosen;
+            $template = $this->chosen;
 
-        $cacheFile = TEMP_PATH . DIRECTORY_SEPARATOR . '.cache'
-            . str_replace(['\\','/',':'], '.', Director::makeRelative(realpath($template ?? '')) ?? '');
-        $lastEdited = filemtime($template ?? '');
+            $cacheFile = TEMP_PATH . DIRECTORY_SEPARATOR . '.cache'
+                . str_replace(['\\','/',':'], '.', Director::makeRelative(realpath($template ?? '')) ?? '');
+            $lastEdited = filemtime($template ?? '');
 
-        if (!file_exists($cacheFile ?? '') || filemtime($cacheFile ?? '') < $lastEdited) {
-            $content = file_get_contents($template ?? '');
-            $content = $this->parseTemplateContent($content, $template);
+            if (!file_exists($cacheFile ?? '') || filemtime($cacheFile ?? '') < $lastEdited) {
+                $content = file_get_contents($template ?? '');
+                $content = $this->parseTemplateContent($content, $template);
 
-            $fh = fopen($cacheFile ?? '', 'w');
-            fwrite($fh, $content ?? '');
-            fclose($fh);
-        }
-
-        $underlay = ['I18NNamespace' => basename($template ?? '')];
-
-        // Makes the rendered sub-templates available on the parent item,
-        // through $Content and $Layout placeholders.
-        foreach (['Content', 'Layout'] as $subtemplate) {
-            // Detect sub-template to use
-            $sub = $this->getSubtemplateFor($subtemplate);
-            if (!$sub) {
-                continue;
+                $fh = fopen($cacheFile ?? '', 'w');
+                fwrite($fh, $content ?? '');
+                fclose($fh);
             }
 
-            // Create lazy-evaluated underlay for this subtemplate
-            $underlay[$subtemplate] = function () use ($item, $arguments, $sub) {
-                $subtemplateViewer = clone $this;
-                // Disable requirements - this will be handled by the parent template
-                $subtemplateViewer->includeRequirements(false);
-                // Select the right template
-                $subtemplateViewer->setTemplate($sub);
+            $underlay = ['I18NNamespace' => basename($template ?? '')];
 
-                // Render if available
-                if ($subtemplateViewer->exists()) {
-                    return $subtemplateViewer->process($item, $arguments);
+            // Makes the rendered sub-templates available on the parent item,
+            // through $Content and $Layout placeholders.
+            foreach (['Content', 'Layout'] as $subtemplate) {
+                // Detect sub-template to use
+                $sub = $this->getSubtemplateFor($subtemplate);
+                if (!$sub) {
+                    continue;
                 }
-                return null;
-            };
-        }
 
-        $output = $this->includeGeneratedTemplate($cacheFile, $item, $arguments, $underlay, $inheritedScope);
+                // Create lazy-evaluated underlay for this subtemplate
+                $underlay[$subtemplate] = function () use ($item, $arguments, $sub) {
+                    $subtemplateViewer = clone $this;
+                    // Disable requirements - this will be handled by the parent template
+                    $subtemplateViewer->includeRequirements(false);
+                    // Select the right template
+                    $subtemplateViewer->setTemplate($sub);
+
+                    // Render if available
+                    if ($subtemplateViewer->exists()) {
+                        return $subtemplateViewer->process($item, $arguments);
+                    }
+                    return null;
+                };
+            }
+
+            $output = $this->includeGeneratedTemplate($cacheFile, $item, $arguments, $underlay, $inheritedScope);
+        }
 
         if ($this->includeRequirements) {
             $output = Requirements::includeInHTML($output);

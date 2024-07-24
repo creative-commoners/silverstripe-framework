@@ -354,12 +354,9 @@ class ViewableData implements IteratorAggregate
         return true;
     }
 
-    /**
-     * @return string the class name
-     */
-    public function __toString()
+    public function __toString(): string
     {
-        return static::class;
+        return (string) $this->forTemplate();
     }
 
     /**
