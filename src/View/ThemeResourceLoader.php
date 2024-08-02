@@ -9,6 +9,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Manifest\ModuleLoader;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
 use SilverStripe\Core\Path;
+use SilverStripe\View\TemplateLayer\TemplateCandidate;
 
 /**
  * Handles finding templates from a stack of template manifest objects.
@@ -172,7 +173,7 @@ class ThemeResourceLoader implements Flushable, TemplateGlobalProvider
      *
      * The results of this method will be cached for future use.
      *
-     * @param string|array $template Template name, or template spec in array format with the keys
+     * @param array|TemplateCandidate $template Template name, or template spec in array format with the keys
      * 'type' (type string) and 'templates' (template hierarchy in order of precedence).
      * If 'templates' is omitted then any other item in the array will be treated as the template
      * list, or list of templates each in the array spec given.
@@ -192,51 +193,32 @@ class ThemeResourceLoader implements Flushable, TemplateGlobalProvider
         // Look for a cached result for this data set
         $cacheKey = md5(json_encode($template) . json_encode($themes));
         if ($this->getCache()->has($cacheKey)) {
-            return $this->getCache()->get($cacheKey);
+            // return $this->getCache()->get($cacheKey);
         }
 
-        $type = '';
-        if (is_array($template)) {
-            // Check if templates has type specified
-            if (array_key_exists('type', $template ?? [])) {
-                $type = $template['type'];
-                unset($template['type']);
-            }
-            // Templates are either nested in 'templates' or just the rest of the list
-            $templateList = array_key_exists('templates', $template ?? []) ? $template['templates'] : $template;
-        } else {
-            $templateList = [$template];
-        }
+        $templateList = is_array($template) ? $template : [$template];
 
-        foreach ($templateList as $i => $template) {
-            // Check if passed list of templates in array format
-            if (is_array($template)) {
-                $path = $this->findTemplate($template, $themes);
-                if ($path) {
-                    $this->getCache()->set($cacheKey, $path);
-                    return $path;
-                }
-                continue;
-            }
-
+        /** @var TemplateCandidate $template */
+        foreach ($templateList as $template) {
+            $templateName = $template->getName();
             // If we have an .ss extension, this is a path, not a template name. We should
             // pass in templates without extensions in order for template manifest to find
             // files dynamically.
-            if (substr($template ?? '', -3) == '.ss' && file_exists($template ?? '')) {
-                $this->getCache()->set($cacheKey, $template);
-                return $template;
+            if (substr($templateName ?? '', -3) == '.ss' && file_exists($templateName ?? '')) {
+                $this->getCache()->set($cacheKey, $templateName);
+                return $templateName;
             }
 
             // Check string template identifier
-            $template = str_replace('\\', '/', $template ?? '');
-            $parts = explode('/', $template ?? '');
+            $templateName = str_replace('\\', '/', $templateName ?? '');
+            $parts = explode('/', $templateName ?? '');
 
             $tail = array_pop($parts);
             $head = implode('/', $parts);
             $themePaths = $this->getThemePaths($themes);
             foreach ($themePaths as $themePath) {
                 // Join path
-                $pathParts = [ $this->base, $themePath, 'templates', $head, $type, $tail ];
+                $pathParts = [ $this->base, $themePath, 'templates', $head, $template->getType(), $tail ];
                 try {
                     $path = Path::join($pathParts) . '.ss';
                     if (file_exists($path ?? '')) {

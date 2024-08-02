@@ -3,6 +3,7 @@
 namespace SilverStripe\View;
 
 use SilverStripe\Core\Config\Config;
+use SilverStripe\ORM\FieldType\DBHTMLText;
 
 /**
  * Special SSViewer that will process a template passed as a string, rather than a filename.
@@ -47,7 +48,7 @@ class SSViewer_FromString extends SSViewer
     /**
      * {@inheritdoc}
      */
-    public function process($item, $arguments = null, $scope = null)
+    public function process($item, $arguments = null, $scope = null): DBHTMLText
     {
         $hash = sha1($this->content ?? '');
         $cacheFile = TEMP_PATH . DIRECTORY_SEPARATOR . ".cache.$hash";

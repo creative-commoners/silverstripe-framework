@@ -572,7 +572,7 @@ class SSTemplateParser extends Parser implements TemplateParser
         }
 
         $res['php'] .= ($sub['ArgumentMode'] == 'default') ? $sub['string_php'] :
-            str_replace('$$FINAL', 'XML_val', $sub['php'] ?? '');
+            str_replace('$$FINAL', 'getOutputValue', $sub['php'] ?? '');
     }
 
     /* Call: Method:Word ( "(" < :CallArguments? > ")" )? */
@@ -765,8 +765,8 @@ class SSTemplateParser extends Parser implements TemplateParser
     }
 
     /**
-     * The basic generated PHP of LookupStep and LastLookupStep is the same, except that LookupStep calls 'obj' to
-     * get the next ViewableData in the sequence, and LastLookupStep calls different methods (XML_val, hasValue, obj)
+     * The basic generated PHP of LookupStep and LastLookupStep is the same, except that LookupStep calls 'scopeToIntermediateValue' to
+     * get the next ViewableData in the sequence, and LastLookupStep calls different methods (getOutputValue, hasValue, scopeToIntermediateValue)
      * depending on the context the lookup is used in.
      */
     function Lookup_AddLookupStep(&$res, $sub, $method)
@@ -777,15 +777,15 @@ class SSTemplateParser extends Parser implements TemplateParser
 
         if (isset($sub['Call']['CallArguments']) && isset($sub['Call']['CallArguments']['php'])) {
             $arguments = $sub['Call']['CallArguments']['php'];
-            $res['php'] .= "->$method('$property', [$arguments], true)";
+            $res['php'] .= "->$method('$property', [$arguments], 'method', true)";
         } else {
-            $res['php'] .= "->$method('$property', null, true)";
+            $res['php'] .= "->$method('$property', [], 'property', true)";
         }
     }
 
     function Lookup_LookupStep(&$res, $sub)
     {
-        $this->Lookup_AddLookupStep($res, $sub, 'obj');
+        $this->Lookup_AddLookupStep($res, $sub, 'scopeToIntermediateValue');
     }
 
     function Lookup_LastLookupStep(&$res, $sub)
@@ -1009,7 +1009,7 @@ class SSTemplateParser extends Parser implements TemplateParser
 
     function InjectionVariables_Argument(&$res, $sub)
     {
-        $res['php'] .= str_replace('$$FINAL', 'XML_val', $sub['php'] ?? '') . ',';
+        $res['php'] .= str_replace('$$FINAL', 'getOutputValue', $sub['php'] ?? '') . ',';
     }
 
     function InjectionVariables__finalise(&$res)
@@ -1158,7 +1158,7 @@ class SSTemplateParser extends Parser implements TemplateParser
 
     function Injection_STR(&$res, $sub)
     {
-        $res['php'] = '$val .= '. str_replace('$$FINAL', 'XML_val', $sub['Lookup']['php'] ?? '') . ';';
+        $res['php'] = '$val .= '. str_replace('$$FINAL', 'getOutputValue', $sub['Lookup']['php'] ?? '') . ';';
     }
 
     /* DollarMarkedLookup: SimpleInjection */
@@ -1818,10 +1818,10 @@ class SSTemplateParser extends Parser implements TemplateParser
             if (!empty($res['php'])) {
                 $res['php'] .= $sub['string_php'];
             } else {
-                $res['php'] = str_replace('$$FINAL', 'XML_val', $sub['lookup_php'] ?? '');
+                $res['php'] = str_replace('$$FINAL', 'getOutputValue', $sub['lookup_php'] ?? '');
             }
         } else {
-            $res['php'] .= str_replace('$$FINAL', 'XML_val', $sub['php'] ?? '');
+            $res['php'] .= str_replace('$$FINAL', 'getOutputValue', $sub['php'] ?? '');
         }
     }
 
@@ -1886,6 +1886,8 @@ class SSTemplateParser extends Parser implements TemplateParser
             $res['php'] .= '((bool)'.$sub['php'].')';
         } else {
             $php = ($sub['ArgumentMode'] == 'default' ? $sub['lookup_php'] : $sub['php']);
+            // TODO: kinda hacky - maybe we need a way to pass state down the parse chain so
+            // Lookup_LastLookupStep and Argument_BareWord can produce hasValue instead of getOutputValue
             $res['php'] .= str_replace('$$FINAL', 'hasValue', $php ?? '');
         }
     }
@@ -2468,7 +2470,7 @@ class SSTemplateParser extends Parser implements TemplateParser
             $res['php'] = '';
         }
 
-        $res['php'] .= str_replace('$$FINAL', 'XML_val', $sub['php'] ?? '');
+        $res['php'] .= str_replace('$$FINAL', 'getOutputValue', $sub['php'] ?? '');
     }
 
     /* CacheBlockTemplate: (Comment | Translate | If | Require |    OldI18NTag | Include | ClosedBlock |
@@ -3585,7 +3587,7 @@ class SSTemplateParser extends Parser implements TemplateParser
     {
         $entity = $sub['String']['text'];
         if (strpos($entity ?? '', '.') === false) {
-            $res['php'] .= "\$scope->XML_val('I18NNamespace').'.$entity'";
+            $res['php'] .= "\$scope->getOutputValue('I18NNamespace').'.$entity'";
         } else {
             $res['php'] .= "'$entity'";
         }
@@ -3790,7 +3792,7 @@ class SSTemplateParser extends Parser implements TemplateParser
                 break;
 
             default:
-                $res['php'] .= str_replace('$$FINAL', 'obj', $sub['php'] ?? '') . '->self()';
+                $res['php'] .= str_replace('$$FINAL', 'scopeToIntermediateValue', $sub['php'] ?? '') . '->self()';
                 break;
         }
     }
@@ -4271,7 +4273,7 @@ class SSTemplateParser extends Parser implements TemplateParser
             }
             $on = str_replace(
                 '$$FINAL',
-                'obj',
+                'scopeToIntermediateValue',
                 ($arg['ArgumentMode'] == 'default') ? $arg['lookup_php'] : $arg['php']
             );
         }
@@ -4297,7 +4299,7 @@ class SSTemplateParser extends Parser implements TemplateParser
             throw new SSTemplateParseException('Control block cant take string as argument.', $this);
         }
 
-        $on = str_replace('$$FINAL', 'obj', ($arg['ArgumentMode'] == 'default') ? $arg['lookup_php'] : $arg['php']);
+        $on = str_replace('$$FINAL', 'scopeToIntermediateValue', ($arg['ArgumentMode'] == 'default') ? $arg['lookup_php'] : $arg['php']);
         return
             $on . '; $scope->pushScope();' . PHP_EOL .
                 $res['Template']['php'] . PHP_EOL .
@@ -5290,6 +5292,8 @@ class SSTemplateParser extends Parser implements TemplateParser
         $text = stripslashes($text ?? '');
         $text = addcslashes($text ?? '', '\'\\');
 
+        // TODO: This is pretty ugly & gets applied on all files not just html. I wonder if we can make this
+        // non-dynamically calculated
         $code = <<<'EOC'
 (\SilverStripe\View\SSViewer::getRewriteHashLinksDefault()
     ? \SilverStripe\Core\Convert::raw2att( preg_replace("/^(\\/)+/", "/", $_SERVER['REQUEST_URI'] ) )
@@ -5328,7 +5332,8 @@ EOC;
 
             $this->includeDebuggingComments = $includeDebuggingComments;
 
-            // Ignore UTF8 BOM at beginning of string.
+            // Ignore UTF8 BOM at beginning of string. TODO: Confirm this is needed, make sure SSViewer handles UTF
+            // (and other encodings) properly
             if (substr($string ?? '', 0, 3) == pack("CCC", 0xef, 0xbb, 0xbf)) {
                 $this->pos = 3;
             }

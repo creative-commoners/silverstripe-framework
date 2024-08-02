@@ -4,19 +4,26 @@ namespace SilverStripe\View;
 
 use ArrayIterator;
 use Countable;
+use InvalidArgumentException;
 use Iterator;
+use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\ORM\FieldType\DBText;
 use SilverStripe\ORM\FieldType\DBFloat;
 use SilverStripe\ORM\FieldType\DBInt;
 use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\View\TemplateLayer\ViewLayerData;
 
 /**
  * This tracks the current scope for an SSViewer instance. It has three goals:
  *   - Handle entering & leaving sub-scopes in loops and withs
  *   - Track Up and Top
  *   - (As a side effect) Inject data that needs to be available globally (used to live in ViewableData)
+ *
+ * It is also responsible for mixing in data on top of what the item provides. This can be "global"
+ * data that is scope-independant (like BaseURL), or type-specific data that is layered on top cross-cut like
+ * (like $FirstLast etc).
  *
  * In order to handle up, rather than tracking it using a tree, which would involve constructing new objects
  * for each step, we use indexes into the itemStack (which already has to exist).
@@ -108,16 +115,60 @@ class SSViewer_Scope
     private $localIndex = 0;
 
     /**
-     * @var object $item
-     * @var SSViewer_Scope $inheritedScope
+     * List of global property providers
+     *
+     * @internal
+     * @var TemplateGlobalProvider[]|null
      */
-    public function __construct($item, SSViewer_Scope $inheritedScope = null)
-    {
+    private static $globalProperties = null;
+
+    /**
+     * List of global iterator providers
+     *
+     * @internal
+     * @var TemplateIteratorProvider[]|null
+     */
+    private static $iteratorProperties = null;
+
+    /**
+     * Overlay variables. Take precedence over anything from the current scope
+     *
+     * @var array|null
+     */
+    protected $overlay;
+
+    /**
+     * Flag for whether overlay should be preserved when pushing a new scope
+     *
+     * @see SSViewer_Scope::pushScope()
+     * @var bool
+     */
+    protected $preserveOverlay = false;
+
+    /**
+     * Underlay variables. Concede precedence to overlay variables or anything from the current scope
+     *
+     * @var array
+     */
+    protected $underlay;
+
+    public function __construct(
+        ?ViewLayerData $item,
+        array $overlay = [],
+        array $underlay = [],
+        SSViewer_Scope $inheritedScope = null
+    ) {
         $this->item = $item;
 
         $this->itemIterator = ($inheritedScope) ? $inheritedScope->itemIterator : null;
         $this->itemIteratorTotal = ($inheritedScope) ? $inheritedScope->itemIteratorTotal : 0;
         $this->itemStack[] = [$this->item, $this->itemIterator, $this->itemIteratorTotal, null, null, 0];
+
+        $this->overlay = $overlay;
+        $this->underlay = $underlay;
+
+        $this->cacheGlobalProperties();
+        $this->cacheIteratorProperties();
     }
 
     /**
@@ -184,27 +235,68 @@ class SSViewer_Scope
     }
 
     /**
-     * @param string $name
-     * @param array $arguments
-     * @param bool $cache
-     * @param string $cacheName
-     * @return mixed
      */
-    public function getObj($name, $arguments = [], $cache = false, $cacheName = null)
+    public function getObj(string $name, array $arguments, string $type, bool $cache, ?string $cacheName)
     {
-        $on = $this->getItem();
-        return $on->obj($name, $arguments, $cache, $cacheName);
+        if ($name === 'Layout') {
+            echo '';
+        }
+        // @TODO caching (used to be handled by ViewableData::obj() - and therefore ignored for overlays and underlays!!)
+        // Use an overlay or underlay if there is one
+        $result = $this->getInjectedValue($name, (array)$arguments);
+        if ($result) {
+            $obj = $result['obj'];
+            return ($obj instanceof ViewLayerData) ? $obj : new ViewLayerData($obj);
+        }
+
+        // Get the actual object
+        if ($type === 'method') {
+            return $this->getItem()->$name(...$arguments);
+        }
+        return $this->getItem()->$name;
     }
 
     /**
-     * @param string $name
-     * @param array $arguments
-     * @param bool $cache
-     * @param string $cacheName
-     * @return $this
+     * Set scope to an intermediate value, which will be used for getting output later on,
+     *
+     * $Up and $Top need to restore the overlay from the parent and top-level
+     * scope respectively.
      */
-    public function obj($name, $arguments = [], $cache = false, $cacheName = null)
-    {
+    public function scopeToIntermediateValue(
+        string $name,
+        array $arguments = [],
+        string $type = '',
+        bool $cache = false,
+        ?string $cacheName = null
+    ): SSViewer_Scope {
+        // @TODO there's obviously some double handling here with up and top...
+        $overlayIndex = false;
+
+        switch ($name) {
+            case 'Up':
+                $upIndex = $this->getUpIndex();
+                if ($upIndex === null) {
+                    throw new \LogicException('Up called when we\'re already at the top of the scope');
+                }
+                $overlayIndex = $upIndex; // Parent scope
+                $this->preserveOverlay = true; // Preserve overlay
+                break;
+            case 'Top':
+                $overlayIndex = 0; // Top-level scope
+                $this->preserveOverlay = true; // Preserve overlay
+                break;
+            default:
+                $this->preserveOverlay = false;
+                break;
+        }
+
+        if ($overlayIndex !== false) {
+            $itemStack = $this->getItemStack();
+            if (!$this->overlay && isset($itemStack[$overlayIndex][SSViewer_Scope::ITEM_OVERLAY])) {
+                $this->overlay = $itemStack[$overlayIndex][SSViewer_Scope::ITEM_OVERLAY];
+            }
+        }
+
         switch ($name) {
             case 'Up':
                 if ($this->upIndex === null) {
@@ -231,7 +323,7 @@ class SSViewer_Scope
                 ) = $this->itemStack[0];
                 break;
             default:
-                $this->item = $this->getObj($name, $arguments, $cache, $cacheName);
+                $this->item = $this->getObj($name, $arguments, $type, $cache, $cacheName);
                 $this->itemIterator = null;
                 $this->upIndex = $this->currentIndex ? $this->currentIndex : count($this->itemStack) - 1;
                 $this->currentIndex = count($this->itemStack);
@@ -247,6 +339,14 @@ class SSViewer_Scope
             $this->currentIndex
         ];
         return $this;
+    }
+
+    public function getOutputValue(string $name, array $arguments = [], string $type = '', bool $cache = false, ?string $cacheName = null): string
+    {
+        // @TODO caching
+        $retval = $this->getObj($name, $arguments, $type, $cache, $cacheName);
+        $this->resetLocalScope();
+        return is_object($retval) ? $retval->__toString() : $retval;
     }
 
     /**
@@ -265,6 +365,12 @@ class SSViewer_Scope
     /**
      * Jump to the last item in the stack, called when a new item is added before a loop/with
      *
+     * Store the current overlay (as it doesn't directly apply to the new scope
+     * that's being pushed). We want to store the overlay against the next item
+     * "up" in the stack (hence upIndex), rather than the current item, because
+     * SSViewer_Scope::obj() has already been called and pushed the new item to
+     * the stack by this point
+     *
      * @return SSViewer_Scope
      */
     public function pushScope()
@@ -281,16 +387,40 @@ class SSViewer_Scope
         // once we enter a new global scope, we need to make sure we use a new one
         $this->itemIterator = $this->itemStack[$newLocalIndex][SSViewer_Scope::ITEM_ITERATOR] = null;
 
+        $upIndex = $this->getUpIndex() ?: 0;
+
+        $itemStack = $this->getItemStack();
+        $itemStack[$upIndex][SSViewer_Scope::ITEM_OVERLAY] = $this->overlay;
+        $this->setItemStack($itemStack);
+
+        // Remove the overlay when we're changing to a new scope, as values in
+        // that scope take priority. The exceptions that set this flag are $Up
+        // and $Top as they require that the new scope inherits the overlay
+        if (!$this->preserveOverlay) {
+            $this->overlay = [];
+        }
+
         return $this;
     }
 
     /**
+     * Now that we're going to jump up an item in the item stack, we need to
+     * restore the overlay that was previously stored against the next item "up"
+     * in the stack from the current one
+     *
      * Jump back to "previous" item in the stack, called after a loop/with block
      *
      * @return SSViewer_Scope
      */
     public function popScope()
     {
+        $upIndex = $this->getUpIndex();
+
+        if ($upIndex !== null) {
+            $itemStack = $this->getItemStack();
+            $this->overlay = $itemStack[$upIndex][SSViewer_Scope::ITEM_OVERLAY];
+        }
+
         $this->localIndex = $this->popIndex;
         $this->resetLocalScope();
 
@@ -356,11 +486,267 @@ class SSViewer_Scope
      */
     public function __call($name, $arguments)
     {
+        // Extract the method name and parameters
+        $property = $arguments[0];  // The name of the public function being called
+
+        // The public function parameters in an array
+        $params = (isset($arguments[1])) ? (array)$arguments[1] : [];
+
+        $val = $this->getInjectedValue($property, $params);
+        if ($val) {
+            $obj = $val['obj'];
+            if ($name === 'hasValue') { // @TODO nothing is ViewableData anymore, so we have to resolve this, probably in ViewLayerData::__isset()
+                $result = ($obj instanceof ViewableData) ? $obj->exists() : (bool)$obj;
+            } elseif (is_null($obj) || (is_scalar($obj) && !is_string($obj))) {
+                $result = $obj; // Nulls and non-string scalars don't need casting
+            } else {
+                $result = $obj->forTemplate(); // XML_val
+            }
+
+            $this->resetLocalScope();
+            return $result;
+        }
+
         $on = $this->getItem();
         $retval = $on ? $on->$name(...$arguments) : null;
 
         $this->resetLocalScope();
         return $retval;
+    }
+
+
+    /**
+     * Build cache of global properties
+     */
+    protected function cacheGlobalProperties()
+    {
+        if (SSViewer_Scope::$globalProperties !== null) {
+            return;
+        }
+
+        SSViewer_Scope::$globalProperties = $this->getPropertiesFromProvider(
+            TemplateGlobalProvider::class,
+            'get_template_global_variables'
+        );
+    }
+
+    /**
+     * Build cache of global iterator properties
+     */
+    protected function cacheIteratorProperties()
+    {
+        if (SSViewer_Scope::$iteratorProperties !== null) {
+            return;
+        }
+
+        SSViewer_Scope::$iteratorProperties = $this->getPropertiesFromProvider(
+            TemplateIteratorProvider::class,
+            'get_template_iterator_variables',
+            true // Call non-statically
+        );
+    }
+
+    /**
+     * @var string $interfaceToQuery
+     * @var string $variableMethod
+     * @var boolean $createObject
+     * @return array
+     */
+    public function getPropertiesFromProvider($interfaceToQuery, $variableMethod, $createObject = false)
+    {
+        $implementors = ClassInfo::implementorsOf($interfaceToQuery);
+        if ($implementors) {
+            foreach ($implementors as $implementor) {
+                // Create a new instance of the object for method calls
+                if ($createObject) {
+                    $implementor = new $implementor();
+                    $exposedVariables = $implementor->$variableMethod();
+                } else {
+                    $exposedVariables = $implementor::$variableMethod();
+                }
+
+                foreach ($exposedVariables as $varName => $details) {
+                    if (!is_array($details)) {
+                        $details = [
+                            'method' => $details,
+                            'casting' => ViewableData::config()->uninherited('default_cast')
+                        ];
+                    }
+
+                    // If just a value (and not a key => value pair), use method name for both key and value
+                    if (is_numeric($varName)) {
+                        $varName = $details['method'];
+                    }
+
+                    // Add in a reference to the implementing class (might be a string class name or an instance)
+                    $details['implementor'] = $implementor;
+
+                    // And a callable array
+                    if (isset($details['method'])) {
+                        $details['callable'] = [$implementor, $details['method']];
+                    }
+
+                    // Save with both uppercase & lowercase first letter, so either works
+                    $lcFirst = strtolower($varName[0] ?? '') . substr($varName ?? '', 1);
+                    $result[$lcFirst] = $details;
+                    $result[ucfirst($varName)] = $details;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Look up injected value - it may be part of an "overlay" (arguments passed to <% include %>),
+     * set on the current item, part of an "underlay" ($Layout or $Content), or an iterator/global property
+     *
+     * @param string $property Name of property
+     * @param array $params
+     * @param bool $cast If true, an object is always returned even if not an object.
+     * @return array|null
+     */
+    public function getInjectedValue(string $property, array $params, $cast = true)
+    {
+        // Get source for this value
+        $result = $this->getValueSource($property);
+        if (!array_key_exists('source', $result)) {
+            return null;
+        }
+
+        // Look up the value - either from a callable, or from a directly provided value
+        $source = $result['source'];
+        $res = [];
+        if (isset($source['callable'])) {
+            $res['value'] = $source['callable'](...$params);
+        } elseif (array_key_exists('value', $source)) {
+            $res['value'] = $source['value'];
+        } else {
+            throw new InvalidArgumentException(
+                "Injected property $property doesn't have a value or callable value source provided"
+            );
+        }
+
+        // If we want to provide a casted object, look up what type object to use
+        if ($cast) {
+            $res['obj'] = $this->castValue($res['value'], $source);
+        }
+
+        return $res;
+    }
+
+
+    /**
+     * Evaluate a template override. Returns an array where the presence of
+     * a 'value' key indiciates whether an override was successfully found,
+     * as null is a valid override value
+     *
+     * @param string $property Name of override requested
+     * @param array $overrides List of overrides available
+     * @return array An array with a 'value' key if a value has been found, or empty if not
+     */
+    protected function processTemplateOverride($property, $overrides)
+    {
+        if (!array_key_exists($property, $overrides)) {
+            return [];
+        }
+
+        // Detect override type
+        $override = $overrides[$property];
+
+        // Late-evaluate this value
+        if (!is_string($override) && is_callable($override)) {
+            $override = $override();
+
+            // Late override may yet return null
+            if (!isset($override)) {
+                return [];
+            }
+        }
+
+        return ['value' => $override];
+    }
+
+    /**
+     * Determine source to use for getInjectedValue. Returns an array where the presence of
+     * a 'source' key indiciates whether a value source was successfully found, as a source
+     * may be a null value returned from an override
+     *
+     * @param string $property
+     * @return array An array with a 'source' key if a value source has been found, or empty if not
+     */
+    protected function getValueSource($property)
+    {
+        // Check for a presenter-specific override
+        $result = $this->processTemplateOverride($property, $this->overlay);
+        if (array_key_exists('value', $result)) {
+            return ['source' => $result];
+        }
+
+        // Check if the method to-be-called exists on the target object - if so, don't check any further
+        // injection locations
+        $on = $this->getItem();
+        if (is_object($on) && (isset($on->$property) || method_exists($on, $property ?? ''))) {
+            return [];
+        }
+
+        // Check for a presenter-specific override
+        $result = $this->processTemplateOverride($property, $this->underlay);
+        if (array_key_exists('value', $result)) {
+            return ['source' => $result];
+        }
+
+        // Then for iterator-specific overrides
+        if (array_key_exists($property, SSViewer_Scope::$iteratorProperties)) {
+            $source = SSViewer_Scope::$iteratorProperties[$property];
+            /** @var TemplateIteratorProvider $implementor */
+            $implementor = $source['implementor'];
+            if ($this->itemIterator) {
+                // Set the current iterator position and total (the object instance is the first item in
+                // the callable array)
+                $implementor->iteratorProperties(
+                    $this->itemIterator->key(),
+                    $this->itemIteratorTotal
+                );
+            } else {
+                // If we don't actually have an iterator at the moment, act like a list of length 1
+                $implementor->iteratorProperties(0, 1);
+            }
+
+            return ($source) ? ['source' => $source] : [];
+        }
+
+        // And finally for global overrides
+        if (array_key_exists($property, SSViewer_Scope::$globalProperties)) {
+            return [
+                'source' => SSViewer_Scope::$globalProperties[$property] // get the method call
+            ];
+        }
+
+        // No value
+        return [];
+    }
+
+    /**
+     * Ensure the value is cast safely
+     *
+     * @param mixed $value
+     * @param array $source
+     * @return DBField
+     */
+    protected function castValue($value, $source)
+    {
+        // If the value has already been cast, is null, or is a non-string scalar
+        if (is_object($value) || is_null($value) || (is_scalar($value) && !is_string($value))) {
+            return $value;
+        }
+
+        // Get provided or default cast
+        $casting = empty($source['casting'])
+            ? ViewableData::config()->uninherited('default_cast')
+            : $source['casting'];
+
+        return DBField::create_field($casting, $value);
     }
 
     /**

@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\View\TemplateEngine;
+namespace SilverStripe\View\TwigEngine;
 
 use SilverStripe\View\Requirements;
 use Twig\Attribute\YieldReady;

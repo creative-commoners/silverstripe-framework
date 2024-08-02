@@ -1,20 +1,23 @@
 <?php
 
-namespace SilverStripe\View\TemplateEngine;
+namespace SilverStripe\View\TwigEngine;
 
 use ArgumentCountError;
-use SilverStripe\Core\Path;
 use SilverStripe\i18n\i18n;
 use SilverStripe\View\SSViewer;
-use SilverStripe\View\SSViewer_DataPresenter;
+use SilverStripe\View\SSViewer_Scope;
+use SilverStripe\View\TemplateLayer\RenderingEngine;
+use SilverStripe\View\TemplateLayer\ViewLayerData;
 use SilverStripe\View\TemplateGlobalProvider;
+use SilverStripe\View\TemplateLayer\TemplateCandidate;
 use SilverStripe\View\ThemeResourceLoader;
-use SilverStripe\View\ViewableData;
+use Symfony\Component\Filesystem\Path;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Twig\Loader\LoaderInterface;
 use Twig\TwigFunction;
 
-class TwigBridge
+class TwigBridge implements RenderingEngine
 {
     // Right now just a string, which is the name of the template minus the extension.
     //
@@ -23,20 +26,61 @@ class TwigBridge
     // is currently an array syntax indicating the "type" of template, with fallbacks.
     // 2. In setTemplate use that new data format to boil down to a single template,
     // similar to SSViewer's $chosen property.
-    private string|array $template;
+    private string $template;
 
     private Environment $twig;
 
-    public function __construct(string|array $template = [])
+    private static ?LoaderInterface $templateLoader = null;
+
+    public function __construct(TemplateCandidate|array $template = [])
     {
         $this->setTemplate($template);
         $this->twig = $this->getEngine();
     }
 
+    public static function hasTemplate(array|TemplateCandidate $template): bool
+    {
+        $templateList = is_array($template) ? $template : [$template];
+        /** @var TemplateCandidate $candidate */
+        foreach ($templateList as $candidate) {
+            $name = $candidate->getName();
+            if (!str_ends_with($name, '.twig')) {
+                $name .= '.twig';
+            }
+            // @TODO might need to handle absolute or relative paths that already include the type?
+            return TwigBridge::getLoader()->exists(Path::join($candidate->getType(), $name));
+        }
+    }
+
+    public function process(ViewLayerData $item, array $arguments = [], $inheritedScope = null): string
+    {
+        if (!empty($arguments)) {
+            $item = $item->customise($arguments);
+        }
+
+        return $this->twig->render($this->template, [
+            // We'd probably wrap it before it even comes to the bridge - but for now this is simpler.
+            'model' => $item,
+        ]);
+    }
+
+    public function setTemplate(TemplateCandidate|array $template): void
+    {
+        // @TODO Handle arrays properly
+        if (is_array($template)) {
+            $template = $template[array_key_first($template)];
+        }
+        $name = $template->getName();
+        if (!str_ends_with($name, '.twig')) {
+            $name .= '.twig';
+        }
+        // @TODO might need to handle absolute or relative paths that already include the type?
+        $this->template = Path::join($template->getType(), $name);
+    }
+
     private function getEngine()
     {
-        $loader = new FilesystemLoader($this->getTemplateDirs());
-        $twig = new Environment($loader, [
+        $twig = new TwigEnvironment(TwigBridge::getLoader(), [
             'cache' => Path::join(TEMP_PATH, 'twig'), // TODO: Bust cache on flush
             'auto_reload' => true, // could be configurable, might want false in prod
             'autoescape' => false,
@@ -49,7 +93,7 @@ class TwigBridge
 
         // This would obviously be refactored out to somewhere more sensible.
         // Template globals are available both as functions and global properties.
-        $dataPresenter = new SSViewer_DataPresenter(null);
+        $dataPresenter = new SSViewer_Scope(null);
         $globalStuff = $dataPresenter->getPropertiesFromProvider(
             TemplateGlobalProvider::class,
             'get_template_global_variables'
@@ -80,19 +124,15 @@ class TwigBridge
         return $twig;
     }
 
-    public function process(ViewableData $item, $arguments = null, $inheritedScope = null): string
+    private static function getLoader(): LoaderInterface
     {
-        if ($arguments !== null) {
-            $item = $item->customise($arguments);
+        if (static::$templateLoader === null) {
+            static::$templateLoader = new FilesystemLoader(TwigBridge::getTemplateDirs());
         }
-
-        return $this->twig->render($this->template, [
-            // We'd probably wrap it before it even comes to the bridge - but for now this is simpler.
-            'model' => new ViewLayerData($item),
-        ]);
+        return static::$templateLoader;
     }
 
-    private function getTemplateDirs()
+    private static function getTemplateDirs()
     {
         $themePaths = ThemeResourceLoader::inst()->getThemePaths(SSViewer::get_themes());
         $dirs = [];
@@ -100,16 +140,11 @@ class TwigBridge
             // Undecided right now if we shuld have `templates/ss/` and `templates/twig/` but for now
             // we just have `templates/` and the .ss and .twig live as sibling files.
             $pathParts = [ BASE_PATH, $themePath, 'templates' ];
-            $path = Path::join($pathParts);
+            $path = Path::join(...$pathParts);
             if (is_dir($path ?? '')) {
                 $dirs[] = $path;
             }
         }
         return $dirs;
-    }
-
-    public function setTemplate(string|array $template): void
-    {
-        $this->template = $template;
     }
 }

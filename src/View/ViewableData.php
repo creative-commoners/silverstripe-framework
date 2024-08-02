@@ -7,6 +7,7 @@ use Exception;
 use InvalidArgumentException;
 use IteratorAggregate;
 use LogicException;
+use PageController;
 use ReflectionMethod;
 use ReflectionObject;
 use ReflectionProperty;
@@ -489,7 +490,7 @@ class ViewableData implements IteratorAggregate
             $data = $data->customise($customFields);
         }
         if ($template instanceof SSViewer) {
-            return $template->process($data, is_array($customFields) ? $customFields : null);
+            return $template->process($data, is_array($customFields) ? $customFields : []);
         }
 
         throw new UnexpectedValueException(
