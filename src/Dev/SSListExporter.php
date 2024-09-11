@@ -4,9 +4,9 @@ namespace SilverStripe\Dev;
 
 use SebastianBergmann\Exporter\Exporter;
 use SebastianBergmann\RecursionContext\Context;
-use SilverStripe\ORM\SS_List;
-use SilverStripe\View\ViewableData;
 use SilverStripe\Dev\Deprecation;
+use SilverStripe\Model\List\SS_List;
+use SilverStripe\Model\ModelData;
 
 if (!class_exists(Exporter::class)) {
     return;
@@ -70,7 +70,7 @@ class SSListExporter extends Exporter implements TestOnly
             return sprintf($className . ' &%s (%s)', $key, $values);
         }
 
-        if ($value instanceof ViewableData) {
+        if ($value instanceof ModelData) {
             $className = get_class($value);
             $data = $this->toMap($value);
 
@@ -87,10 +87,10 @@ class SSListExporter extends Exporter implements TestOnly
     }
 
     /**
-     * @param ViewableData $object
+     * @param ModelData $object
      * @return array
      */
-    public function toMap(ViewableData $object)
+    public function toMap(ModelData $object)
     {
         return $object->hasMethod('toMap')
             ? $object->toMap()

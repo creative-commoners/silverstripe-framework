@@ -15,14 +15,14 @@ use SilverStripe\Core\Convert;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\i18n\i18n;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBField;
-use SilverStripe\ORM\PaginatedList;
+use SilverStripe\Model\List\PaginatedList;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use SilverStripe\Security\SecurityToken;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 use SilverStripe\View\Requirements;
 use SilverStripe\View\Requirements_Backend;
 use SilverStripe\View\SSTemplateParseException;
@@ -31,8 +31,8 @@ use SilverStripe\View\SSViewer;
 use SilverStripe\View\SSViewer_FromString;
 use SilverStripe\View\Tests\SSViewerTest\SSViewerTestModel;
 use SilverStripe\View\Tests\SSViewerTest\SSViewerTestModelController;
-use SilverStripe\View\Tests\SSViewerTest\TestViewableData;
-use SilverStripe\View\ViewableData;
+use SilverStripe\View\Tests\SSViewerTest\TestModelData;
+use SilverStripe\Model\ModelData;
 
 class SSViewerTest extends SapphireTest
 {
@@ -598,7 +598,7 @@ SS;
      */
     public function testArgumentTypes(string $expected, string $template)
     {
-        $this->assertEquals($expected, $this->render($template, new TestViewableData()));
+        $this->assertEquals($expected, $this->render($template, new TestModelData()));
     }
 
     public function testObjectDotArguments()
@@ -769,7 +769,7 @@ after'
     public function testTypesArePreserved($expected, $templateArg)
     {
         $data = new ArrayData([
-            'Test' => new TestViewableData()
+            'Test' => new TestModelData()
         ]);
 
         $this->assertEquals($expected, $this->render("\$Test.Type({$templateArg})", $data));
@@ -781,7 +781,7 @@ after'
     public function testTypesArePreservedAsIncludeArguments($expected, $templateArg)
     {
         $data = new ArrayData([
-            'Test' => new TestViewableData()
+            'Test' => new TestModelData()
         ]);
 
         $this->assertEquals(
@@ -793,7 +793,7 @@ after'
     public function testTypePreservationInConditionals()
     {
         $data = new ArrayData([
-            'Test' => new TestViewableData()
+            'Test' => new TestModelData()
         ]);
 
         // Types in conditionals
@@ -1332,12 +1332,12 @@ after'
     }
 
     /**
-     * See {@link ViewableDataTest} for more extensive casting tests,
+     * See {@link ModelDataTest} for more extensive casting tests,
      * this test just ensures that basic casting is correctly applied during template parsing.
      */
     public function testCastingHelpers()
     {
-        $vd = new SSViewerTest\TestViewableData();
+        $vd = new SSViewerTest\TestModelData();
         $vd->TextValue = '<b>html</b>';
         $vd->HTMLValue = '<b>html</b>';
         $vd->UncastedValue = '<b>html</b>';
@@ -1370,8 +1370,8 @@ after'
             $t = SSViewer::fromString('$HTMLValue.XML')->process($vd)
         );
 
-        // Uncasted value (falls back to ViewableData::$default_cast="Text")
-        $vd = new SSViewerTest\TestViewableData();
+        // Uncasted value (falls back to ModelData::$default_cast="Text")
+        $vd = new SSViewerTest\TestModelData();
         $vd->UncastedValue = '<b>html</b>';
         $this->assertEquals(
             '&lt;b&gt;html&lt;/b&gt;',
@@ -1987,7 +1987,7 @@ after'
 			</html>'
         );
         $tmpl = new SSViewer($tmplFile);
-        $obj = new ViewableData();
+        $obj = new ModelData();
         $obj->InsertedLink = DBField::create_field(
             'HTMLFragment',
             '<a class="inserted" href="#anchor">InsertedLink</a>'
@@ -2042,7 +2042,7 @@ after'
 			</html>'
         );
         $tmpl = new SSViewer($tmplFile);
-        $obj = new ViewableData();
+        $obj = new ModelData();
         $obj->InsertedLink = DBField::create_field(
             'HTMLFragment',
             '<a class="inserted" href="#anchor">InsertedLink</a>'
@@ -2184,13 +2184,13 @@ EOC;
 
         Requirements::set_backend($backend);
 
-        $this->assertEquals(1, substr_count($template->process(new ViewableData()) ?? '', "a.css"));
-        $this->assertEquals(1, substr_count($template->process(new ViewableData()) ?? '', "b.css"));
+        $this->assertEquals(1, substr_count($template->process(new ModelData()) ?? '', "a.css"));
+        $this->assertEquals(1, substr_count($template->process(new ModelData()) ?? '', "b.css"));
 
         // if we disable the requirements then we should get nothing
         $template->includeRequirements(false);
-        $this->assertEquals(0, substr_count($template->process(new ViewableData()) ?? '', "a.css"));
-        $this->assertEquals(0, substr_count($template->process(new ViewableData()) ?? '', "b.css"));
+        $this->assertEquals(0, substr_count($template->process(new ModelData()) ?? '', "a.css"));
+        $this->assertEquals(0, substr_count($template->process(new ModelData()) ?? '', "b.css"));
     }
 
     public function testRequireCallInTemplateInclude()
@@ -2203,7 +2203,7 @@ EOC;
             $this->assertEquals(
                 1,
                 substr_count(
-                    $template->process(new ViewableData()) ?? '',
+                    $template->process(new ModelData()) ?? '',
                     "tests/php/View/SSViewerTest/javascript/RequirementsTest_a.js"
                 )
             );

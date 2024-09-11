@@ -4,7 +4,7 @@ namespace SilverStripe\ORM\Tests\Filters;
 
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\Filters\GreaterThanFilter;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 
 class GreaterThanFilterTest extends SapphireTest
 {

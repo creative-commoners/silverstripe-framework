@@ -2,13 +2,13 @@
 
 namespace SilverStripe\Dev\Tests;
 
-use SilverStripe\Dev\Constraint\ViewableDataContains;
+use SilverStripe\Dev\Constraint\ModelDataContains;
 use SilverStripe\Dev\SapphireTest;
-use SilverStripe\Dev\Tests\ViewableDataContainsTest\TestObject;
+use SilverStripe\Dev\Tests\ModelDataContainsTest\TestObject;
 use SilverStripe\Security\Member;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 
-class ViewableDataContainsTest extends SapphireTest
+class ModelDataContainsTest extends SapphireTest
 {
     private $test_data = [
         'FirstName' => 'Ingo',
@@ -53,7 +53,7 @@ class ViewableDataContainsTest extends SapphireTest
      */
     public function testEvaluateMatchesCorrectlyArrayData($match)
     {
-        $constraint = new ViewableDataContains($match);
+        $constraint = new ModelDataContains($match);
 
         $item = ArrayData::create($this->test_data);
 
@@ -67,7 +67,7 @@ class ViewableDataContainsTest extends SapphireTest
      */
     public function testEvaluateMatchesCorrectlyDataObject($match)
     {
-        $constraint = new ViewableDataContains($match);
+        $constraint = new ModelDataContains($match);
 
         $item = Member::create($this->test_data);
 
@@ -81,7 +81,7 @@ class ViewableDataContainsTest extends SapphireTest
      */
     public function testEvaluateDoesNotMatchWrongMatchInArrayData($match)
     {
-        $constraint = new ViewableDataContains($match);
+        $constraint = new ModelDataContains($match);
 
         $item = ArrayData::create($this->test_data);
 
@@ -95,7 +95,7 @@ class ViewableDataContainsTest extends SapphireTest
      */
     public function testEvaluateDoesNotMatchWrongMatchInDataObject($match)
     {
-        $constraint = new ViewableDataContains($match);
+        $constraint = new ModelDataContains($match);
 
         $item = Member::create($this->test_data);
 
@@ -105,10 +105,10 @@ class ViewableDataContainsTest extends SapphireTest
     public function testFieldAccess()
     {
         $data = new TestObject(['name' => 'Damian']);
-        $constraint = new ViewableDataContains(['name' => 'Damian', 'Something' => 'something']);
+        $constraint = new ModelDataContains(['name' => 'Damian', 'Something' => 'something']);
         $this->assertTrue($constraint->evaluate($data, '', true));
 
-        $constraint = new ViewableDataContains(['name' => 'Damian', 'Something' => 'notthing']);
+        $constraint = new ModelDataContains(['name' => 'Damian', 'Something' => 'notthing']);
         $this->assertFalse($constraint->evaluate($data, '', true));
     }
 }
