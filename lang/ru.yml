@@ -169,7 +169,7 @@ ru:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Обнаружен бесконечный цикл в иерархической структуре "{type}". Для исправления ошибки измените страницу, находящуюся уровнем выше'
     LIMITED_TITLE: 'Слишком много дочерних элементов ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Ошибка проверки'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Пожалуйста, введите имя пользователя и пароль.'

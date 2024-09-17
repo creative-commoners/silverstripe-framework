@@ -115,7 +115,7 @@ lt:
     ANY: 'Bet koks'
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Rastas begalinis sąryšis "{type}" hierarchijoje. Prašome patikrinti tėvinius sąryšius'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Tikrinimo klaida'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Įveskite vartotojo vardą ir slaptažodį'

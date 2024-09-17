@@ -149,7 +149,7 @@ bg:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'В йерархията на "{type}" е открит безкраен цикъл. Коригирайте това като промените родителя..'
     LIMITED_TITLE: 'Твърде много подстраници ({count}}'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Грешка при валидирането'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Моля, въведете потребителско име и парола.'

@@ -209,7 +209,7 @@ de:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Es wurde eine Endlosschleife innerhalb der "{type}"-Hierarchie gefunden. Bitte ändern Sie die übergeordnete Seite, um den Fehler zu beheben'
     LIMITED_TITLE: 'Zu viele Kindelemente ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: Validierungsfehler
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Bitte geben Sie einen Nutzernamen und ein Passwort ein'

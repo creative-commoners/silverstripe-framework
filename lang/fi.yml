@@ -165,7 +165,7 @@ fi:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: '"{type}" -hierarkiasta löytyi loputon silmukka. Ole hyvä ja muuta isäntää korjataksesi ongelman.'
     LIMITED_TITLE: 'Liian monta lapsiobjektia ({count}}'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: Validointivirhe
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Anna käyttäjänimi ja salasana'

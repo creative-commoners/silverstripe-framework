@@ -108,7 +108,7 @@ id:
     ANY: Semua
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Putaran berulang ditemukan pada hirarki "{type}". Mohon ganti induk untuk mengatasi masalah ini'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Kesalahan validasi'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Mohon isikan nama pengguna dan kata kunci.'

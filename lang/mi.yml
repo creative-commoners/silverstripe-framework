@@ -104,7 +104,7 @@ mi:
     ANY: 'Ko tētahi'
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Kua kitea he koromeke mutunga kore i roto i te aroākapanga "{type}". Hurihia te matua hei whakaea i tēnei'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Hapa manatoko'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Tāurua he ingoa kaiwhakamahi me te kupuhipa'

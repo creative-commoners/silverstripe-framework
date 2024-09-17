@@ -160,7 +160,7 @@ sv:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Oändlig loop hittades i hierarkin "{type}". Var vänlig ändra föräldern för att lösa detta'
     LIMITED_TITLE: 'För många barn ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: Valideringsfel
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Var god ange användarnamn och lösenord'

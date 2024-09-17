@@ -219,7 +219,7 @@ sk:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Nekonečná smyčka sa nachádza v {type} hierarchii. Prosím zmeňte rodiča pre vyriešenie tohto problému'
     LIMITED_TITLE: 'Príliš veľa potomkov ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Chyba platnosti'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Prosím zadajte používateľské meno a heslo.'

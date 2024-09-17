@@ -120,7 +120,7 @@ cs:
     ANY: Jakkýkoli
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Nekonečná smyčka se nachází v "{type}" hierarchii. Prosím změňte rodiče pro vyřešení tohoto problému'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Chyba platnosti'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Prosím zadejte uživatelské jméno a heslo.'

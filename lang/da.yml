@@ -149,7 +149,7 @@ da:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Uendeligt løkke fundet i "{type}" hierarkiet. Ændre venligst det overliggende element for at løse dette'
     LIMITED_TITLE: 'For mange underelementer ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: Valideringsfejl
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Indtast venligst et brugernavn og kodeord.'

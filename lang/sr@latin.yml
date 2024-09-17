@@ -103,7 +103,7 @@ sr@latin:
     ANY: 'Bilo koji'
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Otkrivena je beskonačna petlja u okviru "{type}" hijerarhije. Promenite roditelja da bi ste razrešili situaciju'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Grešla pri proveri ispravnosti'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Unesite korisničko ime i lozinku.'

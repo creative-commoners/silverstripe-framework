@@ -151,7 +151,7 @@ es:
     ANY: Cualquiera
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Bucle infinito encontrado dentro de la jerarquía "{type}". Por favor, cambie el padre para resolver el problema'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Error de validación'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Por favor introduzca su nombre de usuario y contraseña.'

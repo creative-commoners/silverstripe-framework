@@ -113,7 +113,7 @@ fa_IR:
     TIMEDIFFIN: 'در {difference}'
   SilverStripe\ORM\FieldType\DBEnum:
     ANY: هر
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'خطای اعتبارسنجی'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'لطفاً یک نام‌کاربری و گذرواژه را وارد نمایید.'

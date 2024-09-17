@@ -210,7 +210,7 @@ eo:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Senfina iteracio troviĝis en la "{type}"-hierarkio. Bonvole ŝanĝu la patron por solvi tion.'
     LIMITED_TITLE: 'Tro da idoj ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Validiga eraro'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'bonvolu enigi salutnomon kaj pasvorton.'

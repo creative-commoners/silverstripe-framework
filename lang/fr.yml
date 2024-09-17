@@ -170,7 +170,7 @@ fr:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: "Une boucle sans fin s’est produite dans la hiérarchie «\_{type}\_». Merci de modifier le parent pour résoudre le problème."
     LIMITED_TITLE: 'Enfants trop nombreux ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Erreur de validation'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: "Merci d'entrer un identifiant et un mot de passe."

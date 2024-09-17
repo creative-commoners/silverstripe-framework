@@ -102,7 +102,7 @@ nb:
     ANY: Noen
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Uendelig løkke ble funnet i hierarkiet til "{type}". Vennligst skift ut overordnet type for å løse dette.'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: Valideringsfeil
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Vennligst skriv inn et brukernavn og passord'

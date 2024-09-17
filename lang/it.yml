@@ -188,7 +188,7 @@ it:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Trovato loop infinito nella gerarchia di "{type}". Cambia il padre per risolvere il problema'
     LIMITED_TITLE: 'Troppi figli ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Errore di validazione'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Per favore inserisci un nome utente e la password.'

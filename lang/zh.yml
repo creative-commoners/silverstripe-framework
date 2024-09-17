@@ -112,7 +112,7 @@ zh:
     ANY: 任何
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: '"{type}" 层次结构中发现无限循环。请更改父类型来解决此问题'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 验证错误
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 请输入一个用户名和密码。

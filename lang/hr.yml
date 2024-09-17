@@ -81,7 +81,7 @@ hr:
     TIMEDIFFIN: 'za {difference}'
   SilverStripe\ORM\FieldType\DBEnum:
     ANY: 'bilo koji'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Greška validacije'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Unesite korisničko ime i lozinu'

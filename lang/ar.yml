@@ -109,7 +109,7 @@ ar:
     ANY: أي
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'العثور على حلقة لا نهائية ضمن "{نوع}" التسلسل الهرمي . الرجاء تغيير الأصل لحل هذه'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'خطأ في عملية التحقق'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'فضلاً أدخل اسم المستخدم و كلمة المرور'

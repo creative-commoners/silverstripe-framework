@@ -202,7 +202,7 @@ sl:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Pojavila se je neskončna zanka v hierarhiji "{type}". Izberite drugo stran kot nadrejeno za razrešitev težave.'
     LIMITED_TITLE: 'Preveč ({count}) elementov v hierarhiji'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Neveljaven vnos'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Vpišite uporabniško ime in geslo.'

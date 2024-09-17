@@ -201,7 +201,7 @@ pl:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Znaleziono nieskończoną pętlę wewnątrz hierarchii "{type}". Proszę zmień rodzica by to rozwiązać.'
     LIMITED_TITLE: 'Zbyt wiele dzieci ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 'Niepoprawne dane'
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Wprowadź username i hasło'

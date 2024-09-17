@@ -99,7 +99,7 @@ ja:
     ANY: 何でも
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: '無限ループが"{型}"階層内で見つかりました。　これを解決するために親を変更してください。'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: 確認エラー
   SilverStripe\Security\BasicAuth:
     ENTERINFO: ユーザー名とパスワードを入力してください

@@ -187,7 +187,7 @@ nl:
   SilverStripe\ORM\Hierarchy\Hierarchy:
     InfiniteLoopNotAllowed: 'Oneindige lus gevonden in "{type}" hiërarchie. Wijzig het hogere niveau om dit op te lossen'
     LIMITED_TITLE: 'Teveel onderliggende items ({count})'
-  SilverStripe\ORM\ValidationException:
+  SilverStripe\Core\Validation\ValidationException:
     DEFAULT_ERROR: Validatiefout
   SilverStripe\Security\BasicAuth:
     ENTERINFO: 'Voer een gebruikersnaam en wachtwoord in.'
