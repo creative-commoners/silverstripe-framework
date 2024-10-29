@@ -3,7 +3,7 @@
 namespace SilverStripe\ORM\Tests;
 
 use SilverStripe\Core\Validation\ValidationException;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 use SilverStripe\Dev\SapphireTest;
 
 class HierarchyTest extends SapphireTest

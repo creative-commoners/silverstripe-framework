@@ -22,7 +22,7 @@ use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldViewButton;
 use SilverStripe\Forms\Tests\GridField\GridFieldReadonlyTest\GridFieldViewButtonReplacement;
-use SilverStripe\Versioned\VersionedGridFieldState\VersionedGridFieldState;
+use SilverStripe\Versioned\Mode\VersionedGridFieldState\VersionedGridFieldState;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class GridFieldReadonlyTest extends SapphireTest

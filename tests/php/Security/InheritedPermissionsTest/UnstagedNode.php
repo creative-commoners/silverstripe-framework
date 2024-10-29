@@ -9,7 +9,7 @@ use SilverStripe\Security\InheritedPermissions;
 use SilverStripe\Security\InheritedPermissionsExtension;
 use SilverStripe\Security\PermissionChecker;
 use SilverStripe\Security\Security;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 
 /**
  * @method UnstagedNode Parent()

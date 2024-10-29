@@ -20,7 +20,7 @@ use SilverStripe\Core\Tests\ObjectTest\MyObject;
 use SilverStripe\Core\Tests\ObjectTest\MySubObject;
 use SilverStripe\Core\Tests\ObjectTest\TestExtension;
 use SilverStripe\Dev\SapphireTest;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 
 class ObjectTest extends SapphireTest
 {

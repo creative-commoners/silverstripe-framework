@@ -37,7 +37,7 @@ use SilverStripe\Model\List\ArrayList;
 use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
-use SilverStripe\Versioned\VersionedGridFieldStateExtension;
+use SilverStripe\Versioned\Versioned\VersionedGridFieldStateExtension;
 
 class GridFieldTest extends SapphireTest
 {

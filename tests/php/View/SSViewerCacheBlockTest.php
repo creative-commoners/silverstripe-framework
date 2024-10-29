@@ -5,7 +5,7 @@ namespace SilverStripe\View\Tests;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Kernel;
 use SilverStripe\Core\TempFolder;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Control\Director;

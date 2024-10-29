@@ -313,7 +313,7 @@ class MyClass extends Base implements SomeService {
     public function getNewLines(\$class) {
         if (
             !is_subclass_of(\$class, DataObject::class)
-            || !Object::has_extension(\$class, \SilverStripe\Versioned\Versioned::class)
+            || !Object::has_extension(\$class, \SilverStripe\Versioned\Mode\Versioned::class)
         ) {
             return null;
         }
@@ -364,7 +364,7 @@ PHP;
         namespace SilverStripe\Framework\Core;
 
         use SilverStripe\ORM\DataObject;
-        use SilverStripe\Versioned\Versioned;
+        use SilverStripe\Versioned\Mode\Versioned;
         use Some\Space\MyClass as AliasClass;
         use NoNamespaceClass;
 
@@ -428,7 +428,7 @@ class MyTrait extends Base implements SomeService {
     public function getNewLines(\$class) {
         if (
             !is_subclass_of(\$class, DataObject::class)
-            || !Object::has_extension(\$class, \SilverStripe\Versioned\Versioned::class)
+            || !Object::has_extension(\$class, \SilverStripe\Versioned\Mode\Versioned::class)
         ) {
             return null;
         }

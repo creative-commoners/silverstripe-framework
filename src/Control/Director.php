@@ -13,7 +13,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Kernel;
 use SilverStripe\Core\Path;
 use SilverStripe\PolyExecution\PolyCommand;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 use SilverStripe\View\Requirements;
 use SilverStripe\View\Requirements_Backend;
 use SilverStripe\View\TemplateGlobalProvider;

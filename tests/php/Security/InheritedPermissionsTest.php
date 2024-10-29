@@ -11,7 +11,7 @@ use SilverStripe\Security\PermissionChecker;
 use SilverStripe\Security\Tests\InheritedPermissionsTest\TestPermissionNode;
 use SilverStripe\Security\Tests\InheritedPermissionsTest\TestDefaultPermissionChecker;
 use SilverStripe\Security\Tests\InheritedPermissionsTest\UnstagedNode;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 use Psr\SimpleCache\CacheInterface;
 use ReflectionClass;
 

@@ -5,7 +5,7 @@ namespace SilverStripe\Versioned\Tests;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Hierarchy\Hierarchy;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 use SilverStripe\ORM\Tests\HierarchyTest\TestObject;
 use SilverStripe\ORM\Tests\HierarchyTest\HideTestObject;
 use SilverStripe\ORM\Tests\HierarchyTest\HideTestSubObject;

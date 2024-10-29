@@ -7,7 +7,7 @@ use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Hierarchy\Hierarchy;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Core\Cache\MemberCacheFlusher;
 use SilverStripe\Dev\Deprecation;

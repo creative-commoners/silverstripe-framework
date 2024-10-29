@@ -12,7 +12,7 @@ use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DB;
-use SilverStripe\Versioned\Versioned;
+use SilverStripe\Versioned\Mode\Versioned;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Convert;
 use Exception;
