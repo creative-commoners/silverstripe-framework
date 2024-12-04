@@ -1262,17 +1262,26 @@ class Form extends ModelData implements HasRequestHandler
      */
     public function validationResult()
     {
+        $result = ValidationResult::create();
+
         // Automatically pass if there is no validator, or the clicked button is exempt
         // Note: Soft support here for validation with absent request handler
         $handler = $this->getRequestHandler();
         $action = $handler ? $handler->buttonClicked() : null;
-        $validator = $this->getValidator();
-        if (!$validator || $this->actionIsValidationExempt($action)) {
-            return ValidationResult::create();
+        if ($this->actionIsValidationExempt($action)) {
+            return $result;
+        }
+
+        // Invoke FormField validation
+        foreach ($this->Fields() as $field) {
+            $result->combineAnd($field->validate());
         }
 
         // Invoke validator
-        $result = $validator->validate();
+        $validator = $this->getValidator();
+        if ($validator) {
+            $result->combineAnd($validator->validate());
+        }
         $this->loadMessagesFrom($result);
         return $result;
     }
