@@ -682,4 +682,14 @@ class HierarchyTest extends SapphireTest
 
         $this->assertSame($expected, $obj->defaultParent());
     }
+
+    /**
+     * Tests that HTML added by an extension is not escaped
+     */
+    public function testGetTreeTitleExtension()
+    {
+        HierarchyTest\TestObject::add_extension(HierarchyTest\TestTreeTitleExtension::class);
+        $obj = $this->objFromFixture(HierarchyTest\TestObject::class, 'obj1');
+        $this->assertSame('Obj 1', '<i>Obj 1</i>');
+    }
 }
