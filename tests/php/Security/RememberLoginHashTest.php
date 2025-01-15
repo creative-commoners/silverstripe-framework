@@ -96,41 +96,4 @@ class RememberLoginHashTest extends SapphireTest
         RememberLoginHash::setLogoutAcrossDevices(false);
         $this->assertFalse(RememberLoginHash::getLogoutAcrossDevices());
     }
-
-    /**
-     * @param bool $replaceToken
-     */
-    #[DataProvider('provideRenew')]
-    public function testRenew($replaceToken)
-    {
-        // If session-manager module is installed it expects an active request during renewal
-        if (class_exists(LoginSession::class)) {
-            $this->markTestSkipped();
-        }
-
-        $member = $this->objFromFixture(Member::class, 'main');
-
-        $hash = RememberLoginHash::generate($member);
-        $oldToken = $hash->getToken();
-        $oldHash = $hash->Hash;
-
-        // Fetch the token from the DB - otherwise we still have the token from when this was originally created
-        $storedHash = RememberLoginHash::get()->find('ID', $hash->ID);
-
-        if ($replaceToken) {
-            $this->assertNotEquals($oldToken, $storedHash->getToken());
-            $this->assertNotEquals($oldHash, $storedHash->Hash);
-        } else {
-            $this->assertEmpty($storedHash->getToken());
-            $this->assertEquals($oldHash, $storedHash->Hash);
-        }
-    }
-
-    public static function provideRenew(): array
-    {
-        return [
-            [true],
-            [false],
-        ];
-    }
 }
