@@ -2786,7 +2786,7 @@ class DataObjectTest extends SapphireTest
         $this->assertSame($expected, $databaseBackedField);
     }
 
-    public function provideExceptionForUniqueIndexViolation()
+    public static function provideExceptionForUniqueIndexViolation()
     {
         return [
             'violate SingleFieldIndex only' => [
@@ -2831,9 +2831,7 @@ class DataObjectTest extends SapphireTest
         ];
     }
 
-    /**
-     * @dataProvider provideExceptionForUniqueIndexViolation
-     */
+    #[DataProvider('provideExceptionForUniqueIndexViolation')]
     public function testExceptionForUniqueIndexViolation(array $fieldsRecordOne, array $fieldsRecordTwo, string $expectedMessage): void
     {
         DataObjectTest\UniqueIndexObject::create($fieldsRecordOne)->write();
