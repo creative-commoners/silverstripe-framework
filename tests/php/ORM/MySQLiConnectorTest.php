@@ -171,7 +171,7 @@ class MySQLiConnectorTest extends SapphireTest implements TestOnly
         $this->assertEquals('rst', $result[1][0]);
     }
 
-    public function provideQueryThrowsException()
+    public static function provideQueryThrowsException()
     {
         return [
             [
@@ -186,9 +186,7 @@ class MySQLiConnectorTest extends SapphireTest implements TestOnly
         ];
     }
 
-    /**
-     * @dataProvider provideQueryThrowsException
-     */
+    #[DataProvider('provideQueryThrowsException')]
     public function testQueryThrowsDatabaseError(int $reportMode): void
     {
         $connector = $this->getConnector();
@@ -200,9 +198,7 @@ class MySQLiConnectorTest extends SapphireTest implements TestOnly
         $connector->query('force an error with invalid SQL');
     }
 
-    /**
-     * @dataProvider provideQueryThrowsException
-     */
+    #[DataProvider('provideQueryThrowsException')]
     public function testQueryThrowsDuplicateEntryException(int $reportMode): void
     {
         $connector = $this->getConnector();
@@ -216,9 +212,7 @@ class MySQLiConnectorTest extends SapphireTest implements TestOnly
         $connector->query('INSERT INTO duplicate_entry_table (Title, Name) VALUES (\'My Title\', \'My Name\');');
     }
 
-    /**
-     * @dataProvider provideQueryThrowsException
-     */
+    #[DataProvider('provideQueryThrowsException')]
     public function testPreparedQueryThrowsDatabaseError(int $reportMode): void
     {
         $connector = $this->getConnector();
@@ -229,9 +223,7 @@ class MySQLiConnectorTest extends SapphireTest implements TestOnly
         $connector->preparedQuery('force an error with invalid SQL', []);
     }
 
-    /**
-     * @dataProvider provideQueryThrowsException
-     */
+    #[DataProvider('provideQueryThrowsException')]
     public function testPreparedQueryThrowsDuplicateEntryException(int $reportMode): void
     {
         $connector = $this->getConnector();
