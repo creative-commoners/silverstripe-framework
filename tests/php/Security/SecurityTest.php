@@ -496,7 +496,7 @@ class SecurityTest extends FunctionalTest
 
         $this->assertEquals(1, count($labelElement ?? []));
         $this->assertStringContainsString(
-            '<label class="left" for="LostPasswordForm_lostPasswordForm_Email">Username</label>',
+            '<label class="form-label left" for="LostPasswordForm_lostPasswordForm_Email">Username</label>',
             (string)$labelElement[0]->asXML()
         );
     }
