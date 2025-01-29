@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Dev\Tests;
 
+use ReflectionMethod;
 use PHPUnit\Framework\ExpectationFailedException;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Model\List\ArrayList;
@@ -11,6 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\DataProviderExternal;
 use SilverStripe\Dev\Exceptions\ExpectedNoticeException;
 use SilverStripe\Dev\Exceptions\ExpectedWarningException;
+use SilverStripe\i18n\i18n;
 
 /**
  * @sometag This is a test annotation used in the testGetAnnotations test
@@ -285,5 +287,57 @@ class SapphireTestTest extends SapphireTest
                 'expectedClass' => null,
             ],
         ];
+    }
+    public static function provideSetI18nLocale(): array
+    {
+        return [
+            'supported-true' => [
+                'doSet' => true,
+                'supported' => true,
+                'expected' => 'en_US',
+            ],
+            'supported-false' => [
+                'doSet' => false,
+                'supported' => true,
+                'expected' => 'ab_CD',
+            ],
+            'unsupported-true' => [
+                'doSet' => true,
+                'supported' => false,
+                'expected' => 'ab_CD',
+            ],
+            'unsupported-false' => [
+                'doSet' => false,
+                'supported' => false,
+                'expected' => 'ab_CD',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideSetI18nLocale')]
+    public function testSetI18nLocale(bool $doSet, bool $supported, string $expected): void
+    {
+        i18n::set_locale('ab_CD');
+        i18n::config()->set('default_locale', 'ab_CD');
+        $method = new ReflectionMethod(SapphireTest::class, 'setI18nLocale');
+        $method->setAccessible(true);
+        $obj = new class($doSet, $supported) extends SapphireTest
+        {
+            private string $supported;
+            public function __construct(bool $doSet, bool $supported)
+            {
+                $this->doSetSupportedModuleLocaleToUS = $doSet;
+                $this->supported = $supported;
+            }
+            protected function getCurrentRelativePath()
+            {
+                return $this->supported
+                    ? '/vendor/silverstripe/framework/tests/php/FooBarTest.php'
+                    : '/vendor/something/different/tests/php/FooBarTest.php';
+            }
+        };
+        $method->invoke($obj);
+        $this->assertEquals($expected, i18n::get_locale());
+        $this->assertEquals($expected, i18n::config()->get('default_locale'));
     }
 }
