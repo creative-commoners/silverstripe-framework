@@ -4,6 +4,7 @@ namespace SilverStripe\Core\Validation;
 
 use InvalidArgumentException;
 use SilverStripe\Core\Injector\Injectable;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * A class that combined as a boolean result with an optional list of error messages.
@@ -77,9 +78,25 @@ class ValidationResult
         $message,
         $messageType = ValidationResult::TYPE_ERROR,
         $code = null,
-        $cast = ValidationResult::CAST_TEXT,
+        $cast = ValidationResult::CAST_TEXT
     ) {
-        return $this->addFieldError(null, $message, $messageType, $code, $cast);
+        if ($code === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $code as null is deprecated. Pass a blank string instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $code = '';
+        }
+        if ($cast === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $cast = ValidationResult::CAST_TEXT;
+        }
+        return $this->addFieldError('', $message, $messageType, $code, $cast);
     }
 
     /**
@@ -102,6 +119,22 @@ class ValidationResult
         $code = null,
         $cast = ValidationResult::CAST_TEXT,
     ) {
+        if ($code === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $code as null is deprecated. Pass a blank string instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $code = '';
+        }
+        if ($cast === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $cast = ValidationResult::CAST_TEXT;
+        }
         $this->isValid = false;
         return $this->addFieldMessage($fieldName, $message, $messageType, $code, $cast);
     }
@@ -124,6 +157,22 @@ class ValidationResult
         $code = null,
         $cast = ValidationResult::CAST_TEXT,
     ) {
+        if ($code === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $code as null is deprecated. Pass a blank string instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $code = '';
+        }
+        if ($cast === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $cast = ValidationResult::CAST_TEXT;
+        }
         return $this->addFieldMessage(null, $message, $messageType, $code, $cast);
     }
 
@@ -147,6 +196,22 @@ class ValidationResult
         $code = null,
         $cast = ValidationResult::CAST_TEXT,
     ) {
+        if ($code === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $code as null is deprecated. Pass a blank string instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $code = '';
+        }
+        if ($cast === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $cast = ValidationResult::CAST_TEXT;
+        }
         if ($code && is_numeric($code)) {
             throw new InvalidArgumentException("Don't use a numeric code '$code'.  Use a string.");
         }

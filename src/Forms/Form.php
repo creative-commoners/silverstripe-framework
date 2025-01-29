@@ -1186,6 +1186,14 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      */
     public function sessionMessage($message, $type = ValidationResult::TYPE_ERROR, $cast = ValidationResult::CAST_TEXT)
     {
+        if ($cast === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $cast = ValidationResult::CAST_TEXT;
+        }
         $this->setMessage($message, $type, $cast);
         $result = $this->getSessionValidationResult() ?: ValidationResult::create();
         $result->addMessage($message, $type, null, $cast);
@@ -1202,6 +1210,14 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      */
     public function sessionError($message, $type = ValidationResult::TYPE_ERROR, $cast = ValidationResult::CAST_TEXT)
     {
+        if ($cast === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $cast = ValidationResult::CAST_TEXT;
+        }
         $this->setMessage($message, $type, $cast);
         $result = $this->getSessionValidationResult() ?: ValidationResult::create();
         $result->addError($message, $type, null, $cast);
@@ -1219,6 +1235,14 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      */
     public function sessionFieldError($message, $fieldName, $type = ValidationResult::TYPE_ERROR, $cast = ValidationResult::CAST_TEXT)
     {
+        if ($cast === null) {
+            Deprecation::notice(
+                '5.4.0',
+                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
+                Deprecation::SCOPE_GLOBAL
+            );
+            $cast = ValidationResult::CAST_TEXT;
+        }
         $this->setMessage($message, $type, $cast);
         $result = $this->getSessionValidationResult() ?: ValidationResult::create();
         $result->addFieldMessage($fieldName, $message, $type, null, $cast);
