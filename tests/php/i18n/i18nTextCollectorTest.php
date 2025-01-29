@@ -981,4 +981,57 @@ PHP;
         $this->assertArrayHasKey("{$otherRoot}/code/i18nTestModuleDecorator.php", $otherFiles);
         $this->assertArrayHasKey("{$otherRoot}/templates/i18nOtherModule.ss", $otherFiles);
     }
+
+    public function testItCanCollectVariables()
+    {
+        $c = i18nTextCollector::create();
+        $mymodule = ModuleLoader::inst()->getManifest()->getModule('i18ntestmodule');
+
+        $php = <<<'PHP'
+        $zeroval = "0"; // it can collect "falsy" values
+        $concatagain = "t";;;; // lots of semicolons shouldn't cause any issue
+        $concatagain .= "est";
+        $concatdouble = "t" . "est" . "";
+        $concat = 't' . 'e' . 's'
+            . 't' ; // we can use concatenation for readibility
+        $str = 'wrong';
+        $str = 'test'; // value can be overwritten later
+        _t('TestEntity.ZEROVAL', $zeroval);
+        _t('TestEntity.CONCATAGAIN', $concatagain);
+        _t('TestEntity.CONCATDBLKEY', $concatdouble);
+        _t('TestEntity.CONCATKEY', $concat);
+        _t('TestEntity.VARKEY', $str);
+        _t('TestEntity.REGULARKEY', 'test');
+PHP;
+
+        $collectedTranslatables = $c->collectFromCode($php, null, $mymodule);
+        $this->assertEquals([
+            'TestEntity.ZEROVAL' => "0",
+            'TestEntity.CONCATAGAIN' => "test",
+            'TestEntity.CONCATDBLKEY' => "test",
+            'TestEntity.CONCATKEY' => "test",
+            'TestEntity.VARKEY' => "test",
+            'TestEntity.REGULARKEY' => "test",
+        ], $collectedTranslatables);
+    }
+
+    public function testItCanUseVariableAsContext()
+    {
+        $c = i18nTextCollector::create();
+        $mymodule = ModuleLoader::inst()->getManifest()->getModule('i18ntestmodule');
+
+        $php = <<<'PHP'
+        $args = ['type' => 'var'];
+        _t('TestEntity.VARCONTEXT', 'test {type}', $args);
+        _t('TestEntity.VARIADICCONTEXT', 'test {type}', ...$args);
+        _t('TestEntity.REGULARCONTEXT', 'test {type}', ['type' => 'var']);
+PHP;
+
+        $collectedTranslatables = $c->collectFromCode($php, null, $mymodule);
+        $this->assertEquals([
+            'TestEntity.VARCONTEXT' => "test {type}",
+            'TestEntity.VARIADICCONTEXT' => "test {type}",
+            'TestEntity.REGULARCONTEXT' => "test {type}",
+        ], $collectedTranslatables);
+    }
 }

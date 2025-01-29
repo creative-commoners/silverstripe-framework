@@ -76,7 +76,9 @@
     },
     "conflict": {
         "egulias/email-validator": "<3.2.1",
-        "oscarotero/html-parser": "<0.1.7"
+        "silverstripe/behat-extension": "<5.5",
+        "oscarotero/html-parser": "<0.1.7",
+        "symfony/process": "<5.3.7"
     },
     "provide": {
         "psr/container-implementation": "1.0.0"
