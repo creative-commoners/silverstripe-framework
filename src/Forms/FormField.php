@@ -18,6 +18,7 @@ use SilverStripe\Model\ModelData;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Validation\FieldValidation\FieldValidationTrait;
 use SilverStripe\Core\Validation\FieldValidation\FieldValidationInterface;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * Represents a field in a form.
