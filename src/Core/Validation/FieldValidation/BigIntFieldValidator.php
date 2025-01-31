@@ -23,6 +23,8 @@ class BigIntFieldValidator extends IntFieldValidator
             if ($bits === 32) {
                 throw new RunTimeException('Cannot use BigIntFieldValidator on a 32-bit system');
             }
+            $minValue ??= (int) DBBigInt::getMinValue();
+            $maxValue ??= (int) DBBigInt::getMaxValue();
         }
         $this->minValue = $minValue;
         $this->maxValue = $maxValue;

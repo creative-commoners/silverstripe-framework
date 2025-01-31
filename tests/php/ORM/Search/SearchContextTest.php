@@ -3,6 +3,7 @@
 namespace SilverStripe\ORM\Tests\Search;
 
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Dev\SapphireTest;
@@ -22,7 +23,6 @@ use SilverStripe\Model\ArrayData;
 
 class SearchContextTest extends SapphireTest
 {
-
     protected static $fixture_file = 'SearchContextTest.yml';
 
     protected static $extra_dataobjects = [
@@ -34,6 +34,7 @@ class SearchContextTest extends SapphireTest
         SearchContextTest\Deadline::class,
         SearchContextTest\Action::class,
         SearchContextTest\AllFilterTypes::class,
+        SearchContextTest\WithinRangeFilterModel::class,
         SearchContextTest\Customer::class,
         SearchContextTest\Address::class,
         SearchContextTest\Order::class,
@@ -176,6 +177,279 @@ class SearchContextTest extends SapphireTest
             "Get RSS feeds working",
             $project->Actions()->find('ID', $action3->ID)->Description
         );
+    }
+
+    public static function provideQueryWithinRangeFilter(): array
+    {
+        return [
+            // DBDate
+            'date mid range' => [
+                'params' => [
+                    'DateOnly_SearchFrom' => '1990-01-01',
+                    'DateOnly_SearchTo' => '2100-12-24',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'date from only' => [
+                'params' => [
+                    'DateOnly_SearchFrom' => '1990-01-01',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'date to only' => [
+                'params' => [
+                    'DateOnly_SearchTo' => '2100-12-24',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBDatetime
+            'datetime mid range' => [
+                'params' => [
+                    'Datetime_SearchFrom' => '1990-01-01 12:23:15',
+                    'Datetime_SearchTo' => '2100-12-24 12:23:15',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'datetime from only' => [
+                'params' => [
+                    'Datetime_SearchFrom' => '1990-01-01 12:23:15',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'datetime to only' => [
+                'params' => [
+                    'Datetime_SearchTo' => '2100-12-24 12:23:15',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            'datetime mid range date only' => [
+                'params' => [
+                    'DatetimeWithDateField_SearchFrom' => '1990-01-01',
+                    'DatetimeWithDateField_SearchTo' => '2100-12-24',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'datetime from only date only' => [
+                'params' => [
+                    'DatetimeWithDateField_SearchFrom' => '1990-01-01',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'datetime to only date only' => [
+                'params' => [
+                    'DatetimeWithDateField_SearchTo' => '2100-12-24',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            'datetime mid range date only exact day' => [
+                'params' => [
+                    // The from time should end up being 00:00:00
+                    'DatetimeWithDateField_SearchFrom' => '2005-04-06',
+                    // The to time should end up being 24:59:59
+                    'DatetimeWithDateField_SearchTo' => '2005-04-06',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            // DBTime
+            'time mid range' => [
+                'params' => [
+                    'TimeOnly_SearchFrom' => '05:23:45',
+                    'TimeOnly_SearchTo' => '17:01:23',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'time from only' => [
+                'params' => [
+                    'TimeOnly_SearchFrom' => '05:23:45',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'time to only' => [
+                'params' => [
+                    'TimeOnly_SearchTo' => '17:01:23',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBInt
+            'int mid range' => [
+                'params' => [
+                    'IntRange_SearchFrom' => '53',
+                    'IntRange_SearchTo' => '623',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'int from only' => [
+                'params' => [
+                    'IntRange_SearchFrom' => '53',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'int to only' => [
+                'params' => [
+                    'IntRange_SearchTo' => '623',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBDecimal
+            'decimal mid range' => [
+                'params' => [
+                    'DecimalRange_SearchFrom' => '2.0',
+                    'DecimalRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'decimal from only' => [
+                'params' => [
+                    'DecimalRange_SearchFrom' => '2.0',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'decimal to only' => [
+                'params' => [
+                    'DecimalRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBFloat
+            'float mid range' => [
+                'params' => [
+                    'FloatRange_SearchFrom' => '2.0',
+                    'FloatRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'float from only' => [
+                'params' => [
+                    'FloatRange_SearchFrom' => '2.0',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'float to only' => [
+                'params' => [
+                    'FloatRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBPercentage
+            'percentage mid range' => [
+                'params' => [
+                    'PercentageRange_SearchFrom' => '0.12',
+                    'PercentageRange_SearchTo' => '0.75',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'percentage from only' => [
+                'params' => [
+                    'PercentageRange_SearchFrom' => '0.12',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'percentage to only' => [
+                'params' => [
+                    'PercentageRange_SearchTo' => '0.75',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBYear
+            'year mid range' => [
+                'params' => [
+                    'YearRange_SearchFrom' => '1990',
+                    'YearRange_SearchTo' => '2100',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'year from only' => [
+                'params' => [
+                    'YearRange_SearchFrom' => '1990',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'year to only' => [
+                'params' => [
+                    'YearRange_SearchTo' => '2100',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBCurrency
+            'currency mid range' => [
+                'params' => [
+                    'CurrencyRange_SearchFrom' => '2.0',
+                    'CurrencyRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'currency from only' => [
+                'params' => [
+                    'CurrencyRange_SearchFrom' => '2.0',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'currency to only' => [
+                'params' => [
+                    'CurrencyRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // Special match_any config
+            'match_any mid range' => [
+                'params' => [
+                    'MatchAnyRange_SearchFrom' => '2.0',
+                    'MatchAnyRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'match_any from only' => [
+                'params' => [
+                    'MatchAnyRange_SearchFrom' => '2.0',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'match_any to only' => [
+                'params' => [
+                    'MatchAnyRange_SearchTo' => '63.125',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+            // DBVarchar
+            'varchar mid range' => [
+                'params' => [
+                    'VarcharRangeWithConfig_SearchFrom' => 'e',
+                    'VarcharRangeWithConfig_SearchTo' => 's',
+                ],
+                'expectedFixtureNames' => ['midrange'],
+            ],
+            'varchar from only' => [
+                'params' => [
+                    'VarcharRangeWithConfig_SearchFrom' => 'e',
+                ],
+                'expectedFixtureNames' => ['midrange', 'highrange'],
+            ],
+            'varchar to only' => [
+                'params' => [
+                    'VarcharRangeWithConfig_SearchTo' => 's',
+                ],
+                'expectedFixtureNames' => ['lowrange', 'midrange'],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideQueryWithinRangeFilter')]
+    public function testQueryWithinRangeFilter(array $params, array $expectedFixtureNames): void
+    {
+        $model = SearchContextTest\WithinRangeFilterModel::singleton();
+        $context = $model->getDefaultSearchContext();
+        $results = $context->getResults($params)->column('ID');
+
+        $found = [];
+        foreach ($expectedFixtureNames as $fixtureName) {
+            $id = $this->idFromFixture(SearchContextTest\WithinRangeFilterModel::class, $fixtureName);
+            if (in_array($id, $results)) {
+                $found[] = $fixtureName;
+            }
+        }
+
+        $this->assertSame($expectedFixtureNames, $found);
+        $this->assertCount(count($expectedFixtureNames), $results, 'More results found than expected');
     }
 
     public function testCanGenerateQueryUsingAllFilterTypes()

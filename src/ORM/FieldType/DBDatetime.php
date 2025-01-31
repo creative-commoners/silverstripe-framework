@@ -15,6 +15,7 @@ use SilverStripe\View\TemplateGlobalProvider;
 use SilverStripe\Model\ModelData;
 use SilverStripe\Core\Validation\FieldValidation\DateFieldValidator;
 use SilverStripe\Core\Validation\FieldValidation\DatetimeFieldValidator;
+use SilverStripe\ORM\Tests\Search\SearchContextTest\WithinRangeFilterModel;
 
 /**
  * Represents a date-time field.

@@ -5,6 +5,9 @@ namespace SilverStripe\ORM\Tests\Search\SearchContextTest;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;
 
+/**
+ * Note this model intentionally omits WithinRangeFilter because that will be tested separately.
+ */
 class AllFilterTypes extends DataObject implements TestOnly
 {
     private static $table_name = 'SearchContextTest_AllFilterTypes';

@@ -15,6 +15,7 @@ use SilverStripe\ORM\Filters\StartsWithFilter;
 use SilverStripe\ORM\Search\BasicSearchContext;
 use SilverStripe\Model\ArrayData;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 
 class BasicSearchContextTest extends SapphireTest
 {
@@ -22,6 +23,7 @@ class BasicSearchContextTest extends SapphireTest
 
     protected static $extra_dataobjects = [
         SearchContextTest\GeneralSearch::class,
+        SearchContextTest\WithinRangeFilterModel::class,
     ];
 
     private function getList(): ArrayList
@@ -338,5 +340,25 @@ class BasicSearchContextTest extends SapphireTest
         $results = $context->getQuery([$generalField => $general1->ExcludeThisField], existingQuery: $list);
         $this->assertNotEmpty($general1->ExcludeThisField);
         $this->assertCount(0, $results);
+    }
+
+
+    #[DataProviderExternal(SearchContextTest::class, 'provideQueryWithinRangeFilter')]
+    public function testQueryWithinRangeFilter(array $params, array $expectedFixtureNames): void
+    {
+        $model = SearchContextTest\WithinRangeFilterModel::singleton();
+        $context = $model->getDefaultSearchContext();
+        $results = $context->getResults($params)->column('ID');
+
+        $found = [];
+        foreach ($expectedFixtureNames as $fixtureName) {
+            $id = $this->idFromFixture(SearchContextTest\WithinRangeFilterModel::class, $fixtureName);
+            if (in_array($id, $results)) {
+                $found[] = $fixtureName;
+            }
+        }
+
+        $this->assertSame($expectedFixtureNames, $found);
+        $this->assertCount(count($expectedFixtureNames), $results, 'More results found than expected');
     }
 }

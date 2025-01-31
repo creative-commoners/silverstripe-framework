@@ -27,6 +27,17 @@ use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Model\ModelData;
 use ReflectionMethod;
+use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\CompositeField;
+use SilverStripe\Forms\DatalessField;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\HiddenField;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\NumericField;
+use SilverStripe\Forms\TextareaField;
+use SilverStripe\Forms\TextField;
+use SilverStripe\ORM\FieldType\DBInt;
+use SilverStripe\ORM\Filters\WithinRangeFilter;
 use stdClass;
 
 class DataObjectTest extends SapphireTest
@@ -1417,6 +1428,241 @@ class DataObjectTest extends SapphireTest
         $testObj = new DataObjectTest\Fixture();
         $fields = $testObj->searchableFields();
         $this->assertEmpty($fields);
+    }
+
+    public static function provideSearchableFieldsForWithinRangeFilter(): array
+    {
+        return [
+            'invalid field in general' => [
+                'config' => [
+                    'NotARealField' => [
+                        'filter' => WithinRangeFilter::class,
+                        'rangeFromDefault' => 'some value',
+                        'rangeToDefault' => 'another value',
+                    ],
+                ],
+                'exceptionMessage' => 'NotARealField is not a relation/field on ' . DataObjectTest\Team::class,
+                'expected' => null,
+            ],
+            'cannot filter by relation with WithinRangeFilter' => [
+                'config' => [
+                    'Captain' => [
+                        'filter' => WithinRangeFilter::class,
+                    ],
+                ],
+                'exceptionMessage' => "dataType must be set to a DBField class for 'Captain'",
+                'expected' => null,
+            ],
+            'missing default "from"' => [
+                'config' => [
+                    'Title' => ['filter' => WithinRangeFilter::class],
+                ],
+                'exceptionMessage' => "rangeFromDefault must be set for 'Title'",
+                'expected' => null,
+            ],
+            'missing default "to"' => [
+                'config' => [
+                    'Title' => [
+                        'filter' => WithinRangeFilter::class,
+                        'rangeFromDefault' => 'some value',
+                    ],
+                ],
+                'exceptionMessage' => "rangeToDefault must be set for 'Title'",
+                'expected' => null,
+            ],
+            'fully valid config' => [
+                'config' => [
+                    'Title' => [
+                        'filter' => WithinRangeFilter::class,
+                        'rangeFromDefault' => 'some value',
+                        'rangeToDefault' => 'another value',
+                    ],
+                ],
+                'exceptionMessage' => null,
+                'expected' => [
+                    'Title' => [
+                        'filter' => WithinRangeFilter::class,
+                        'dataType' => DBVarchar::class,
+                        'rangeFromDefault' => 'some value',
+                        'rangeToDefault' => 'another value',
+                        'title' => 'Title',
+                    ],
+                ],
+            ],
+            'fully valid config inferred from datatype' => [
+                'config' => [
+                    'Title' => [
+                        'filter' => WithinRangeFilter::class,
+                        'dataType' => DBInt::class,
+                    ],
+                ],
+                'exceptionMessage' => null,
+                'expected' => [
+                    'Title' => [
+                        'filter' => WithinRangeFilter::class,
+                        'dataType' => DBInt::class,
+                        'title' => 'Title',
+                        'rangeFromDefault' => DBInt::getMinValue(),
+                        'rangeToDefault' => DBInt::getMaxValue(),
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideSearchableFieldsForWithinRangeFilter')]
+    public function testSearchableFieldsForWithinRangeFilter(array $config, ?string $exceptionMessage, ?array $expected): void
+    {
+        DataObjectTest\Team::config()->set('searchable_fields', $config);
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'team1');
+
+        if ($exceptionMessage !== null) {
+            $this->expectException(LogicException::class);
+            $this->expectExceptionMessage($exceptionMessage);
+        }
+
+        $fields = $team->searchableFields();
+        if ($expected !== null) {
+            $this->assertSame($expected, $fields);
+        }
+    }
+
+    public static function provideScaffoldSearchFields(): array
+    {
+        return [
+            'inferred from simple config' => [
+                'config' => [
+                    'Title',
+                    'DatabaseField',
+                    'NumericField',
+                    'Captain.IsRetired' => [
+                        'Title' => 'Captain is retired',
+                    ],
+                ],
+                'generalSearchFieldName' => '',
+                'expected' => [
+                    'Title' => TextField::class,
+                    'DatabaseField' => TextField::class,
+                    'NumericField' => NumericField::class,
+                    'Captain__IsRetired' => DropdownField::class,
+                ],
+            ],
+            'inferred from simple config (with general field)' => [
+                'config' => [
+                    'Title',
+                    'DatabaseField',
+                    'NumericField',
+                    'Captain.IsRetired' => [
+                        'Title' => 'Captain is retired',
+                    ],
+                ],
+                'generalSearchFieldName' => 'gen',
+                'expected' => [
+                    'gen' => HiddenField::class,
+                    'Title' => TextField::class,
+                    'DatabaseField' => TextField::class,
+                    'NumericField' => NumericField::class,
+                    'Captain__IsRetired' => DropdownField::class,
+                ],
+            ],
+            'field specified in config' => [
+                'config' => [
+                    'Title' => [
+                        'field' => DatalessField::class,
+                    ],
+                ],
+                'generalSearchFieldName' => 'gen',
+                'expected' => [
+                    'gen' => HiddenField::class,
+                    'Title' => DatalessField::class,
+                ],
+            ],
+            'no searchable fields' => [
+                'config' => [],
+                'generalSearchFieldName' => 'gen',
+                'expected' => [],
+            ],
+            'within range duplicates field' => [
+                'config' => [
+                    'NumericField' => WithinRangeFilter::class,
+                ],
+                'generalSearchFieldName' => '',
+                'expected' => [
+                    'NumericField_SearchFrom' => NumericField::class,
+                    'NumericField_SearchTo' => NumericField::class,
+                ],
+            ],
+            'search against relation (with method implemented)' => [
+                'config' => [
+                    'Captain',
+                ],
+                'generalSearchFieldName' => '',
+                'expected' => [
+                    'Captain.ID' => DropdownField::class,
+                ],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideScaffoldSearchFields')]
+    public function testScaffoldSearchFields(array $config, string $generalSearchFieldName, array $expected): void
+    {
+        DataObjectTest\Team::config()->set('searchable_fields', $config);
+        DataObjectTest\Team::config()->set('general_search_field_name', $generalSearchFieldName);
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'team1');
+
+        $fields = $team->scaffoldSearchFields();
+        $fieldMap = [];
+        foreach ($fields as $field) {
+            if ($field instanceof CompositeField) {
+                foreach ($field->getChildren() as $childField) {
+                    $fieldMap[$childField->getName()] = get_class($childField);
+                }
+                continue;
+            }
+            $fieldMap[$field->getName()] = get_class($field);
+        }
+        $this->assertSame($expected, $fieldMap);
+    }
+
+    public function testScaffoldSearchFieldsWithArg(): void
+    {
+        $config = [
+            'Title',
+            'DatabaseField' => [
+                // This will get overridden by fieldClasses arg
+                'field' => DatalessField::class,
+            ],
+            'NumericField',
+            'Captain.IsRetired' => [
+                'Title' => 'Captain is retired',
+            ],
+        ];
+        $args = [
+            'fieldClasses' => [
+                'DatabaseField' => NumericField::class,
+            ],
+            'restrictFields' => [
+                'DatabaseField',
+                'Captain.IsRetired'
+            ],
+        ];
+        $expected = [
+            'DatabaseField' => NumericField::class,
+            'Captain__IsRetired' => DropdownField::class,
+        ];
+
+
+        DataObjectTest\Team::config()->set('searchable_fields', $config);
+        DataObjectTest\Team::config()->set('general_search_field_name', '');
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'team1');
+
+        $fields = $team->scaffoldSearchFields($args);
+        $fieldMap = [];
+        foreach ($fields as $field) {
+            $fieldMap[$field->getName()] = get_class($field);
+        }
+        $this->assertSame($expected, $fieldMap);
     }
 
     public function testCastingHelper()
