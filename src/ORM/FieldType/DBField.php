@@ -571,4 +571,20 @@ DBG;
     {
         return true;
     }
+
+    /**
+     * @return mixed The minimum value for comparisons with this field - or null if that's not determinable.
+     */
+    public static function getMinValue(): mixed
+    {
+        return null;
+    }
+
+    /**
+     * @return mixed The maximum value for comparisons with this field - or null if that's not determinable.
+     */
+    public static function getMaxValue(): mixed
+    {
+        return null;
+    }
 }

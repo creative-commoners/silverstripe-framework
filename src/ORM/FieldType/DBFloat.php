@@ -89,4 +89,14 @@ class DBFloat extends DBField
 
         return $value;
     }
+
+    public static function getMinValue(): float
+    {
+        return PHP_FLOAT_MIN;
+    }
+
+    public static function getMaxValue(): float
+    {
+        return PHP_FLOAT_MAX;
+    }
 }
