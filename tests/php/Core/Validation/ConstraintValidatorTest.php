@@ -352,7 +352,7 @@ class ConstraintValidatorTest extends SapphireTest
 
         $this->assertCount($countViolations, $violations);
         foreach ($violations as $violation) {
-            $this->assertSame($fieldName ?: null, $violation['fieldName']);
+            $this->assertSame($fieldName ?: '', $violation['fieldName']);
         }
     }
 

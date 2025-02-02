@@ -18,6 +18,7 @@ use SilverStripe\Model\ModelData;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Validation\FieldValidation\FieldValidationTrait;
 use SilverStripe\Core\Validation\FieldValidation\FieldValidationInterface;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * Represents a field in a form.
@@ -459,9 +460,11 @@ class FormField extends RequestHandler implements FieldValidationInterface
      * for instance to add localisation or formatting.
      *
      * @return mixed
+     * @deprecated 5.4.0 Will be replaced by getFormattedValue() and getValue()
      */
     public function Value()
     {
+        Deprecation::notice('5.4.0', 'Will be replaced by getFormattedValue() and getValue()');
         return $this->value;
     }
 

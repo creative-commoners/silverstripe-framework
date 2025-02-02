@@ -3,6 +3,7 @@
 namespace SilverStripe\Forms;
 
 use SilverStripe\Core\Validation\FieldValidation\StringFieldValidator;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * TextareaField creates a multi-line text field,
@@ -189,9 +190,11 @@ class TextareaField extends FormField
      * Return value with all values encoded in html entities
      *
      * @return string Raw HTML
+     * @deprecated 5.4.0 Use getFormattedValueEntities() instead
      */
     public function ValueEntities()
     {
+        Deprecation::noticeWithNoReplacment('5.4.0', 'Will be replaced by getFormattedValueEntities()');
         return htmlentities($this->Value() ?? '', ENT_COMPAT, 'UTF-8');
     }
 }
