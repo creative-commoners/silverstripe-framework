@@ -1359,16 +1359,20 @@ class DataList extends ModelData implements SS_List
         // Note that $joinRows also holds extra fields data
         $joinRows = [];
         if (!empty($parentIDs) && !empty($fetchedIDs)) {
-            $fetchedIDsAsString = implode(',', $fetchedIDs);
-            $joinRows = DB::query(
-                'SELECT * FROM "' . $joinTable
+            // Use sortByField to generate the ORDER BY clause
+            $orderByClause = DB::get_conn()->sortByField($childIDField, $fetchedIDs);
+
+            // Build the query with the order clause
+            $joinQuery = 'SELECT * FROM "' . $joinTable
                 // Only get joins relevant for the parent list
                 . '" WHERE "' . $parentIDField . '" IN (' . implode(',', $parentIDs) . ')'
                 // Exclude any children that got filtered out
-                . ' AND ' . $childIDField . ' IN (' . $fetchedIDsAsString . ')'
+                . ' AND ' . $childIDField . ' IN (' . implode(',', $fetchedIDs) . ')'
                 // Respect sort order of fetched items
-                . ' ORDER BY FIELD(' . $childIDField . ', ' . $fetchedIDsAsString . ')'
-            );
+                . ' ORDER BY ' . $orderByClause;
+
+            // Execute the query
+            $joinRows = DB::query($joinQuery);
         }
 
         // Store the children in an EagerLoadedList against the correct parent
