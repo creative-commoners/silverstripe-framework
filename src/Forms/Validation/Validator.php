@@ -83,7 +83,7 @@ abstract class Validator
         $messageType = ValidationResult::TYPE_ERROR,
         $cast = ValidationResult::CAST_TEXT
     ) {
-        $this->result->addFieldError($fieldName, $message, $messageType, null, $cast);
+        $this->result->addFieldError($fieldName, $message, $messageType, '', $cast);
         return $this;
     }
 
