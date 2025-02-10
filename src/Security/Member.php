@@ -325,7 +325,7 @@ class Member extends DataObject
                 _t(
                     __CLASS__ . '.ERRORLOCKEDOUT2',
                     'Your account has been temporarily disabled because of too many failed attempts at ' . 'logging in. Please try again in {count} minutes.',
-                    null,
+                    '',
                     ['count' => static::config()->get('lock_out_delay_mins')]
                 )
             );
@@ -1625,17 +1625,17 @@ class Member extends DataObject
             return ValidationResult::create();
         }
 
-        $valid = parent::validate();
+        $result = parent::validate();
         $validator = static::password_validator();
 
         if ($validator) {
             if ((!$this->ID && $this->Password) || $this->isChanged('Password')) {
                 $userValid = $validator->validate($this->Password, $this);
-                $valid->combineAnd($userValid);
+                $result->combineAnd($userValid);
             }
         }
 
-        return $valid;
+        return $result;
     }
 
     /**

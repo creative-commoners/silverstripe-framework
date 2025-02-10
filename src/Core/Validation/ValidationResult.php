@@ -4,7 +4,6 @@ namespace SilverStripe\Core\Validation;
 
 use InvalidArgumentException;
 use SilverStripe\Core\Injector\Injectable;
-use SilverStripe\Dev\Deprecation;
 
 /**
  * A class that combined as a boolean result with an optional list of error messages.
@@ -50,204 +49,169 @@ class ValidationResult
     /**
      * Is the result valid or not.
      * Note that there can be non-error messages in the list.
-     *
-     * @var bool
      */
-    protected $isValid = true;
+    protected bool $isValid = true;
 
     /**
      * List of messages
-     *
-     * @var array
      */
-    protected $messages = [];
+    protected array $messages = [];
+
+    /**
+     * The class of the model being validated.
+     */
+    private string $modelClass = '';
+
+    /**
+     * The record ID of the object being validated.
+     */
+    private mixed $recordID = null;
+
+    public function getModelClass(): string
+    {
+        return $this->modelClass;
+    }
+
+    public function setModelClass(string $modelClass): static
+    {
+        $this->modelClass = $modelClass;
+        return $this;
+    }
+
+    public function getRecordID(): mixed
+    {
+        return $this->recordID;
+    }
+
+    public function setRecordID(mixed $recordID): static
+    {
+        $this->recordID = $recordID;
+        return $this;
+    }
 
     /**
      * Record an error against this validation result,
      *
-     * @param string $message     The message string.
-     * @param string $messageType Passed as a CSS class to the form, so other values can be used if desired.
-     * Standard types are defined by the TYPE_ constant definitions.
-     * @param string $code        A codename for this error. Only one message per codename will be added.
-     *                            This can be usedful for ensuring no duplicate messages
-     * @param string|bool $cast Cast type; One of the CAST_ constant definitions.
-     * Bool values will be treated as plain text flag.
-     * @return $this
+     * @param string $messageType The type of message: e.g. "bad", "warning", "good", or "required"
+     *               Passed as a CSS class to the form, so other values can be used if desired
+     * @param string $code A codename for this error. Only one message per codename will be added.
+     *               This can be usedful for ensuring no duplicate messages
+     * @param string $cast Cast type; One of the CAST_ constant definitions.
      */
     public function addError(
-        $message,
-        $messageType = ValidationResult::TYPE_ERROR,
-        $code = null,
-        $cast = ValidationResult::CAST_TEXT
-    ) {
-        if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $code = '';
-        }
-        if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $cast = ValidationResult::CAST_TEXT;
-        }
-        return $this->addFieldError('', $message, $messageType, $code, $cast);
+        string $message,
+        string $messageType = ValidationResult::TYPE_ERROR,
+        string $code = '',
+        string $cast = ValidationResult::CAST_TEXT,
+    ): static {
+        return $this->addFieldError(
+            '',
+            $message,
+            $messageType,
+            $code,
+            $cast,
+        );
     }
 
     /**
      * Record an error against this validation result,
      *
-     * @param string $fieldName   The field to link the message to.  If omitted; a form-wide message is assumed.
-     * @param string $message     The message string.
-     * @param string $messageType The type of message: e.g. "bad", "warning", "good", or "required". Passed as a CSS
-     *                            class to the form, so other values can be used if desired.
-     * @param string $code        A codename for this error. Only one message per codename will be added.
-     *                            This can be usedful for ensuring no duplicate messages
-     * @param string|bool $cast Cast type; One of the CAST_ constant definitions.
-     * Bool values will be treated as plain text flag.
-     * @return $this
+     * @param string $fieldName The field to link the message to. If omitted; a form-wide message is assumed.
+     * @param string $messageType The type of message: e.g. "bad", "warning", "good", or "required"
+     *               Passed as a CSS class to the form, so other values can be used if desired
+     * @param string $code A codename for this error. Only one message per codename will be added.
+     *               This can be usedful for ensuring no duplicate messages
+     * @param string $cast Cast type; One of the CAST_ constant definitions.
      */
     public function addFieldError(
-        $fieldName,
-        $message,
-        $messageType = ValidationResult::TYPE_ERROR,
-        $code = null,
-        $cast = ValidationResult::CAST_TEXT,
-    ) {
-        if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $code = '';
-        }
-        if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $cast = ValidationResult::CAST_TEXT;
-        }
+        string $fieldName,
+        string $message,
+        string $messageType = ValidationResult::TYPE_ERROR,
+        string $code = '',
+        string $cast = ValidationResult::CAST_TEXT,
+    ): static {
         $this->isValid = false;
-        return $this->addFieldMessage($fieldName, $message, $messageType, $code, $cast);
+        return $this->addFieldMessage(
+            $fieldName,
+            $message,
+            $messageType,
+            $code,
+            $cast,
+        );
     }
 
     /**
      * Add a message to this ValidationResult without necessarily marking it as an error
      *
-     * @param string $message     The message string.
-     * @param string $messageType The type of message: e.g. "bad", "warning", "good", or "required". Passed as a CSS
-     *                            class to the form, so other values can be used if desired.
-     * @param string $code        A codename for this error. Only one message per codename will be added.
-     *                            This can be usedful for ensuring no duplicate messages
-     * @param string|bool $cast Cast type; One of the CAST_ constant definitions.
-     * Bool values will be treated as plain text flag.
-     * @return $this
+     * @param string $messageType The type of message: e.g. "bad", "warning", "good", or "required"
+     *               Passed as a CSS class to the form, so other values can be used if desired
+     * @param string $code A codename for this error. Only one message per codename will be added.
+     *               This can be usedful for ensuring no duplicate messages
+     * @param string $cast Cast type; One of the CAST_ constant definitions.
      */
     public function addMessage(
-        $message,
-        $messageType = ValidationResult::TYPE_ERROR,
-        $code = null,
-        $cast = ValidationResult::CAST_TEXT,
-    ) {
-        if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $code = '';
-        }
-        if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $cast = ValidationResult::CAST_TEXT;
-        }
-        return $this->addFieldMessage(null, $message, $messageType, $code, $cast);
+        string $message,
+        string $messageType = ValidationResult::TYPE_ERROR,
+        string $code = '',
+        string $cast = ValidationResult::CAST_TEXT,
+    ): static {
+        return $this->addFieldMessage(
+            '',
+            $message,
+            $messageType,
+            $code,
+            $cast,
+        );
     }
 
     /**
      * Add a message to this ValidationResult without necessarily marking it as an error
      *
-     * @param string $fieldName   The field to link the message to.  If omitted; a form-wide message is assumed.
-     * @param string $message     The message string.
-     * @param string $messageType The type of message: e.g. "bad", "warning", "good", or "required". Passed as a CSS
-     *                            class to the form, so other values can be used if desired.
-     * @param string $code        A codename for this error. Only one message per codename will be added.
-     *                            This can be usedful for ensuring no duplicate messages
-     * @param string|bool $cast Cast type; One of the CAST_ constant definitions.
-     * Bool values will be treated as plain text flag.
-     * @return $this
+     * @param string $fieldName The field to link the message to.  If omitted; a form-wide message is assumed.
+     * @param string $messageType The type of message: e.g. "bad", "warning", "good", or "required"
+     *               Passed as a CSS class to the form, so other values can be used if desired
+     * @param string $code A codename for this error. Only one message per codename will be added.
+     *               This can be usedful for ensuring no duplicate messages
+     * @param string $cast Cast type; One of the CAST_ constant definitions.
      */
     public function addFieldMessage(
-        $fieldName,
-        $message,
-        $messageType = ValidationResult::TYPE_ERROR,
-        $code = null,
-        $cast = ValidationResult::CAST_TEXT,
-    ) {
-        if ($code === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $code as null is deprecated. Pass a blank string instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $code = '';
-        }
-        if ($cast === null) {
-            Deprecation::notice(
-                '5.4.0',
-                'Passing $cast as null is deprecated. Pass a ValidationResult::CAST_* constant instead.',
-                Deprecation::SCOPE_GLOBAL
-            );
-            $cast = ValidationResult::CAST_TEXT;
-        }
+        string $fieldName,
+        string $message,
+        string $messageType = ValidationResult::TYPE_ERROR,
+        string $code = '',
+        string $cast = ValidationResult::CAST_TEXT,
+    ): static {
         if ($code && is_numeric($code)) {
-            throw new InvalidArgumentException("Don't use a numeric code '$code'.  Use a string.");
-        }
-        if (is_bool($cast)) {
-            $cast = $cast ? ValidationResult::CAST_TEXT : ValidationResult::CAST_HTML;
+            throw new InvalidArgumentException("Don't use a numeric code '$code'. Use a string.");
         }
         $metadata = [
             'message' => $message,
             'fieldName' => $fieldName,
             'messageType' => $messageType,
             'messageCast' => $cast,
+            'modelClass' => $this->modelClass,
+            'recordID' => $this->recordID,
         ];
         if ($code) {
             $this->messages[$code] = $metadata;
         } else {
             $this->messages[] = $metadata;
         }
-
         return $this;
     }
 
     /**
      * Returns true if the result is valid.
-     * @return boolean
      */
-    public function isValid()
+    public function isValid(): bool
     {
         return $this->isValid;
     }
 
     /**
      * Return the full error meta-data, suitable for combining with another ValidationResult.
-     *
-     * @return array Array of messages, where each item is an array of data for that message.
      */
-    public function getMessages()
+    public function getMessages(): array
     {
         return $this->messages;
     }
@@ -256,14 +220,12 @@ class ValidationResult
      * Combine this Validation Result with the ValidationResult given in other.
      * It will be valid if both this and the other result are valid.
      * This object will be modified to contain the new validation information.
-     *
-     * @param ValidationResult $other the validation result object to combine
-     * @return $this
      */
-    public function combineAnd(ValidationResult $other)
+    public function combineAnd(ValidationResult $other): static
     {
         $this->isValid = $this->isValid && $other->isValid();
         $this->messages = array_merge($this->messages, $other->getMessages());
+        $this->combineModelClassAndRecordID($other);
         return $this;
     }
 
@@ -279,5 +241,20 @@ class ValidationResult
     {
         $this->messages = $data['messages'];
         $this->isValid = $data['isValid'];
+    }
+
+    /**
+     * Combine the model class and record ID from another ValidationResult object.
+     */
+    private function combineModelClassAndRecordID(ValidationResult $other): void
+    {
+        $otherModelClass = $other->getModelClass();
+        if ($this->getModelClass() === '' && $otherModelClass !== '') {
+            $this->setModelClass($otherModelClass);
+        }
+        $otherRecordID = $other->getRecordID();
+        if ($this->getRecordID() === null && $otherRecordID !== null) {
+            $this->setRecordID($otherRecordID);
+        }
     }
 }

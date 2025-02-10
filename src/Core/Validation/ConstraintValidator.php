@@ -15,10 +15,9 @@ use Symfony\Component\Validator\Validation;
 class ConstraintValidator
 {
     /**
-     * Validate a value by a constraint
+     * Validate a value by a constraint or an array of constraints
      *
      * @param Constraint|Constraint[] $constraints a constraint or array of constraints to validate against
-     * @param string $fieldName The field name the value relates to, if relevant
      */
     public static function validate(mixed $value, Constraint|array $constraints, string $fieldName = ''): ValidationResult
     {
