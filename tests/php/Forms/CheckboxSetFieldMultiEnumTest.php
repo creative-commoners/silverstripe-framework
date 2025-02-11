@@ -65,7 +65,7 @@ class CheckboxSetFieldMultiEnumTest extends SapphireTest
             new FieldList()
         );
         $form->loadDataFrom($article);
-        $value = $field->Value();
+        $value = $field->getValue();
         $this->assertEquals(['Red', 'Green'], $value);
     }
 

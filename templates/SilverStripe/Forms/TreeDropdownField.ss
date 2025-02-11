@@ -3,5 +3,5 @@
 	$AttributesHTML('class') $SchemaAttributesHtml
 	<% if $Metadata %>data-metadata="$Metadata.ATT"<% end_if %>
 >
-	<input id="$ID" type="hidden" name="$Name.ATT" value="$Value.ATT" />
+	<input id="$ID" type="hidden" name="$Name.ATT" value="$FormattedValue.ATT" />
 </div>

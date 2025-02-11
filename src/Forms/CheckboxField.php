@@ -21,7 +21,7 @@ class CheckboxField extends FormField
         return ($this->value) ? 1 : null;
     }
 
-    public function Value()
+    public function getValue(): mixed
     {
         return ($this->value) ? 1 : 0;
     }
@@ -39,7 +39,7 @@ class CheckboxField extends FormField
         return array_merge(
             $attributes,
             [
-                'checked' => ($this->Value()) ? 'checked' : null,
+                'checked' => ($this->getValue()) ? 'checked' : null,
                 'type' => 'checkbox',
             ]
         );

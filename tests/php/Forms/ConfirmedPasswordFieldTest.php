@@ -29,13 +29,13 @@ class ConfirmedPasswordFieldTest extends SapphireTest
     public function testSetValue()
     {
         $field = new ConfirmedPasswordField('Test', 'Testing', 'valueA');
-        $this->assertEquals('valueA', $field->Value());
-        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_Password]')->Value());
-        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->Value());
+        $this->assertEquals('valueA', $field->getValue());
+        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_Password]')->getValue());
+        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->getValue());
         $field->setValue('valueB');
-        $this->assertEquals('valueB', $field->Value());
-        $this->assertEquals('valueB', $field->children->fieldByName($field->getName() . '[_Password]')->Value());
-        $this->assertEquals('valueB', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->Value());
+        $this->assertEquals('valueB', $field->getValue());
+        $this->assertEquals('valueB', $field->children->fieldByName($field->getName() . '[_Password]')->getValue());
+        $this->assertEquals('valueB', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->getValue());
     }
 
     /**
@@ -46,9 +46,9 @@ class ConfirmedPasswordFieldTest extends SapphireTest
         $field = new ConfirmedPasswordField('Password', 'Password', 'valueA');
         $field->setCanBeEmpty(true);
 
-        $this->assertEquals('valueA', $field->Value());
-        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_Password]')->Value());
-        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->Value());
+        $this->assertEquals('valueA', $field->getValue());
+        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_Password]')->getValue());
+        $this->assertEquals('valueA', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->getValue());
 
         $member = new Member();
         $member->Password = "valueB";
@@ -57,9 +57,9 @@ class ConfirmedPasswordFieldTest extends SapphireTest
         $form = new Form(Controller::curr(), 'Form', new FieldList($field), new FieldList());
         $form->loadDataFrom($member);
 
-        $this->assertEquals('', $field->Value());
-        $this->assertEquals('', $field->children->fieldByName($field->getName() . '[_Password]')->Value());
-        $this->assertEquals('', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->Value());
+        $this->assertEquals('', $field->getValue());
+        $this->assertEquals('', $field->children->fieldByName($field->getName() . '[_Password]')->getValue());
+        $this->assertEquals('', $field->children->fieldByName($field->getName() . '[_ConfirmPassword]')->getValue());
     }
 
     public function testSetShowOnClick()
@@ -149,8 +149,8 @@ class ConfirmedPasswordFieldTest extends SapphireTest
                 '_ConfirmPassword' => '',
             ],
         ]);
-        $this->assertSame('123', $field->children->first()->Value());
-        $this->assertSame('', $field->children->last()->Value());
+        $this->assertSame('123', $field->children->first()->getValue());
+        $this->assertSame('', $field->children->last()->getValue());
 
         $form->loadDataFrom([
             'Password' => [
@@ -158,8 +158,8 @@ class ConfirmedPasswordFieldTest extends SapphireTest
                 '_ConfirmPassword' => 'abc',
             ],
         ]);
-        $this->assertSame('123', $field->children->first()->Value());
-        $this->assertSame('abc', $field->children->last()->Value());
+        $this->assertSame('123', $field->children->first()->getValue());
+        $this->assertSame('abc', $field->children->last()->getValue());
 
         $form->loadDataFrom([
             'Password' => [
@@ -167,8 +167,8 @@ class ConfirmedPasswordFieldTest extends SapphireTest
                 '_ConfirmPassword' => 'abc',
             ],
         ]);
-        $this->assertSame('', $field->children->first()->Value());
-        $this->assertSame('abc', $field->children->last()->Value());
+        $this->assertSame('', $field->children->first()->getValue());
+        $this->assertSame('abc', $field->children->last()->getValue());
     }
 
     /**
@@ -328,7 +328,7 @@ class ConfirmedPasswordFieldTest extends SapphireTest
 
         $this->assertInstanceOf(ReadonlyField::class, $result);
         $this->assertSame('Change it', $result->Title());
-        $this->assertStringContainsString('***', $result->Value());
+        $this->assertStringContainsString('***', $result->getValue());
     }
 
     public function testPerformDisabledTransformation()
@@ -365,10 +365,10 @@ class ConfirmedPasswordFieldTest extends SapphireTest
                 return 'R4ndom-P4ssw0rd$LOREM^ipsum#12345';
             }));
         }
-        $this->assertEmpty($field->Value());
+        $this->assertEmpty($field->getValue());
         $member = new Member();
         $field->saveInto($member);
-        $this->assertSame($expected, $field->Value());
+        $this->assertSame($expected, $field->getValue());
     }
 
     public static function provideSetCanBeEmptySaveInto(): array

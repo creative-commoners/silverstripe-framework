@@ -219,7 +219,7 @@ class MoneyField extends FormField
         return $this->getDBMoney()->getValue();
     }
 
-    public function Value()
+    public function getFormattedValue(): mixed
     {
         // Localised money
         return $this->getDBMoney()->Nice();

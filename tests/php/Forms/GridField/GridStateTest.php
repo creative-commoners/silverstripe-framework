@@ -14,18 +14,18 @@ class GridStateTest extends SapphireTest
         $gridfield = new GridField('Test');
 
         $state = new GridState($gridfield);
-        $this->assertEquals('{}', $state->Value(), 'GridState without any data has empty JSON object for Value');
+        $this->assertEquals('{}', $state->getValue(), 'GridState without any data has empty JSON object for Value');
 
         $data = $state->getData();
         $data->initDefaults(['Foo' => 'Bar']);
 
-        $this->assertEquals('{}', $state->Value(), 'GridState without change has empty JSON object for Value');
+        $this->assertEquals('{}', $state->getValue(), 'GridState without change has empty JSON object for Value');
 
         $data->Foo = 'Barrr';
 
         $this->assertEquals(
             '{"Foo":"Barrr"}',
-            $state->Value(),
+            $state->getValue(),
             'GridState with changes returns has a JSON object string for Value.'
         );
     }

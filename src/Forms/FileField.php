@@ -172,7 +172,7 @@ class FileField extends FormField implements FileHandleField
         }
     }
 
-    public function Value()
+    public function getValue(): mixed
     {
         return isset($_FILES[$this->getName()]) ? $_FILES[$this->getName()] : null;
     }

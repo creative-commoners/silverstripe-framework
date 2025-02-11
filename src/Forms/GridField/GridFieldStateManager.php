@@ -39,7 +39,7 @@ class GridFieldStateManager implements GridFieldStateManagerInterface
     public function addStateToURL(GridField $gridField, string $url): string
     {
         $key = $this->getStateKey($gridField);
-        $value = $gridField->getState(false)->Value();
+        $value = $gridField->getState(false)->getValue();
 
         // Using a JSON-encoded empty array as the blank value, to avoid changing Value() semantics in a minor release
         if ($value === '{}') {

@@ -51,7 +51,7 @@ class MoneyFieldTest extends SapphireTest
         $this->assertEquals(123456.78, $testObject->MyMoney->getAmount());
         $this->assertEquals('EUR', $testObject->MyMoney->getCurrency());
         $this->assertEquals('123456.78 EUR', $field->dataValue());
-        $this->assertEquals('€123,456.78', $field->Value());
+        $this->assertEquals('€123,456.78', $field->getFormattedValue());
     }
 
     public function testSetValueAsArray()
@@ -78,7 +78,7 @@ class MoneyFieldTest extends SapphireTest
         $this->assertEquals(1.01, $testObject->MyMoney->getAmount());
         $this->assertEquals('USD', $testObject->MyMoney->getCurrency());
         $this->assertEquals('1.01 USD', $field->dataValue());
-        $this->assertEquals('US$1.01', $field->Value());
+        $this->assertEquals('US$1.01', $field->getFormattedValue());
 
         $testObject = new TestObject();
         $field = new MoneyField('MyMoney');
@@ -88,7 +88,7 @@ class MoneyFieldTest extends SapphireTest
         $this->assertEquals(1.01, $testObject->MyMoney->getAmount());
         $this->assertNull($testObject->MyMoney->getCurrency());
         $this->assertEquals('1.01', $field->dataValue());
-        $this->assertEquals('$1.01', $field->Value());
+        $this->assertEquals('$1.01', $field->getFormattedValue());
     }
 
     /**

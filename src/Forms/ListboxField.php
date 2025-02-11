@@ -4,6 +4,8 @@ namespace SilverStripe\Forms;
 
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\Model\ArrayData;
+use SilverStripe\ORM\DB;
+use SilverStripe\ORM\FieldType\DBHTMLText;
 
 /**
  * Multi-line listbox field, created from a select tag.
@@ -68,9 +70,6 @@ class ListboxField extends MultiSelectField
 
     /**
      * Returns a select tag containing all the appropriate option tags
-     *
-     * @param array $properties
-     * @return string
      */
     public function Field($properties = [])
     {
@@ -252,7 +251,7 @@ class ListboxField extends MultiSelectField
 
     public function getValueArray()
     {
-        $value = $this->Value();
+        $value = $this->getFormattedValue();
         $validValues = $this->getValidValues();
         if (empty($validValues)) {
             return [];

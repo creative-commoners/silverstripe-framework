@@ -23,7 +23,8 @@ class HTMLEditorField extends TextareaField
 {
 
     private static $casting = [
-        'Value' => 'HTMLText',
+        'FormattedValue' => 'HTMLText',
+        'getFormattedValue' => 'HTMLText',
     ];
 
     protected $schemaDataType = FormField::SCHEMA_DATA_TYPE_HTML;
@@ -134,7 +135,7 @@ class HTMLEditorField extends TextareaField
         }
 
         // Sanitise if requested
-        $htmlValue = HTMLValue::create($this->Value());
+        $htmlValue = HTMLValue::create($this->getValue());
         if (HTMLEditorField::config()->sanitise_server_side) {
             $config = $this->getEditorConfig();
             $santiser = HTMLEditorSanitiser::create($config);
@@ -184,11 +185,9 @@ class HTMLEditorField extends TextareaField
     }
 
     /**
-     * Return value with all values encoded in html entities
-     *
-     * @return string Raw HTML
+     * Return formatted value with all values encoded in html entities
      */
-    public function ValueEntities()
+    public function getFormattedValueEntities(): string
     {
         $entities = get_html_translation_table(HTML_ENTITIES);
 
@@ -196,13 +195,13 @@ class HTMLEditorField extends TextareaField
             $entities[$key] = "/" . $value . "/";
         }
 
-        $value = preg_replace_callback($entities, function ($matches) {
+        $formattedValue = preg_replace_callback($entities, function ($matches) {
             // Don't apply double encoding to ampersand
             $doubleEncoding = $matches[0] != '&amp;';
             return htmlentities($matches[0], ENT_COMPAT, 'UTF-8', $doubleEncoding);
-        }, $this->Value() ?? '');
+        }, $this->getFormattedValue() ?? '');
 
-        return $value;
+        return $formattedValue;
     }
 
     /**
@@ -231,7 +230,7 @@ class HTMLEditorField extends TextareaField
         }
 
         $castingService = CastingService::singleton();
-        $castValue = $castingService->cast($this->Value(), $record, $this->getName());
+        $castValue = $castingService->cast($this->getValue(), $record, $this->getName());
         return $castValue instanceof DBField && $castValue::config()->get('escape_type') === 'xml';
     }
 }
