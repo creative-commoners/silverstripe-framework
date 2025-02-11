@@ -4,12 +4,8 @@ namespace SilverStripe\ORM\FieldType;
 
 use SilverStripe\Core\Validation\FieldValidation\IntFieldValidator;
 use SilverStripe\Forms\FormField;
-use SilverStripe\Dev\Deprecation;
 use SilverStripe\Forms\NumericField;
-use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DB;
-use SilverStripe\Model\List\SS_List;
-use SilverStripe\Model\ArrayData;
 use SilverStripe\Model\ModelData;
 
 /**
@@ -64,20 +60,6 @@ class DBInt extends DBField
         ];
         $values = ['type' => 'int', 'parts' => $parts];
         DB::require_field($this->tableName, $this->name, $values);
-    }
-
-    /**
-     * @deprecated 5.4.0 Will be removed without equivalent functionality to replace it
-     */
-    public function Times(): SS_List
-    {
-        Deprecation::noticeWithNoReplacment('5.4.0');
-        $output = new ArrayList();
-        for ($i = 0; $i < $this->value; $i++) {
-            $output->push(ArrayData::create(['Number' => $i + 1]));
-        }
-
-        return $output;
     }
 
     public function Nice(): string
