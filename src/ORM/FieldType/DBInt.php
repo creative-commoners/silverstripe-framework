@@ -2,6 +2,7 @@
 
 namespace SilverStripe\ORM\FieldType;
 
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\Forms\NumericField;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DB;
@@ -51,8 +52,12 @@ class DBInt extends DBField
         DB::require_field($this->tableName, $this->name, $values);
     }
 
+    /**
+     * @deprecated 5.4.0 Will be removed without equivalent functionality to replace it
+     */
     public function Times()
     {
+        Deprecation::noticeWithNoReplacment('5.4.0');
         $output = new ArrayList();
         for ($i = 0; $i < $this->value; $i++) {
             $output->push(ArrayData::create(['Number' => $i + 1]));
