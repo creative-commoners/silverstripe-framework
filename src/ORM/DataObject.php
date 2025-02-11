@@ -4429,8 +4429,7 @@ class DataObject extends ViewableData implements DataObjectInterface, i18nEntity
         $pluralName = $this->plural_name();
         $singularName = $this->singular_name();
         $conjunction = preg_match('/^[aeiou]/i', $singularName ?? '') ? 'An ' : 'A ';
-        return [
-            static::class . '.CLASS_DESCRIPTION' => $this->classDescription(),
+        $entities = [
             static::class . '.SINGULARNAME' => $singularName,
             static::class . '.PLURALNAME' => $pluralName,
             static::class . '.PLURALS' => [
@@ -4438,6 +4437,11 @@ class DataObject extends ViewableData implements DataObjectInterface, i18nEntity
                 'other' => '{count} ' . $pluralName
             ]
         ];
+        $classDescription = $this->classDescription();
+        if ($classDescription) {
+            $entities[static::class . '.CLASS_DESCRIPTION'] = $classDescription;
+        }
+        return $entities;
     }
 
     /**
