@@ -27,9 +27,22 @@ it:
   SilverStripe\Control\RequestProcessor:
     INVALID_REQUEST: 'Richiesta non valida'
     REQUEST_ABORTED: 'Richiesta annullata'
+  SilverStripe\Dev\DevBuildController:
+    CAN_DEV_BUILD_DESCRIPTION: 'Può eseguire /dev/build'
+    CAN_DEV_BUILD_HELP: 'Può eseguire il comando di build (/dev/build).'
+  SilverStripe\Dev\DevConfigController:
+    CAN_DEV_CONFIG_DESCRIPTION: 'Può vedere /dev/config'
+    CAN_DEV_CONFIG_HELP: "Può vedere l'intera configurazione dell'applicazione (/dev/config)."
   SilverStripe\Dev\DevConfirmationController:
     INFO_DESCRIPTION: "Confermare l'operazione potenzialmente pericolosa"
     INFO_TITLE: 'Conferma di Sicurezza'
+  SilverStripe\Dev\DevelopmentAdmin:
+    ALL_DEV_ADMIN_DESCRIPTION: 'Può vedere ed eseguire tutte le azioni in /dev'
+    ALL_DEV_ADMIN_HELP: 'Può vedere ed eseguire tutte le azioni in /dev'
+    PERMISSIONS_CATEGORY: 'Permessi di sviluppo'
+  SilverStripe\Dev\TaskRunner:
+    BUILDTASK_CAN_RUN_DESCRIPTION: 'Può vedere ed eseguire ogni cosa in /dev/tasks'
+    BUILDTASK_CAN_RUN_HELP: 'Può vedere ed eseguire tutti i task di build (/dev/tasks). Può comunque essere scavalcato da specifici permessi del task'
   SilverStripe\Forms\CheckboxField:
     YESANSWER: Sì
   SilverStripe\Forms\CheckboxSetField_ss:
@@ -41,6 +54,7 @@ it:
     CURRENT_PASSWORD_MISSING: 'Devi inserire la tua password attuale.'
     LOGGED_IN_ERROR: 'Devi essere autenticato per poter cambiare la tua password.'
     MAXIMUM: 'La password deve essere lunga almeno {max} caratteri.'
+    RANDOM_IF_EMPTY: 'Se lasciato vuoto una password casuale verrà generata automaticamente.'
     SHOWONCLICKTITLE: 'Cambia password'
   SilverStripe\Forms\DateField:
     NOTSET: 'non impostato'
@@ -103,7 +117,7 @@ it:
     Create: Crea
     Delete: Elimina
     DeletePermissionsFailure: 'Non hai i permessi per eliminare'
-    Deleted: 'Eliminato {type} {name}'
+    Deleted: 'Eliminato {type} "{name}"'
     Save: Salva
     Saved: 'Salvato {name} {link}'
   SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest:
@@ -111,6 +125,8 @@ it:
     NEW: 'Aggiungi un nuovo record'
     NEXT: 'Vai al prossimo record'
     PREVIOUS: 'Vai al record precedente'
+    SAVEDUP: 'Salvato correttamente.'
+    SAVETOASTMESSAGE: '{type} "{title}" salvato correttamente.'
     ViewPermissionsFailure: 'Pare tu non abbia i privilegi necessari per visualizzare "{ObjectTitle}"'
   SilverStripe\Forms\GridField\GridFieldEditButton:
     EDIT: Modifica
@@ -140,16 +156,25 @@ it:
     IsNullLabel: 'è nullo.'
   SilverStripe\Forms\NumericField:
     VALIDATION: "'{value}' non è un numero, solo numeri possono essere accettati per questo campo"
+  SilverStripe\Forms\SearchableDropdownTrait:
+    SELECT: Seleziona...
+    SELECT_OR_TYPE_TO_SEARCH: 'Selezionare o digitare per cercare...'
+    TYPE_TO_SEARCH: 'Tipo di ricerca...'
   SilverStripe\Forms\TextField:
     VALIDATEMAXLENGTH: 'Il valore di {name} non deve superare i {maxLength} caratteri di lunghezza'
   SilverStripe\Forms\TimeField:
     VALIDATEFORMAT: "Inserisci un formato d'ora valido ({format})"
+  SilverStripe\Forms\UrlField:
+    INVALID: 'Prego inserire un URL valido'
   SilverStripe\ORM\DataObject:
+    GENERALSEARCH: 'Ricerca Generale'
     PLURALNAME: 'Data Object'
     PLURALS:
       many: '{count} Data Object'
       one: 'Un Data Object'
       other: '{count} Data Object'
+    many_many_FileTracking: 'Monitoraggio file'
+    many_many_LinkTracking: 'Monitoraggio link'
   SilverStripe\ORM\FieldType\DBBoolean:
     ANY: Qualsiasi
     YESANSWER: Sì
@@ -179,6 +204,31 @@ it:
     YEARS_SHORT_PLURALS:
       many: '{count} anni'
       one: '{count} anno'
+      other: '{count} anni'
+  SilverStripe\ORM\FieldType\DBDatetime:
+    nDays:
+      many: '{count} giorni'
+      one: 'un giorno'
+      other: '{count} giorni'
+    nHours:
+      many: '{count} ore'
+      one: "un'ora"
+      other: '{count} ore'
+    nMinutes:
+      many: '{count} minuti'
+      one: 'un minuto'
+      other: '{count} minuti'
+    nMonths:
+      many: '{count} mesi'
+      one: 'un mese'
+      other: '{count} mesi'
+    nSeconds:
+      many: '{count} secondi'
+      one: 'un secondo'
+      other: '{count} secondi'
+    nYears:
+      many: '{count} anni'
+      one: 'un anno'
       other: '{count} anni'
   SilverStripe\ORM\FieldType\DBEnum:
     ANY: Qualsiasi
@@ -238,15 +288,29 @@ it:
     SINGULARNAME: Gruppo
     Sort: 'Tipo ordinamento'
     ValidationIdentifierAlreadyExists: 'Esiste già un gruppo ({group}) con lo stesso {identifier}'
+    db_AccessAllSubsites: 'Accesso a tutti i sottositi'
+    db_Code: Codice
     db_Description: Descrizione
+    db_HtmlEditorConfig: 'Configurazione editor HTML'
+    db_LastSynced: 'Ultima sincronizzazione'
+    db_Locked: Bloccato
     db_Sort: Ordine
     db_Title: Titolo
     has_many_Groups: Gruppi
+    has_many_LDAPGroupMappings: 'Mappatura dei gruppi LDAP'
     has_many_Permissions: Permessi
     has_one_Parent: Parente
     many_many_Members: Membri
     many_many_Roles: Ruoli
+    many_many_SiteTreeContentReview: "Revisione contenuto dell'albero delle pagine"
     many_many_Subsites: Sottositi
+  SilverStripe\Security\InheritedPermissionsExtension:
+    db_CanEditType: 'Tipo può modificare'
+    db_CanViewType: 'Tipo può visualizzare'
+    many_many_EditorGroups: 'Gruppi di editori'
+    many_many_EditorMembers: 'Membri editori'
+    many_many_ViewerGroups: 'Gruppi di visualizzatori'
+    many_many_ViewerMembers: 'Membri visualizzatori'
   SilverStripe\Security\LoginAttempt:
     Email: 'Indirizzo e-mail'
     EmailHashed: 'Indirizzo email (hash)'
@@ -258,6 +322,7 @@ it:
       other: "{count} tentativi d'accesso"
     SINGULARNAME: "Tentativo d'accesso"
     Status: Stato
+    db_EmailHashed: 'Email codificata'
     db_Status: Stato
     has_one_Member: Utente
   SilverStripe\Security\Member:
@@ -271,6 +336,7 @@ it:
     CONFIRMPASSWORD: 'Conferma password'
     CURRENT_PASSWORD: 'Password Attuale'
     EDIT_PASSWORD: 'Nuova password'
+    EMAIL_FAILED: "Errore durante l'invio dell'email per il reset delle credenziali."
     EMPTYNEWPASSWORD: 'La nuova password non può essere vuota, riprova'
     ENTEREMAIL: 'Inserisci un indirizzo e-mail per ricevere il link di azzeramento della password'
     ERRORLOCKEDOUT2: 'Il tuo account è stato temporaneamente disabilitato perchè ci sono stati troppi tentativi di accesso errati. Riprova tra {count} minuti.'
@@ -289,6 +355,7 @@ it:
       many: '{count} Utenti'
       one: 'Un Utente'
       other: '{count} Utenti'
+    RequiresPasswordChangeOnNextLogin: 'Richiede il cambio password al prossimo login'
     SINGULARNAME: Utente
     SUBJECTPASSWORDCHANGED: 'La tua password è stata cambiata'
     SUBJECTPASSWORDRESET: 'Link per azzerare la tua password'
@@ -298,14 +365,39 @@ it:
     ValidationIdentifierFailed: "Non posso sovrascrivere l'utente esistente #{id} con identificatore identico ({name} = {value}))"
     WELCOMEBACK: 'Bentornato, {firstname}'
     YOUROLDPASSWORD: 'La tua vecchia password'
+    belongs_many_many_BlogPosts: 'Articoli del blog'
     belongs_many_many_Groups: Gruppi
+    db_AccountResetExpired: 'Reset credenziali scaduto'
+    db_AccountResetHash: 'Hash per il reset delle credenziali'
+    db_AutoLoginExpired: 'Auto login scaduto'
+    db_AutoLoginHash: "Hash per l'auto login"
+    db_BlogProfileSummary: 'Riassunto profilo per il blog'
+    db_DefaultRegisteredMethodID: 'ID metodo di registrazione di default'
     db_Email: E-mail
+    db_FailedLoginCount: 'Conteggio login falliti'
     db_FirstName: Nome
+    db_HasSkippedMFARegistration: 'Ha registrazione con skippedMFA'
+    db_IsExpired: 'È scaduto'
+    db_LastSynced: 'Ultima sincronizzazione'
     db_Locale: 'Localizzazione interfaccia'
     db_LockedOutUntil: 'Bloccato fino al'
+    db_PasswordEncryption: 'Password criptata'
     db_PasswordExpiry: 'Data di scadenza della password'
+    db_Salt: Seme
     db_Surname: Cognome
+    db_TempIDExpired: 'TempID scaduto'
+    db_TempIDHash: 'Hash di TempID'
     db_URLSegment: 'Segmento URL'
+    db_Username: 'Nome utente'
+    has_many_LoggedPasswords: 'Password registrate'
+    has_many_LoginSessions: 'Sessioni di login'
+    has_many_RegisteredMFAMethods: 'Metodi RegisteredMFA'
+    has_many_RememberLoginHashes: 'Ricordare gli hash di login'
+    has_one_AFile: 'Un file'
+    has_one_AImage: "Un'immagine"
+    has_one_BlogProfileImage: 'Immagine profilo per il blog'
+    has_one_FavouritePage: 'Pagina preferita'
+    many_many_SiteTreeContentReview: "Revisione contenuto dell'albero delle pagine"
   SilverStripe\Security\MemberAuthenticator\CMSMemberLoginForm:
     AUTHENTICATORNAME: 'Form di Login Utente CMS'
     BUTTONFORGOTPASSWORD: 'Password dimenticata'
@@ -321,6 +413,8 @@ it:
       one: 'Una password utente'
       other: '{count} password utente'
     SINGULARNAME: 'Password utente'
+    db_PasswordEncryption: 'Password criptata'
+    db_Salt: Seme
     has_one_Member: Utente
   SilverStripe\Security\PasswordValidator:
     LOWCHARSTRENGTH: 'Perfavore aumenta la sicurezza della password aggiungendo alcuni dei seguenti caratteri: {chars}'
@@ -340,6 +434,8 @@ it:
       other: '{count} Permessi'
     SINGULARNAME: Permesso
     UserPermissionsIntro: 'Assegnando gruppi a questo utente modificherà i suoi permessi. Vedi la sezione gruppi per dettagli sui permessi dei singoli gruppi.'
+    db_Arg: Argomento
+    db_Code: Codice
     db_Type: Tipo
     has_one_Group: Gruppo
   SilverStripe\Security\PermissionCheckboxSetField:
@@ -359,6 +455,7 @@ it:
     belongs_many_many_Groups: Gruppi
     db_OnlyAdminCanApply: "Solo l'amministratore può applicare"
     db_Title: Titolo
+    has_many_Codes: Codici
   SilverStripe\Security\PermissionRoleCode:
     PLURALNAME: 'Codici di ruolo'
     PLURALS:
@@ -367,6 +464,7 @@ it:
       other: '{count} codici di ruolo'
     PermsError: 'Non posso assegnare permessi privilegiati al codice "{code}" (richiede accesso ADMIN)'
     SINGULARNAME: 'Codice di ruolo'
+    db_Code: Codice
     has_one_Role: Ruolo
   SilverStripe\Security\RememberLoginHash:
     PLURALNAME: 'Hash di Login'
@@ -375,6 +473,9 @@ it:
       one: 'Un Hash di Login'
       other: '{count} Hash di Login'
     SINGULARNAME: 'Hash di Login'
+    db_DeviceID: 'ID dispositivo'
+    db_ExpiryDate: 'Data scadenza'
+    has_one_LoginSession: 'Sessione di login'
     has_one_Member: Utente
   SilverStripe\Security\Security:
     ALREADYLOGGEDIN: 'Non hai accesso a questa pagina. Se hai un altro account che può accederci, puoi autenticarti qui sotto.'
