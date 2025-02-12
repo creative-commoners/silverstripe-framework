@@ -2840,4 +2840,56 @@ class DataObjectTest extends SapphireTest
         $this->expectExceptionMessage($expectedMessage);
         $record2->write();
     }
+
+    public static function provideProvideI18nEntities(): array
+    {
+        return [
+            'has-class-description' => [
+                'classDescription' => 'A fluffy cloud',
+                'expected' => true,
+            ],
+            'no-class-description' => [
+                'classDescription' => null,
+                'expected' => false,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideProvideI18nEntities
+     */
+    public function testProvideI18nEntities(?string $classDescription, bool $expected): void
+    {
+        $obj = new class extends DataObject {
+            public $classDescription;
+            public function singular_name()
+            {
+                return 'Cloud';
+            }
+            public function plural_name()
+            {
+                return 'Clouds';
+            }
+            public function classDescription()
+            {
+                return $this->classDescription;
+            }
+        };
+        $obj->classDescription = $classDescription;
+        $entities = $obj->provideI18nEntities();
+        // Fix up anonymous class keys
+        foreach ($entities as $key => $entity) {
+            unset($entities[$key]);
+            $newKey = preg_replace('#^.+?\.([A-Z_]+)$#', '$1', $key);
+            $entities[$newKey] = $entity;
+        }
+        $this->assertSame('Cloud', $entities['SINGULARNAME']);
+        $this->assertSame('Clouds', $entities['PLURALNAME']);
+        $this->assertSame(['one' => 'A Cloud', 'other' => '{count} Clouds'], $entities['PLURALS']);
+        if ($expected) {
+            $this->assertSame('A fluffy cloud', $entities['CLASS_DESCRIPTION']);
+        } else {
+            $this->assertFalse(array_key_exists('CLASS_DESCRIPTION', $entities));
+        }
+    }
 }
