@@ -25,6 +25,10 @@ en:
   SilverStripe\Control\RequestProcessor:
     INVALID_REQUEST: 'Invalid request'
     REQUEST_ABORTED: 'Request aborted'
+  SilverStripe\Dev\BulkLoader:
+    CANNOT_CREATE: "Not allowed to create '{type}' records"
+    CANNOT_DELETE: "Not allowed to delete '{type}' records"
+    CANNOT_EDIT: "Not allowed to edit '{type}' records"
   SilverStripe\Dev\DevBuildController:
     CAN_DEV_BUILD_DESCRIPTION: 'Can execute /dev/build'
     CAN_DEV_BUILD_HELP: 'Can execute the build command (/dev/build).'
@@ -167,6 +171,9 @@ en:
     INVALID: 'Please enter a valid URL'
   SilverStripe\ORM\DataObject:
     GENERALSEARCH: 'General Search'
+    NO_DUPLICATE: 'Cannot create duplicate {type}'
+    NO_DUPLICATE_MULTI_FIELD: 'Cannot create duplicate {type} - at least one of the following fields need to be changed: {fields}'
+    NO_DUPLICATE_SINGLE_FIELD: 'Cannot create duplicate {type} with "{field}" set to "{value}"'
     PLURALNAME: 'Data Objects'
     PLURALS:
       one: 'A Data Object'
