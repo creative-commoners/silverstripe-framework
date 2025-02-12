@@ -11,7 +11,6 @@ use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\Relation;
 use SilverStripe\Model\List\SS_List;
 use SilverStripe\ORM\FieldType\DBHTMLText;
@@ -379,7 +378,7 @@ trait SearchableDropdownTrait
         return [];
     }
 
-    public function saveInto(DataObjectInterface $record): void
+    public function saveInto(DataObject $record): void
     {
         $name = $this->getName();
         $ids = $this->getValueArray();

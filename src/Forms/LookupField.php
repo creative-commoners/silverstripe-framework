@@ -4,9 +4,9 @@ namespace SilverStripe\Forms;
 
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\ArrayLib;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Validation\FieldValidation\MultiOptionFieldValidator;
+use SilverStripe\ORM\DataObject;
 
 /**
  * Read-only complement of {@link MultiSelectField}.
@@ -73,9 +73,9 @@ class LookupField extends MultiSelectField
     /**
      * Stubbed so invalid data doesn't save into the DB
      *
-     * @param DataObjectInterface $record DataObject to save data into
+     * @param DataObject $record DataObject to save data into
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
     }
 

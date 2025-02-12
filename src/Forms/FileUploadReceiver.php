@@ -9,7 +9,6 @@ use SilverStripe\Assets\Storage\AssetContainer;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\Model\List\SS_List;
 use SilverStripe\ORM\UnsavedRelationList;
@@ -248,10 +247,10 @@ trait FileUploadReceiver
     }
 
     /**
-     * @param DataObject|DataObjectInterface $record
+     * @param DataObject $record
      * @return $this
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         // Check required relation details are available
         $fieldname = $this->getName();

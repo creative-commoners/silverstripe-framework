@@ -4,11 +4,11 @@ namespace SilverStripe\Forms;
 
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Validation\ValidationResult;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\Model\List\Map;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Validation\FieldValidation\OptionFieldValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\ORM\DataObject;
 
 /**
  * Read-only complement of {@link DropdownField}.
@@ -46,9 +46,9 @@ class SingleLookupField extends SingleSelectField
     /**
      * Stubbed so invalid data doesn't save into the DB
      *
-     * @param DataObjectInterface $record DataObject to save data into
+     * @param DataObject $record DataObject to save data into
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
     }
 

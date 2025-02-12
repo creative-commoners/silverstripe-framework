@@ -5,12 +5,12 @@ namespace SilverStripe\Forms\HTMLEditor;
 use SilverStripe\Assets\Shortcodes\ImageShortcodeProvider;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\TextareaField;
-use SilverStripe\ORM\DataObjectInterface;
 use Exception;
 use SilverStripe\Model\ModelData;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\View\CastingService;
 use SilverStripe\View\Parsers\HTMLValue;
+use SilverStripe\ORM\DataObject;
 
 /**
  * A TinyMCE-powered WYSIWYG HTML editor field with image and link insertion and tracking capabilities. Editor fields
@@ -126,7 +126,7 @@ class HTMLEditorField extends TextareaField
         );
     }
 
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         if (!$this->usesXmlFriendlyField($record)) {
             throw new Exception(
@@ -223,7 +223,7 @@ class HTMLEditorField extends TextareaField
         return $config;
     }
 
-    private function usesXmlFriendlyField(DataObjectInterface $record): bool
+    private function usesXmlFriendlyField(DataObject $record): bool
     {
         if ($record instanceof ModelData && !$record->hasField($this->getName())) {
             return true;

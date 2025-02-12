@@ -19,7 +19,6 @@ use SilverStripe\Forms\HiddenField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\ORM\HasManyList;
 use SilverStripe\ORM\ManyManyList;
@@ -101,7 +100,7 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
      *
      * @param GridField $gridField
      * @param GridFieldDetailForm $component
-     * @param ModelData&DataObjectInterface $record
+     * @param DataObject $record
      * @param RequestHandler $requestHandler
      * @param string $popupFormName
      */
@@ -431,8 +430,8 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
 
         if ($this->record->ID !== null && $this->record->ID !== 0) { // existing record
             if ($this->record->hasMethod('canEdit') && $this->record->canEdit()) {
-                if (!($this->record instanceof DataObjectInterface)) {
-                    throw new LogicException(get_class($this->record) . ' must implement ' . DataObjectInterface::class);
+                if (!($this->record instanceof DataObject)) {
+                    throw new LogicException(get_class($this->record) . ' must be an instance of ' . DataObject::class);
                 }
 
                 $noChangesClasses = 'btn-outline-primary font-icon-tick';
@@ -445,8 +444,8 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
             }
 
             if ($this->record->hasMethod('canDelete') && $this->record->canDelete()) {
-                if (!($this->record instanceof DataObjectInterface)) {
-                    throw new LogicException(get_class($this->record) . ' must implement ' . DataObjectInterface::class);
+                if (!($this->record instanceof DataObject)) {
+                    throw new LogicException(get_class($this->record) . ' must be an instance of ' . DataObject::class);
                 }
                 $actions->insertAfter('MajorActions', FormAction::create('doDelete', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Delete', 'Delete'))
                     ->setUseButtonTag(true)
@@ -786,7 +785,7 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
      * @param array $data
      * @param Form $form
      * @throws ValidationException On error
-     * @return ModelData&DataObjectInterface Saved record
+     * @return DataObject Saved record
      */
     protected function saveFormIntoRecord($data, $form)
     {

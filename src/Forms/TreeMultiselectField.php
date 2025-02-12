@@ -8,7 +8,6 @@ use SilverStripe\Core\Convert;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\ORM\Relation;
 use SilverStripe\Model\List\SS_List;
@@ -247,9 +246,9 @@ class TreeMultiselectField extends TreeDropdownField
      * Calls function $record->onChange($items) before saving to the assumed
      * Component set.
      *
-     * @param DataObjectInterface $record
+     * @param DataObject $record
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         $fieldName = $this->getName();
 

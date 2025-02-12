@@ -3,7 +3,6 @@
 namespace SilverStripe\Forms;
 
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBMultiEnum;
 use SilverStripe\ORM\Relation;
 use SilverStripe\Core\Validation\FieldValidation\MultiOptionFieldValidator;
@@ -111,9 +110,9 @@ abstract class MultiSelectField extends SelectField
     /**
      * Load the value from the dataobject into this field
      *
-     * @param DataObject|DataObjectInterface $record
+     * @param DataObject $record
      */
-    public function loadFrom(DataObjectInterface $record)
+    public function loadFrom(DataObject $record)
     {
         $fieldName = $this->getName();
         if (empty($fieldName) || empty($record)) {
@@ -150,9 +149,9 @@ abstract class MultiSelectField extends SelectField
      * it is saved by setByIDList(), otherwise it creates a comma separated
      * list for a standard DB text/varchar field.
      *
-     * @param DataObject|DataObjectInterface $record The record to save into
+     * @param DataObject $record The record to save into
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         $fieldName = $this->getName();
         if (empty($fieldName) || empty($record)) {

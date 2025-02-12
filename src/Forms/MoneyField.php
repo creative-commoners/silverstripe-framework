@@ -6,8 +6,8 @@ use InvalidArgumentException;
 use SilverStripe\Core\ArrayLib;
 use SilverStripe\Core\Validation\FieldValidation\CompositeFieldValidator;
 use SilverStripe\ORM\FieldType\DBMoney;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\Core\Validation\ValidationResult;
+use SilverStripe\ORM\DataObject;
 
 /**
  * A form field that can save into a {@link Money} database field.
@@ -234,9 +234,9 @@ class MoneyField extends FormField
      *
      * (see @link MoneyFieldTest_CustomSetter_Object for more information)
      *
-     * @param DataObjectInterface|Object $dataObject
+     * @param DataObject $dataObject
      */
-    public function saveInto(DataObjectInterface $dataObject)
+    public function saveInto(DataObject $dataObject)
     {
         $fieldName = $this->getName();
         if ($dataObject->hasMethod("set$fieldName")) {

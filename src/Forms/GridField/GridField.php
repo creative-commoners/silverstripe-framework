@@ -20,11 +20,11 @@ use SilverStripe\Forms\GridField\FormAction\SessionStore;
 use SilverStripe\Forms\GridField\FormAction\StateStore;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataList;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Model\List\SS_List;
 use SilverStripe\View\HTML;
 use SilverStripe\Model\ModelData;
+use SilverStripe\ORM\DataObject;
 
 /**
  * Displays a {@link SS_List} in a grid format.
@@ -1303,7 +1303,7 @@ class GridField extends FormField
     /**
      * {@inheritdoc}
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         foreach ($this->getComponents() as $component) {
             if ($component instanceof GridField_SaveHandler) {

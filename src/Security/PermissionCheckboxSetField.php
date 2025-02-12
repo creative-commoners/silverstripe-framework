@@ -7,7 +7,6 @@ use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\Model\List\SS_List;
 use Traversable;
 
@@ -289,10 +288,8 @@ class PermissionCheckboxSetField extends FormField
 
     /**
      * Update the permission set associated with $record DataObject
-     *
-     * @param DataObjectInterface $record
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         $fieldname = $this->name;
         $managedClass = $this->managedClass;

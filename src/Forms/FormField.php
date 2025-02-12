@@ -8,7 +8,6 @@ use SilverStripe\Control\Controller;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Convert;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Core\Validation\ValidationResult;
@@ -480,9 +479,9 @@ class FormField extends RequestHandler implements FieldValidationInterface
      *
      * By default, makes use of $this->dataValue()
      *
-     * @param DataObjectInterface $record Record to save data into
+     * @param DataObject $record Record to save data into
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         $component = $record;
         $fieldName = $this->name;

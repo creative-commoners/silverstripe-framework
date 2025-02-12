@@ -2,7 +2,7 @@
 
 namespace SilverStripe\Security;
 
-use SilverStripe\ORM\DataObjectInterface;
+use SilverStripe\ORM\DataObject;
 
 /**
  * Readonly version of a {@link PermissionCheckboxSetField} -
@@ -13,7 +13,7 @@ class PermissionCheckboxSetField_Readonly extends PermissionCheckboxSetField
 
     protected $readonly = true;
 
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         return false;
     }

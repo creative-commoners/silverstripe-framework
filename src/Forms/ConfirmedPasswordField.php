@@ -4,7 +4,6 @@ namespace SilverStripe\Forms;
 
 use LogicException;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Security\Authenticator;
 use SilverStripe\Security\Security;
@@ -565,7 +564,7 @@ class ConfirmedPasswordField extends FormField
     /**
      * Only save if field was shown on the client, and is not empty or random password generation is enabled
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         if (!$this->isSaveable()) {
             return;

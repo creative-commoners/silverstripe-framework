@@ -113,7 +113,7 @@ use stdClass;
  * @property string $Created Date and time of DataObject creation.
  * @property string $ObsoleteClassName If ClassName no longer exists this will be set to the legacy value
  */
-class DataObject extends ModelData implements DataObjectInterface, i18nEntityProvider, Resettable, ValidationInterface
+class DataObject extends ModelData implements i18nEntityProvider, Resettable, ValidationInterface
 {
     /**
      * Human-readable singular name.

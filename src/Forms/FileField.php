@@ -6,7 +6,6 @@ use SilverStripe\Assets\File;
 use SilverStripe\Control\HTTP;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\Core\Validation\ValidationResult;
 
 /**
@@ -127,9 +126,9 @@ class FileField extends FormField implements FileHandleField
     }
 
     /**
-     * @param DataObject|DataObjectInterface $record
+     * @param DataObject $record
      */
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObject $record)
     {
         if (!isset($_FILES[$this->name]['error']) || $_FILES[$this->name]['error'] == UPLOAD_ERR_NO_FILE) {
             return;

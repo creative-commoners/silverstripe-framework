@@ -13,7 +13,6 @@ use SilverStripe\Control\Session;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Validation\ValidationInterface;
-use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Security\NullSecurityToken;
@@ -22,6 +21,7 @@ use SilverStripe\View\AttributesHTML;
 use SilverStripe\View\SSViewer;
 use SilverStripe\Model\ModelData;
 use SilverStripe\Forms\Validation\Validator;
+use SilverStripe\ORM\DataObject;
 
 /**
  * Base class for all forms.
@@ -1477,11 +1477,11 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      * Save the contents of this form into the given data object.
      * It will make use of setCastedField() to do this.
      *
-     * @param ModelData&DataObjectInterface $dataObject The object to save data into
+     * @param DataObject $dataObject The object to save data into
      * @param array<string>|null $fieldList An optional list of fields to process.  This can be useful when you have a
      * form that has some fields that save to one object, and some that save to another.
      */
-    public function saveInto(DataObjectInterface $dataObject, $fieldList = null)
+    public function saveInto(DataObject $dataObject, $fieldList = null)
     {
         $form = $this;
         $dataObject->invokeWithExtensions('onBeforeFormSaveInto', $form, $fieldList);
