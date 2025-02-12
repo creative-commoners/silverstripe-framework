@@ -7,6 +7,8 @@ namespace SilverStripe\ORM;
  * a manner similar to DataObject.
  *
  * In addition to the methods defined below, the data of the object should be directly accessible as fields.
+ *
+ * @deprecated 5.4.0 Will be removed without equivalent functionality to replace it
  */
 interface DataObjectInterface
 {
