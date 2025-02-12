@@ -128,7 +128,7 @@ class ValidationExceptionTest extends SapphireTest
             'message' => 'Error inferred from message',
             'messageCast' => ValidationResult::CAST_TEXT,
             'messageType' => ValidationResult::TYPE_ERROR,
-            'fieldName' => null,
+            'fieldName' => '',
             'modelClass' => '',
             'recordID' => null,
         ], $exception->getResult()->getMessages());

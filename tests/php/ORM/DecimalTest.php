@@ -97,6 +97,6 @@ class DecimalTest extends SapphireTest
         $this->assertEquals(3, $field->getScale());
         $field->setValue(1.9999);
         $this->assertEquals(1.9999, $field->dataValue());
-        $this->assertEquals('2.000', $field->Value());
+        $this->assertEquals('2.000', $field->getFormattedValue());
     }
 }

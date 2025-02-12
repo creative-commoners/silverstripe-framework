@@ -23,13 +23,17 @@ class TimeFieldTest extends SapphireTest
     public function testConstructorWithoutArgs()
     {
         $f = new TimeField('Time');
-        $this->assertEquals($f->dataValue(), null);
+        $this->assertSame('', $f->dataValue());
+        $this->assertSame('00:00:00', $f->getFormattedValue());
     }
 
     public function testConstructorWithString()
     {
         $f = new TimeField('Time', 'Time', '23:00:00');
-        $this->assertEquals($f->dataValue(), '23:00:00');
+        $this->assertSame('23:00:00', $f->dataValue());
+        $f->setLocale('de_DE');
+        $f->setHTML5(false);
+        $this->assertSame('23:00:00', $f->getFormattedValue());
     }
 
     public function testValidate()
@@ -65,39 +69,36 @@ class TimeFieldTest extends SapphireTest
         $f->setHTML5(false);
         $f->setLocale('fr_FR');
         $f->setValue('23:59');
-        $this->assertEquals($f->dataValue(), '23:59:00');
+        $this->assertSame('23:59:00', $f->dataValue());
     }
 
     public function testSetValueWithUseStrToTime()
     {
         $f = new TimeField('Time', 'Time');
         $f->setValue('11pm');
-        $this->assertEquals(
-            $f->dataValue(),
-            '23:00:00',
-            'Setting value to "11pm" parses with strtotime enabled'
-        );
+        // Setting value to "11pm" parses with strtotime enabled
+        $this->assertSame('23:00:00', $f->dataValue());
         $this->assertTrue($f->validate()->isValid());
 
         $f = new TimeField('Time', 'Time');
         $f->setValue('11:59pm');
-        $this->assertEquals('23:59:00', $f->dataValue());
+        $this->assertSame('23:59:00', $f->dataValue());
 
         $f = new TimeField('Time', 'Time');
         $f->setValue('11:59 pm');
-        $this->assertEquals('23:59:00', $f->dataValue());
+        $this->assertSame('23:59:00', $f->dataValue());
 
         $f = new TimeField('Time', 'Time');
         $f->setValue('23:59');
-        $this->assertEquals('23:59:00', $f->dataValue());
+        $this->assertSame('23:59:00', $f->dataValue());
 
         $f = new TimeField('Time', 'Time');
         $f->setValue('23:59:38');
-        $this->assertEquals('23:59:38', $f->dataValue());
+        $this->assertSame('23:59:38', $f->dataValue());
 
         $f = new TimeField('Time', 'Time');
         $f->setValue('12:00 am');
-        $this->assertEquals($f->dataValue(), '00:00:00');
+        $this->assertSame('00:00:00', $f->dataValue());
     }
 
     public function testOverrideWithNull()
@@ -105,7 +106,7 @@ class TimeFieldTest extends SapphireTest
         $field = new TimeField('Time', 'Time');
         $field->setValue('11:00:00');
         $field->setValue('');
-        $this->assertEquals($field->dataValue(), '');
+        $this->assertSame('', $field->dataValue());
     }
 
     /**
@@ -113,7 +114,6 @@ class TimeFieldTest extends SapphireTest
      */
     public function testSetTimeFormat()
     {
-
         // Test with timeformat that includes hour
 
         // Check pm
@@ -121,35 +121,35 @@ class TimeFieldTest extends SapphireTest
         $f->setHTML5(false);
         $f->setTimeFormat('h:mm:ss a');
         $f->setValue('3:59 pm');
-        $this->assertEquals($f->dataValue(), '15:59:00');
+        $this->assertSame('15:59:00', $f->dataValue());
 
         // Check am
         $f = new TimeField('Time', 'Time');
         $f->setHTML5(false);
         $f->setTimeFormat('h:mm:ss a');
         $f->setValue('3:59 am');
-        $this->assertEquals($f->dataValue(), '03:59:00');
+        $this->assertSame('03:59:00', $f->dataValue());
 
         // Check with ISO date/time
         $f = new TimeField('Time', 'Time');
         $f->setHTML5(false);
         $f->setTimeFormat('h:mm:ss a');
         $f->setValue('15:59:00');
-        $this->assertEquals($f->dataValue(), '15:59:00');
+        $this->assertSame('15:59:00', $f->dataValue());
 
         // ISO am
         $f = new TimeField('Time', 'Time');
         $f->setHTML5(false);
         $f->setTimeFormat('h:mm:ss a');
         $f->setValue('03:59:00');
-        $this->assertEquals($f->dataValue(), '03:59:00');
+        $this->assertSame('03:59:00', $f->dataValue());
     }
 
     public function testLenientSubmissionParseWithoutSecondsOnHtml5()
     {
         $f = new TimeField('Time', 'Time');
         $f->setSubmittedValue('23:59');
-        $this->assertEquals($f->Value(), '23:59:00');
+        $this->assertSame('23:59:00', $f->getFormattedValue());
     }
 
     public function testHtml5WithCustomFormatThrowsException()
@@ -159,7 +159,7 @@ class TimeFieldTest extends SapphireTest
         $f = new TimeField('Time', 'Time');
         $f->setValue('15:59:00');
         $f->setTimeFormat('mm:HH');
-        $f->Value();
+        $f->getFormattedValue();
     }
 
     public function testHtml5WithCustomDateLengthThrowsException()
@@ -169,7 +169,7 @@ class TimeFieldTest extends SapphireTest
         $f = new TimeField('Time', 'Time');
         $f->setValue('15:59:00');
         $f->setTimeLength(IntlDateFormatter::MEDIUM);
-        $f->Value();
+        $f->getFormattedValue();
     }
 
     public function testHtml5WithCustomLocaleThrowsException()
@@ -179,7 +179,7 @@ class TimeFieldTest extends SapphireTest
         $f = new TimeField('Time', 'Time');
         $f->setValue('15:59:00');
         $f->setLocale('de_DE');
-        $f->Value();
+        $f->getFormattedValue();
     }
 
     public static function provideTidyInternal(): array
@@ -225,6 +225,6 @@ class TimeFieldTest extends SapphireTest
         $method = new ReflectionMethod($field, 'tidyInternal');
         $method->setAccessible(true);
         $actual = $method->invoke($field, $time, $returnNullOnFailure);
-        $this->assertEquals($expected, $actual);
+        $this->assertSame($expected, $actual);
     }
 }

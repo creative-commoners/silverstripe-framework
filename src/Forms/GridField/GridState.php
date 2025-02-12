@@ -101,10 +101,8 @@ class GridState extends HiddenField
 
     /**
      * Returns a json encoded string representation of this state.
-     *
-     * @return string
      */
-    public function Value()
+    public function getValue(): string
     {
         $data = $this->data ? $this->data->getChangesArray() : [];
         return json_encode($data, JSON_FORCE_OBJECT);
@@ -117,7 +115,7 @@ class GridState extends HiddenField
      */
     public function dataValue()
     {
-        return $this->Value();
+        return $this->getValue();
     }
 
     /**
@@ -126,11 +124,11 @@ class GridState extends HiddenField
      */
     public function attrValue()
     {
-        return Convert::raw2att($this->Value());
+        return Convert::raw2att($this->getValue());
     }
 
     public function __toString()
     {
-        return $this->Value();
+        return $this->getValue();
     }
 }

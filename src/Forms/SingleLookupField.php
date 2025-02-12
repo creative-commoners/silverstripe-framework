@@ -83,14 +83,13 @@ class SingleLookupField extends SingleSelectField
      *
      * @return mixed
      */
-    public function Value()
+    public function getFormattedValue(): mixed
     {
         $label = $this->valueToLabel();
         if (!is_null($label)) {
             return $label;
         }
-
-        return parent::Value();
+        return parent::getFormattedValue();
     }
 
     /**

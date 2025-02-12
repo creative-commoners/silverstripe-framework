@@ -74,22 +74,22 @@ class TextareaFieldTest extends SapphireTest
         $this->assertTrue($field->validate()->isValid());
     }
 
-    public function testValueEntities()
+    public function testFormattedValueEntities()
     {
         $inputText = "These <b>are</b> some unicodes: äöü";
         $field = new TextareaField("Test", "Test");
         $field->setValue($inputText);
 
-        // Value should be safe-encoding only, but ValueEntities should be more aggressive
+        // Value should be safe-encoding only, but FormattedValueEntities should be more aggressive
         $this->assertEquals(
             "These &lt;b&gt;are&lt;/b&gt; some unicodes: &auml;&ouml;&uuml;",
-            $field->obj('ValueEntities')->forTemplate()
+            $field->obj('FormattedValueEntities')->forTemplate()
         );
 
         // Shortcodes are disabled
         $this->assertEquals(
             false,
-            $field->obj('ValueEntities')->getProcessShortcodes()
+            $field->obj('FormattedValueEntities')->getProcessShortcodes()
         );
     }
 

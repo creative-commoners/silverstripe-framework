@@ -169,7 +169,7 @@ class NumericField extends TextField
      *
      * @return string
      */
-    public function Value()
+    public function getFormattedValue(): mixed
     {
         // Show invalid value back to user in case of error
         if ($this->value === null || $this->value === false) {

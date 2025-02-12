@@ -10,8 +10,10 @@ namespace SilverStripe\Forms;
 class HTMLReadonlyField extends ReadonlyField
 {
     private static $casting = [
-        'Value' => 'HTMLFragment',
-        'ValueEntities' => 'HTMLFragment',
+        'FormattedValue' => 'HTMLFragment',
+        'getFormattedValue' => 'HTMLFragment',
+        'FormattedValueEntities' => 'HTMLFragment',
+        'getFormattedValueEntities' => 'HTMLFragment',
     ];
 
     protected $schemaDataType = HTMLReadonlyField::SCHEMA_DATA_TYPE_STRUCTURAL;
@@ -27,12 +29,12 @@ class HTMLReadonlyField extends ReadonlyField
     }
 
     /**
-     * Return value with all values encoded in html entities
+     * Return formatted value with all values encoded in html entities
      *
      * @return string Raw HTML
      */
-    public function ValueEntities()
+    public function getFormattedValueEntities()
     {
-        return htmlentities($this->Value() ?? '', ENT_COMPAT, 'UTF-8');
+        return htmlentities($this->getFormattedValue() ?? '', ENT_COMPAT, 'UTF-8');
     }
 }

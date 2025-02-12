@@ -182,7 +182,7 @@ class ValidationResult
         string $cast = ValidationResult::CAST_TEXT,
     ): static {
         if ($code && is_numeric($code)) {
-            throw new InvalidArgumentException("Don't use a numeric code '$code'. Use a string.");
+            throw new InvalidArgumentException("Don't use a numeric code '$code'. Use a non-numeric code instead.");
         }
         $metadata = [
             'message' => $message,

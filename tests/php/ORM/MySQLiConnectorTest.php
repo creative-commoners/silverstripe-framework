@@ -237,9 +237,7 @@ class MySQLiConnectorTest extends SapphireTest implements TestOnly
         $connector->preparedQuery('INSERT INTO duplicate_entry_table (Title, Name) VALUES (?, ?);', ['My Title', 'My Name']);
     }
 
-    /**
-     * @dataProvider provideQueryThrowsException
-     */
+    #[DataProvider('provideQueryThrowsException')]
     public function testPrepareStatementThrowsDatabaseError(int $reportMode): void
     {
         $connector = $this->getConnector();

@@ -216,9 +216,9 @@ class NumericFieldTest extends SapphireTest
         }
         $field->setScale($scale);
         $field->setValue($input);
-        $this->assertSame($expDataValue, $field->dataValue(), 'dataValue()');
-        $this->assertSame($expValue, $field->Value(), 'Value()');
-        $this->assertTrue($field->validate()->isValid(), 'isValid()');
+        $this->assertSame($expDataValue, $field->dataValue());
+        $this->assertSame($expValue, $field->getFormattedValue());
+        $this->assertTrue($field->validate()->isValid());
     }
 
     public function testReadonly()
@@ -244,13 +244,13 @@ class NumericFieldTest extends SapphireTest
     {
         $field = new NumericField('Number');
         $field->setValue('');
-        $this->assertEquals('', $field->Value());
+        $this->assertEquals('', $field->getFormattedValue());
         $this->assertNull($field->dataValue());
         $field->setValue(null);
-        $this->assertNull($field->Value());
+        $this->assertNull($field->getFormattedValue());
         $this->assertNull($field->dataValue());
         $field->setValue(0);
-        $this->assertEquals(0, $field->Value());
+        $this->assertEquals(0, $field->getFormattedValue());
         $this->assertEquals(0, $field->dataValue());
     }
 
@@ -615,7 +615,7 @@ class NumericFieldTest extends SapphireTest
         if (!$cleanedInput) {
             $cleanedInput = $submittedValue;
         }
-        $this->assertSame($cleanedInput, $field->Value(), 'Value()');
+        $this->assertSame($cleanedInput, $field->getFormattedValue(), 'getFormattedValue()');
     }
 
     public static function provideDataType(): array
@@ -625,6 +625,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => 3,
                 'scale' => 0,
                 'expValue' => '3',
+                'expFormattedValue' => '3',
                 'expValueForValidation' => '3',
                 'expDataValue' => '3',
             ],
@@ -632,6 +633,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => 3,
                 'scale' => 1,
                 'expValue' => '3',
+                'expFormattedValue' => '3.0',
                 'expValueForValidation' => '3',
                 'expDataValue' => '3',
             ],
@@ -639,6 +641,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => 3.4,
                 'scale' => 0,
                 'expValue' => '3',
+                'expFormattedValue' => '3',
                 'expValueForValidation' => '3',
                 'expDataValue' => '3',
             ],
@@ -646,6 +649,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => 3.4,
                 'scale' => 1,
                 'expValue' => '3.4',
+                'expFormattedValue' => '3.4',
                 'expValueForValidation' => '3.4',
                 'expDataValue' => '3.4',
             ],
@@ -653,6 +657,8 @@ class NumericFieldTest extends SapphireTest
                 'value' => '3',
                 'scale' => 0,
                 'expValue' => '3',
+                'expValue' => '3',
+                'expFormattedValue' => '3',
                 'expValueForValidation' => '3',
                 'expDataValue' => '3',
             ],
@@ -660,6 +666,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => '3',
                 'scale' => 1,
                 'expValue' => '3',
+                'expFormattedValue' => '3.0',
                 'expValueForValidation' => '3',
                 'expDataValue' => '3',
             ],
@@ -667,6 +674,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => '3.4',
                 'scale' => 0,
                 'expValue' => '3',
+                'expFormattedValue' => '3',
                 'expValueForValidation' => '3',
                 'expDataValue' => '3',
             ],
@@ -674,6 +682,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => '3.4',
                 'scale' => 1,
                 'expValue' => '3.4',
+                'expFormattedValue' => '3.4',
                 'expValueForValidation' => '3.4',
                 'expDataValue' => '3.4',
             ],
@@ -681,6 +690,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => null,
                 'scale' => 0,
                 'expValue' => null,
+                'expFormattedValue' => null,
                 'expValueForValidation' => null,
                 'expDataValue' => null,
             ],
@@ -688,6 +698,7 @@ class NumericFieldTest extends SapphireTest
                 'value' => true,
                 'scale' => 0,
                 'expValue' => true,
+                'expFormattedValue' => '1',
                 'expValueForValidation' => true,
                 'expDataValue' => true,
             ],
@@ -699,6 +710,7 @@ class NumericFieldTest extends SapphireTest
         mixed $value,
         int $scale,
         mixed $expValue,
+        mixed $expFormattedValue,
         mixed $expValueForValidation,
         mixed $expDataValue
     ): void {
@@ -706,6 +718,7 @@ class NumericFieldTest extends SapphireTest
         $field->setScale($scale);
         $field->setValue($value);
         $this->assertSame($expValue, $field->getValue(), 'getValue()');
+        $this->assertSame($expFormattedValue, $field->getFormattedValue(), 'getFormattedValue()');
         $this->assertSame($expValueForValidation, $field->getValueForValidation(), 'getValueForValidation()');
         $this->assertSame($expDataValue, $field->dataValue(), 'dataValue()');
     }

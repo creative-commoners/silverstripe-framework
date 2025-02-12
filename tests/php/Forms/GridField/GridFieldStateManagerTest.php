@@ -44,14 +44,14 @@ class GridFieldStateManagerTest extends SapphireTest
         $grid = new GridField('TestGrid');
         $grid->getState()->testValue = 'foo';
         $link = '/link-to/something';
-        $state = $grid->getState(false)->Value();
+        $state = $grid->getState(false)->getValue();
         $this->assertEquals(
             '/link-to/something?gridState-TestGrid-0=' . urlencode($state ?? ''),
             $manager->addStateToURL($grid, $link)
         );
 
         $link = '/link-to/something-else?someParam=somevalue';
-        $state = $grid->getState(false)->Value();
+        $state = $grid->getState(false)->getValue();
         $this->assertEquals(
             '/link-to/something-else?someParam=somevalue&gridState-TestGrid-0=' . urlencode($state ?? ''),
             $manager->addStateToURL($grid, $link)
@@ -67,7 +67,7 @@ class GridFieldStateManagerTest extends SapphireTest
         $grid->setForm($form);
 
         $grid->getState()->testValue = 'foo';
-        $state = urlencode($grid->getState(false)->Value() ?? '');
+        $state = urlencode($grid->getState(false)->getValue() ?? '');
         $request = new HTTPRequest(
             'GET',
             '/link-to/something',
@@ -87,7 +87,7 @@ class GridFieldStateManagerTest extends SapphireTest
         $grid->getState()->initDefaults(['testValue' => 'foo']);
         $link = '/link-to/something';
 
-        $this->assertEquals('{}', $grid->getState(false)->Value());
+        $this->assertEquals('{}', $grid->getState(false)->getValue());
 
         $this->assertEquals(
             '/link-to/something',

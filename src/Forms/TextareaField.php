@@ -34,8 +34,10 @@ class TextareaField extends FormField
      * @var array
      */
     private static $casting = [
-        'Value' => 'Text',
-        'ValueEntities' => 'HTMLFragment([\'shortcodes\' => false])',
+        'FormattedValue' => 'Text',
+        'getFormattedValue' => 'Text',
+        'FormattedValueEntities' => 'HTMLFragment([\'shortcodes\' => false])',
+        'getFormattedValueEntities' => 'HTMLFragment([\'shortcodes\' => false])',
     ];
 
     protected $schemaDataType = FormField::SCHEMA_DATA_TYPE_TEXT;
@@ -190,11 +192,9 @@ class TextareaField extends FormField
      * Return value with all values encoded in html entities
      *
      * @return string Raw HTML
-     * @deprecated 5.4.0 Use getFormattedValueEntities() instead
      */
-    public function ValueEntities()
+    public function getFormattedValueEntities(): string
     {
-        Deprecation::noticeWithNoReplacment('5.4.0', 'Will be replaced by getFormattedValueEntities()');
-        return htmlentities($this->Value() ?? '', ENT_COMPAT, 'UTF-8');
+        return htmlentities($this->getFormattedValue() ?? '', ENT_COMPAT, 'UTF-8');
     }
 }

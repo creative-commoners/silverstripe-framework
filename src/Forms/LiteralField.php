@@ -18,7 +18,8 @@ class LiteralField extends DatalessField
 {
 
     private static $casting = [
-        'Value' => 'HTMLFragment',
+        'FormattedValue' => 'HTMLFragment',
+        'getFormattedValue' => 'HTMLFragment',
     ];
 
     /**

@@ -70,10 +70,9 @@ class DatetimeFieldTest extends SapphireTest
     public function testDataValue()
     {
         $f = new DatetimeField('Datetime');
-        $this->assertEquals(null, $f->dataValue(), 'Empty field');
-
+        $this->assertEquals(null, $f->dataValue());
         $f = new DatetimeField('Datetime', null, '2003-03-29 23:59:38');
-        $this->assertEquals('2003-03-29 23:59:38', $f->dataValue(), 'From date/time string');
+        $this->assertEquals('2003-03-29 23:59:38', $f->dataValue());
     }
 
     public function testDataValueWithTimezone()
@@ -84,14 +83,14 @@ class DatetimeFieldTest extends SapphireTest
         $f = new DatetimeField('Datetime');
         $f->setTimezone('Pacific/Auckland');
         $f->setSubmittedValue('2003-01-30T23:59:38'); // frontend timezone (Auckland)
-        $this->assertEquals('2003-01-30 11:59:38', $f->dataValue()); // server timezone (Berlin)
+        $this->assertEquals('2003-01-30 11:59:38', $f->getValue()); // server timezone (Berlin)
     }
 
     public function testSetSubmittedValueNull()
     {
         $field = new DatetimeField('Datetime');
         $field->setSubmittedValue(false);
-        $this->assertNull($field->Value());
+        $this->assertNull($field->getFormattedValue());
     }
 
     public function testConstructorWithoutArgs()
@@ -100,43 +99,55 @@ class DatetimeFieldTest extends SapphireTest
         $this->assertEquals($f->dataValue(), null);
     }
 
-    public function testConstructorWithLocalizedDateSetsNullValue()
+    public function testConstructorWithLocalizedDate()
     {
         $f = new DatetimeField('Datetime', 'Datetime', '29/03/2003 23:59:38');
-        $this->assertNull($f->Value());
+        $this->assertSame('29/03/2003 23:59:38', $f->getValue());
+        $this->assertNull($f->getFormattedValue());
     }
 
     public function testConstructorWithIsoDate()
     {
         // used by Form->loadDataFrom()
         $f = new DatetimeField('Datetime', 'Datetime', '2003-03-29 23:59:38');
-        $this->assertEquals($f->dataValue(), '2003-03-29 23:59:38');
+        $this->assertSame('2003-03-29 23:59:38', $f->getValue());
+        $this->assertSame('2003-03-29T23:59:38', $f->getFormattedValue());
     }
 
     public function testSetValueWithDateTimeString()
     {
+        // ISO
         $f = new DatetimeField('Datetime', 'Datetime');
         $f->setValue('2003-03-29 23:59:38');
-        $this->assertEquals('2003-03-29 23:59:38', $f->dataValue(), 'Accepts ISO');
+        $this->assertEquals('2003-03-29 23:59:38', $f->getValue());
+        $this->assertEquals('2003-03-29T23:59:38', $f->getFormattedValue());
 
+        // Normalised ISO
         $f = new DatetimeField('Datetime', 'Datetime');
         $f->setValue('2003-03-29T23:59:38');
-        $this->assertEquals('2003-03-29 23:59:38', $f->dataValue(), 'Accepts normalised ISO');
+        $this->assertEquals('2003-03-29 23:59:38', $f->getValue());
+        $this->assertEquals('2003-03-29T23:59:38', $f->getFormattedValue());
 
+        // Null
         $f = new DatetimeField('Datetime', 'Datetime');
         $f->setValue(null);
-        $this->assertEquals(null, $f->dataValue());
+        $this->assertEquals(null, $f->getValue());
+        $this->assertEquals('', $f->getFormattedValue());
     }
 
     public function testSubmittedValue()
     {
+        // ISO
         $datetimeField = new DatetimeField('Datetime', 'Datetime');
         $datetimeField->setSubmittedValue('2003-03-29 23:00:00');
-        $this->assertEquals($datetimeField->dataValue(), '2003-03-29 23:00:00');
+        $this->assertEquals('2003-03-29 23:00:00', $datetimeField->getValue());
+        $this->assertEquals('2003-03-29T23:00:00', $datetimeField->getFormattedValue());
 
+        // Normalised ISO
         $datetimeField = new DatetimeField('Datetime', 'Datetime');
         $datetimeField->setSubmittedValue('2003-03-29T23:00:00');
-        $this->assertEquals($datetimeField->dataValue(), '2003-03-29 23:00:00', 'Normalised ISO');
+        $this->assertEquals('2003-03-29 23:00:00', $datetimeField->getValue());
+        $this->assertEquals('2003-03-29T23:00:00', $datetimeField->getFormattedValue());
     }
 
     public function testSetValueWithLocalised()
@@ -153,7 +164,7 @@ class DatetimeFieldTest extends SapphireTest
         // Some localisation packages exclude the ',' in default medium format
         $this->assertMatchesRegularExpression(
             '#29.03.2003(,)? 23:00:00#',
-            $datetimeField->Value(),
+            $datetimeField->getFormattedValue(),
             'User value is formatted, and in user timezone'
         );
     }
@@ -353,7 +364,7 @@ class DatetimeFieldTest extends SapphireTest
         $datetimeField->setValue('2003-12-24 23:59:59');
         $this->assertEquals(
             '25/12/2003 11:59:59',
-            $datetimeField->Value(),
+            $datetimeField->getFormattedValue(),
             'User value is formatted, and in user timezone'
         );
 
@@ -374,7 +385,7 @@ class DatetimeFieldTest extends SapphireTest
         $datetimeField->setValue('2003-12-24 23:59:59');
         $this->assertEquals(
             '2003-12-25T11:59:59',
-            $datetimeField->Value(),
+            $datetimeField->getFormattedValue(),
             'User value is in normalised ISO format and in user timezone'
         );
 

@@ -237,11 +237,11 @@ trait FileUploadReceiver
      */
     public function getItemIDs()
     {
-        $value = $this->Value();
+        $value = $this->getValue();
         return empty($value['Files']) ? [] : $value['Files'];
     }
 
-    public function Value()
+    public function getValue(): mixed
     {
         // Re-override FileField Value to use data value
         return $this->dataValue();

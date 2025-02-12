@@ -31,7 +31,6 @@ class ListboxFieldTest extends SapphireTest
         $tag3 = $this->objFromFixture(Tag::class, 'tag3');
         $field = new ListboxField("Tags", "Test field", DataObject::get(Tag::class)->map()->toArray());
         $field->setValue(null, $articleWithTags);
-
         $p = new CSSContentParser($field->Field());
         $tag1xml = $p->getByXpath('//option[@value=' . $tag1->ID . ']');
         $tag2xml = $p->getByXpath('//option[@value=' . $tag2->ID . ']');
@@ -115,7 +114,7 @@ class ListboxFieldTest extends SapphireTest
         $obj2 = new TestObject();
         $obj2->Choices = '["a","c"]';
         $field->setValue(null, $obj2);
-        $this->assertEquals(['a', 'c'], $field->Value());
+        $this->assertEquals(['a', 'c'], $field->getValue());
         $field->saveInto($obj2);
         $this->assertEquals('["a","c"]', $obj2->Choices);
     }

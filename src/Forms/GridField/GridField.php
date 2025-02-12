@@ -485,7 +485,7 @@ class GridField extends FormField
             // Create a dummy state so that we can merge the current state with the request state.
             $newState = new GridState($this, $stateStr);
             // Put the current state on top of the request state.
-            $newState->setValue($oldState->Value());
+            $newState->setValue($oldState->getValue());
             $this->state = $newState;
         }
     }

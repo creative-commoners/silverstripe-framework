@@ -25,6 +25,7 @@ class ValidationResultTest extends SapphireTest
             ValidationResult::CAST_HTML,
         );
         $serialised = serialize($result);
+
         /** @var ValidationResult $result2 */
         $result2 = unserialize($serialised ?? '');
         $this->assertEquals(

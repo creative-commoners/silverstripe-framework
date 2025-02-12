@@ -30,7 +30,7 @@ class CheckboxFieldTest extends SapphireTest
         $this->assertEquals($field->dataValue(), 1, 'dataValue() returns a 1');
 
         /* Value() returns 1 as well */
-        $this->assertEquals($field->Value(), 1, 'Value() returns a 1');
+        $this->assertEquals($field->getValue(), 1, 'getValue() returns a 1');
     }
 
     public function testFieldValueString()
@@ -43,7 +43,7 @@ class CheckboxFieldTest extends SapphireTest
         $this->assertEquals($field->dataValue(), 1, 'dataValue() returns a 1');
 
         /* Value() returns 1 as well */
-        $this->assertEquals($field->Value(), 1, 'Value() returns a 1');
+        $this->assertEquals($field->getValue(), 1, 'getValue() returns a 1');
     }
 
     public function testFieldValueSettingNull()
@@ -56,7 +56,7 @@ class CheckboxFieldTest extends SapphireTest
         $this->assertEquals($field->dataValue(), null, 'dataValue() returns a 0');
 
         /* Value() returns 0 as well */
-        $this->assertEquals($field->Value(), 0, 'Value() returns a 0');
+        $this->assertEquals($field->getValue(), 0, 'getValue() returns a 0');
     }
 
     public function testFieldValueSettingFalse()
@@ -69,7 +69,7 @@ class CheckboxFieldTest extends SapphireTest
         $this->assertEquals($field->dataValue(), null, 'dataValue() returns a 0');
 
         /* Value() returns 0 as well */
-        $this->assertEquals($field->Value(), 0, 'Value() returns a 0');
+        $this->assertEquals($field->getValue(), 0, 'getValue() returns a 0');
     }
 
     public function testFieldValueWithoutSettingValue()
@@ -81,7 +81,7 @@ class CheckboxFieldTest extends SapphireTest
         $this->assertEquals($field->dataValue(), null, 'dataValue() returns a 0');
 
         /* Value() returns 0 as well */
-        $this->assertEquals($field->Value(), 0, 'Value() returns a 0');
+        $this->assertEquals($field->getValue(), 0, 'getValue() returns a 0');
     }
 
     public function testSavingChecked()

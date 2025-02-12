@@ -181,7 +181,7 @@ class CheckboxSetFieldTest extends SapphireTest
             new FieldList()
         );
         $form->loadDataFrom($articleWithTags);
-        $value = $field->Value();
+        $value = $field->getValue();
         sort($value);
         $this->assertEquals(
             [

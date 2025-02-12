@@ -39,7 +39,7 @@ class DateField_Disabled extends DateField
                 // Render the display value with some complement of info
                 $displayValue = Convert::raw2xml(sprintf(
                     $format ?? '',
-                    $this->Value(),
+                    $this->getFormattedValue(),
                     $infoComplement
                 ));
             }

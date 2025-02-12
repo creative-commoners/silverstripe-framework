@@ -124,56 +124,56 @@ class CurrencyFieldTest extends SapphireTest
         //tests with default currency symbol setting
         $f->setValue('123.45');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$123.45',
             'Prepends dollar sign to positive decimal'
         );
 
         $f->setValue('-123.45');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$-123.45',
             'Prepends dollar sign to negative decimal'
         );
 
         $f->setValue('$1');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$1.00',
             'Formats small value'
         );
 
         $f->setValue('$2.5');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$2.50',
             'Formats small value'
         );
 
         $f->setValue('$2500000.13');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$2,500,000.13',
             'Formats large value'
         );
 
         $f->setValue('$2.50000013');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$2.50',
             'Truncates long decimal portions'
         );
 
         $f->setValue('test123.00test');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$123.00',
             'Strips alpha values'
         );
 
         $f->setValue('test');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '$0.00',
             'Does not set alpha values'
         );
@@ -183,56 +183,56 @@ class CurrencyFieldTest extends SapphireTest
 
         $f->setValue('123.45');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€123.45',
             'Prepends dollar sign to positive decimal'
         );
 
         $f->setValue('-123.45');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€-123.45',
             'Prepends dollar sign to negative decimal'
         );
 
         $f->setValue('€1');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€1.00',
             'Formats small value'
         );
 
         $f->setValue('€2.5');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€2.50',
             'Formats small value'
         );
 
         $f->setValue('€2500000.13');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€2,500,000.13',
             'Formats large value'
         );
 
         $f->setValue('€2.50000013');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€2.50',
             'Truncates long decimal portions'
         );
 
         $f->setValue('test123.00test');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€123.00',
             'Strips alpha values'
         );
 
         $f->setValue('test');
         $this->assertEquals(
-            $f->Value(),
+            $f->getFormattedValue(),
             '€0.00',
             'Does not set alpha values'
         );

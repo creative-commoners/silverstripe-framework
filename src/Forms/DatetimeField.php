@@ -362,7 +362,7 @@ class DatetimeField extends TextField implements FieldValidatorConverterInterfac
      *
      * @return string
      */
-    public function Value()
+    public function getFormattedValue(): mixed
     {
         return $this->internalToFrontend($this->value);
     }

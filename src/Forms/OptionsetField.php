@@ -75,7 +75,7 @@ class OptionsetField extends SingleSelectField
             'Name' => $this->getOptionName(),
             'Value' => $value,
             'Title' => $title,
-            'isChecked' => $this->isSelectedValue($value, $this->Value()),
+            'isChecked' => $this->isSelectedValue($value, $this->getValue()),
             'isDisabled' => $this->isDisabledValue($value)
         ]);
     }

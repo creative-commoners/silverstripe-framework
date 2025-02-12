@@ -418,7 +418,7 @@ class DropdownFieldTest extends SapphireTest
         $field = $this->createDropdownField();
         $field->setValue($value);
         $this->assertInstanceOf('SilverStripe\\ORM\\FieldType\\DBHTMLText', $field->Field());
-        $this->assertSame($value, $field->Value());
+        $this->assertSame($value, $field->getValue());
     }
 
     /**

@@ -1,1 +1,1 @@
-<textarea $AttributesHTML>$ValueEntities.RAW</textarea>
+<textarea $AttributesHTML>$FormattedValueEntities.RAW</textarea>

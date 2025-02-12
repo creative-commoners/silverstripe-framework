@@ -865,7 +865,7 @@ class TreeDropdownField extends FormField implements HasOneRelationFieldInterfac
     {
         $data = parent::getSchemaStateDefaults();
         /** @var Hierarchy|DataObject $record */
-        $record = $this->Value() ? $this->objectForKey($this->Value()) : null;
+        $record = $this->getValue() ? $this->objectForKey($this->getValue()) : null;
 
         $data['data']['cacheKey'] = $this->getCacheKey();
         $data['data']['showSelectedPath'] = $this->getShowSelectedPath();
