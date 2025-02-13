@@ -10,7 +10,8 @@ use SilverStripe\Forms\HTMLReadonlyField;
 class HTMLEditorField_Readonly extends HTMLReadonlyField
 {
     private static $casting = [
-        'Value' => 'HTMLText',
+        'FormattedValue' => 'HTMLText',
+        'getFormattedValue' => 'HTMLText',
     ];
 
     public function Type()

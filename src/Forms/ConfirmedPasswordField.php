@@ -204,7 +204,7 @@ class ConfirmedPasswordField extends FormField
         }
 
         // Check if the field should be visible up front
-        $visible = $this->hiddenField->Value();
+        $visible = $this->hiddenField->getValue();
         $classes = $visible
             ? 'showOnClickContainer'
             : 'showOnClickContainer d-none';
@@ -418,7 +418,7 @@ class ConfirmedPasswordField extends FormField
     public function isSaveable()
     {
         return !$this->showOnClick
-            || ($this->showOnClick && $this->hiddenField && $this->hiddenField->Value());
+            || ($this->showOnClick && $this->hiddenField && $this->hiddenField->getValue());
     }
 
     public function validate(): ValidationResult
@@ -432,10 +432,10 @@ class ConfirmedPasswordField extends FormField
     
             $this->getPasswordField()->setValue($this->value);
             $this->getConfirmPasswordField()->setValue($this->confirmValue);
-            $value = $this->getPasswordField()->Value();
+            $value = $this->getPasswordField()->getValue();
     
             // both password-fields should be the same
-            if ($value != $this->getConfirmPasswordField()->Value()) {
+            if ($value != $this->getConfirmPasswordField()->getValue()) {
                 $result->addFieldError(
                     $name,
                     _t('SilverStripe\\Forms\\Form.VALIDATIONPASSWORDSDONTMATCH', "Passwords don't match"),
@@ -446,7 +446,7 @@ class ConfirmedPasswordField extends FormField
     
             if (!$this->canBeEmpty) {
                 // both password-fields shouldn't be empty
-                if (!$value || !$this->getConfirmPasswordField()->Value()) {
+                if (!$value || !$this->getConfirmPasswordField()->getValue()) {
                     $result->addFieldError(
                         $name,
                         _t('SilverStripe\\Forms\\Form.VALIDATIONPASSWORDSNOTEMPTY', "Passwords can't be empty"),

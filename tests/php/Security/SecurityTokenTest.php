@@ -147,7 +147,7 @@ class SecurityTokenTest extends SapphireTest
 
         $this->assertInstanceOf(HiddenField::class, $f);
         $this->assertEquals($f->getName(), $t->getName(), 'Name matches');
-        $this->assertEquals($f->Value(), $t->getValue(), 'Value matches');
+        $this->assertEquals($f->getValue(), $t->getValue(), 'Value matches');
     }
 
     public function testUpdateFieldSetDoesntAddTwice()

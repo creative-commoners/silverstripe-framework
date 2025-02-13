@@ -121,7 +121,7 @@ class TreeMultiselectField extends TreeDropdownField
      */
     public function getItems()
     {
-        $value = $this->Value();
+        $value = $this->getValue();
 
         // If unchanged, load from record
         if ($value === 'unchanged') {

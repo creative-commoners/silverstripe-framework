@@ -270,7 +270,8 @@ class FormField extends RequestHandler implements FieldValidationInterface
         'Field' => 'HTMLFragment',
         'AttributesHTML' => 'HTMLFragment', // property $AttributesHTML version
         'getAttributesHTML' => 'HTMLFragment', // method $getAttributesHTML($arg) version
-        'Value' => 'Text',
+        'FormattedValue' => 'Text',
+        'getFormattedValue' => 'Text',
         'extraClass' => 'Text',
         'ID' => 'Text',
         'isReadOnly' => 'Boolean',
@@ -458,14 +459,10 @@ class FormField extends RequestHandler implements FieldValidationInterface
     /**
      * Returns the value of the field which may be modified for display purposes
      * for instance to add localisation or formatting.
-     *
-     * @return mixed
-     * @deprecated 5.4.0 Will be replaced by getFormattedValue() and getValue()
      */
-    public function Value()
+    public function getFormattedValue(): mixed
     {
-        Deprecation::notice('5.4.0', 'Will be replaced by getFormattedValue() and getValue()');
-        return $this->value;
+        return $this->getValue();
     }
 
     /**
@@ -671,7 +668,7 @@ class FormField extends RequestHandler implements FieldValidationInterface
         $attributes = [
             'type' => $this->getInputType(),
             'name' => $this->getName(),
-            'value' => $this->Value(),
+            'value' => $this->getFormattedValue(),
             'class' => $this->extraClass(),
             'id' => $this->ID(),
             'disabled' => $this->isDisabled(),
@@ -951,16 +948,12 @@ class FormField extends RequestHandler implements FieldValidationInterface
             $context = $context->customise($properties);
         }
 
-        $result = $context->renderWith($context->getTemplates());
+        $dbHtmlText = $context->renderWith($context->getTemplates());
 
-        // Trim whitespace from the result, so that trailing newlines are suppressed. Works for strings and HTMLText values
-        if (is_string($result)) {
-            $result = trim($result ?? '');
-        } elseif ($result instanceof DBField) {
-            $result->setValue(trim($result->getValue() ?? ''));
-        }
+        // Trim whitespace from the result, so that trailing newlines are suppressed.
+        $dbHtmlText->setValue(trim($dbHtmlText->getValue() ?? ''));
 
-        return $result;
+        return $dbHtmlText;
     }
 
     /**
@@ -1557,7 +1550,7 @@ class FormField extends RequestHandler implements FieldValidationInterface
         $state = [
             'name' => $this->getName(),
             'id' => $this->ID(),
-            'value' => $this->Value(),
+            'value' => $this->getFormattedValue(),
             'message' => $this->getSchemaMessage(),
             'data' => [],
         ];

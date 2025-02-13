@@ -115,22 +115,22 @@ class DateFieldTest extends SapphireTest
         $this->assertEquals('2003-03-29', $f->dataValue());
     }
 
-    public function testSetValue()
+    public function testGetFormattedValue()
     {
         $f = (new DateField('Date', 'Date'))->setValue('notadate');
-        $this->assertNull($f->Value(), 'Invalid input ignored');
+        $this->assertNull($f->getFormattedValue());
 
         $f = (new DateField('Date', 'Date'))->setValue('-1 day');
-        $this->assertEquals($f->Value(), '2011-01-31', 'Relative dates accepted');
+        $this->assertSame('2011-01-31', $f->getFormattedValue());
 
         $f = (new DateField('Date', 'Date'))->setValue('2011-01-31');
-        $this->assertEquals($f->Value(), '2011-01-31', 'ISO format accepted');
+        $this->assertSame('2011-01-31', $f->getFormattedValue());
 
         $f = (new DateField('Date', 'Date'))->setValue('2011-01-31 23:59:59');
-        $this->assertEquals($f->Value(), '2011-01-31', 'ISO format with time accepted');
+        $this->assertSame('2011-01-31', $f->getFormattedValue());
 
         $f->setValue(null);
-        $this->assertNull($f->Value());
+        $this->assertNull($f->getFormattedValue());
     }
 
     public function testSetValueWithLocalisedDateString()
@@ -220,7 +220,7 @@ class DateFieldTest extends SapphireTest
         $dateField = new DateField('Date', 'Date');
         $dateField->setValue('2010-03-31');
         $dateField->setDateFormat('d/M/y');
-        $dateField->Value();
+        $dateField->getFormattedValue();
     }
 
     public function testHtml5WithCustomDateLengthThrowsException()
@@ -230,7 +230,7 @@ class DateFieldTest extends SapphireTest
         $dateField = new DateField('Date', 'Date');
         $dateField->setValue('2010-03-31');
         $dateField->setDateLength(IntlDateFormatter::MEDIUM);
-        $dateField->Value();
+        $dateField->getFormattedValue();
     }
 
     public function testHtml5WithCustomLocaleThrowsException()
@@ -240,7 +240,7 @@ class DateFieldTest extends SapphireTest
         $dateField = new DateField('Date', 'Date');
         $dateField->setValue('2010-03-31');
         $dateField->setLocale('de_DE');
-        $dateField->Value();
+        $dateField->getFormattedValue();
     }
 
     public function testGetDateFormatHTML5()
@@ -275,7 +275,7 @@ class DateFieldTest extends SapphireTest
     {
         $field = new DateField('Date');
         $field->setSubmittedValue(false);
-        $this->assertNull($field->Value());
+        $this->assertNull($field->getFormattedValue());
     }
 
     public function testPerformReadonlyTransformation()

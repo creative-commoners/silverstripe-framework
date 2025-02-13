@@ -216,7 +216,7 @@ EOS
         );
     }
 
-    public static function provideTestValueEntities()
+    public static function provideTestFormattedValueEntities()
     {
         return [
             "ampersand" => [
@@ -234,15 +234,15 @@ EOS
         ];
     }
 
-    #[DataProvider('provideTestValueEntities')]
-    public function testValueEntities(string $input, string $result)
+    #[DataProvider('provideTestFormattedValueEntities')]
+    public function testFormattedValueEntities(string $input, string $result)
     {
         $field = new HTMLEditorField("Content");
         $field->setValue($input);
 
         $this->assertEquals(
             $result,
-            $field->obj('ValueEntities')->forTemplate()
+            $field->obj('FormattedValueEntities')->forTemplate()
         );
     }
 

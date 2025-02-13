@@ -280,7 +280,7 @@ class TimeField extends TextField implements FieldValidatorConverterInterface
         return $this;
     }
 
-    public function Value()
+    public function getFormattedValue(): mixed
     {
         $localised = $this->internalToFrontend($this->value);
         if ($localised) {

@@ -13,7 +13,7 @@ class CheckboxField_Readonly extends ReadonlyField
         return clone $this;
     }
 
-    public function Value()
+    public function getFormattedValue(): mixed
     {
         return $this->value ?
             _t('SilverStripe\\Forms\\CheckboxField.YESANSWER', 'Yes') :

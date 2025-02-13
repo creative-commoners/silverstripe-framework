@@ -2,12 +2,23 @@
 
 namespace SilverStripe\Core\Tests\Validation;
 
+use ReflectionClass;
 use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Dev\SapphireTest;
+use SilverStripe\Core\Environment;
+use SilverStripe\Control\Controller;
+use SilverStripe\Dev\DevelopmentAdmin;
+use SilverStripe\Core\Tests\Validation\ValidationExceptionTest\TestObject;
+use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Forms\EmailField;
 
 class ValidationExceptionTest extends SapphireTest
 {
+    protected static $extra_dataobjects = [
+        TestObject::class
+    ];
+
     private function arrayContainsArray($expectedSubArray, $array)
     {
         foreach ($array as $subArray) {
@@ -16,6 +27,28 @@ class ValidationExceptionTest extends SapphireTest
             }
         }
         return false;
+    }
+
+    private ?bool $initialCliOverride = null;
+
+    private array $initialControllerStack = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $reflectionCli = new ReflectionClass(Environment::class);
+        $reflectionStack = new ReflectionClass(Controller::class);
+        $this->initialCliOverride = $reflectionCli->getStaticPropertyValue('isCliOverride');
+        $this->initialControllerStack = $reflectionStack->getStaticPropertyValue('controller_stack');
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $reflectionCli = new ReflectionClass(Environment::class);
+        $reflectionStack = new ReflectionClass(Controller::class);
+        $reflectionCli->setStaticPropertyValue('isCliOverride', $this->initialCliOverride);
+        $reflectionStack->setStaticPropertyValue('controller_stack', $this->initialControllerStack);
     }
 
     /**
@@ -35,7 +68,9 @@ class ValidationExceptionTest extends SapphireTest
             'message' => 'Not a valid result',
             'messageCast' => ValidationResult::CAST_TEXT,
             'messageType' => ValidationResult::TYPE_ERROR,
-            'fieldName' => null,
+            'fieldName' => '',
+            'modelClass' => '',
+            'recordID' => null,
         ], $exception->getResult()->getMessages());
         $this->assertTrue($b, 'Messages array should contain expected messaged');
     }
@@ -60,7 +95,9 @@ class ValidationExceptionTest extends SapphireTest
             'message' => 'Invalid type',
             'messageCast' => ValidationResult::CAST_TEXT,
             'messageType' => ValidationResult::TYPE_ERROR,
-            'fieldName' => null,
+            'fieldName' => '',
+            'modelClass' => '',
+            'recordID' => null,
         ], $exception->getResult()->getMessages());
         $this->assertTrue($b, 'Messages array should contain expected messaged');
 
@@ -68,7 +105,9 @@ class ValidationExceptionTest extends SapphireTest
             'message' => 'Out of kiwis',
             'messageCast' => ValidationResult::CAST_TEXT,
             'messageType' => ValidationResult::TYPE_ERROR,
-            'fieldName' => null,
+            'fieldName' => '',
+            'modelClass' => '',
+            'recordID' => null,
         ], $exception->getResult()->getMessages());
         $this->assertTrue($b, 'Messages array should contain expected messaged');
     }
@@ -89,7 +128,9 @@ class ValidationExceptionTest extends SapphireTest
             'message' => 'Error inferred from message',
             'messageCast' => ValidationResult::CAST_TEXT,
             'messageType' => ValidationResult::TYPE_ERROR,
-            'fieldName' => null,
+            'fieldName' => '',
+            'modelClass' => '',
+            'recordID' => null,
         ], $exception->getResult()->getMessages());
         $this->assertTrue($b, 'Messages array should contain expected messaged');
     }
@@ -113,7 +154,9 @@ class ValidationExceptionTest extends SapphireTest
             'message' => 'A spork is not a knife',
             'messageCast' => ValidationResult::CAST_TEXT,
             'messageType' => ValidationResult::TYPE_ERROR,
-            'fieldName' => null,
+            'fieldName' => '',
+            'modelClass' => '',
+            'recordID' => null,
         ], $exception->getResult()->getMessages());
         $this->assertTrue($b, 'Messages array should contain expected messaged');
 
@@ -121,7 +164,9 @@ class ValidationExceptionTest extends SapphireTest
             'message' => 'A knife is not a back scratcher',
             'messageCast' => ValidationResult::CAST_TEXT,
             'messageType' => ValidationResult::TYPE_ERROR,
-            'fieldName' => null,
+            'fieldName' => '',
+            'modelClass' => '',
+            'recordID' => null,
         ], $exception->getResult()->getMessages());
         $this->assertTrue($b, 'Messages array should contain expected messaged');
     }
@@ -135,7 +180,7 @@ class ValidationExceptionTest extends SapphireTest
         $anotherresult = new ValidationResult();
         $yetanotherresult = new ValidationResult();
         $anotherresult->addError("Eat with your mouth closed", 'bad', "EATING101");
-        $yetanotherresult->addError("You didn't wash your hands", 'bad', "BECLEAN", false);
+        $yetanotherresult->addError("You didn't wash your hands", 'bad', "BECLEAN", ValidationResult::CAST_HTML);
 
         $this->assertTrue($result->isValid());
         $this->assertFalse($anotherresult->isValid());
@@ -150,13 +195,17 @@ class ValidationExceptionTest extends SapphireTest
                     'message' => 'Eat with your mouth closed',
                     'messageType' => 'bad',
                     'messageCast' => ValidationResult::CAST_TEXT,
-                    'fieldName' => null,
+                    'fieldName' => '',
+                    'modelClass' => '',
+                    'recordID' => null,
                 ],
                 'BECLEAN' => [
                     'message' => 'You didn\'t wash your hands',
                     'messageType' => 'bad',
                     'messageCast' => ValidationResult::CAST_HTML,
-                    'fieldName' => null,
+                    'fieldName' => '',
+                    'modelClass' => '',
+                    'recordID' => null,
                 ],
             ],
             $result->getMessages()
@@ -179,31 +228,141 @@ class ValidationExceptionTest extends SapphireTest
         $this->assertEquals(
             [
                 [
-                    'fieldName' => null,
+                    'fieldName' => '',
                     'message' => 'A spork is not a knife',
                     'messageType' => 'bad',
                     'messageCast' => ValidationResult::CAST_TEXT,
+                    'modelClass' => '',
+                    'recordID' => null,
                 ],
                 [
-                    'fieldName' => null,
+                    'fieldName' => '',
                     'message' => 'A knife is not a back scratcher',
                     'messageType' => 'error',
                     'messageCast' => ValidationResult::CAST_TEXT,
+                    'modelClass' => '',
+                    'recordID' => null,
                 ],
                 [
                     'fieldName' => 'Title',
                     'message' => 'Title is good',
                     'messageType' => 'good',
                     'messageCast' => ValidationResult::CAST_TEXT,
+                    'modelClass' => '',
+                    'recordID' => null,
                 ],
                 [
                     'fieldName' => 'Content',
                     'message' => 'Content is bad',
                     'messageType' => 'bad',
                     'messageCast' => ValidationResult::CAST_TEXT,
+                    'modelClass' => '',
+                    'recordID' => null,
                 ]
             ],
             $result->getMessages()
         );
+    }
+
+    public static function provideDoShowAdditionalInfo(): array
+    {
+        return [
+            'is_cli' => [
+                'isCli' => true,
+                'isDevAdmin' => false,
+                'expected' => true,
+            ],
+            'is_dev_admin' => [
+                'isCli' => false,
+                'isDevAdmin' => true,
+                'expected' => true,
+            ],
+            'is_both' => [
+                'isCli' => true,
+                'isDevAdmin' => true,
+                'expected' => true,
+            ],
+            'is_neither' => [
+                'isCli' => false,
+                'isDevAdmin' => false,
+                'expected' => false,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideDoShowAdditionalInfo')]
+    public function testDoShowAdditionalInfo(
+        bool $isCli,
+        bool $isDevAdmin,
+        bool $expected
+    ) {
+        // Set cli override
+        $reflectionCli = new ReflectionClass(Environment::class);
+        $reflectionCli->setStaticPropertyValue('isCliOverride', $isCli);
+        if ($isDevAdmin) {
+            // Ensure that Controller::curr() to return a DevelopmentAdmin
+            $reflectionStack = new ReflectionClass(Controller::class);
+            $value = $reflectionStack->getStaticPropertyValue('controller_stack');
+            array_unshift($value, new DevelopmentAdmin());
+            $reflectionStack->setStaticPropertyValue('controller_stack', $value);
+        }
+        $result = new ValidationResult();
+        $result->addFieldMessage('Title', 'Invalid');
+        $exception = new ValidationException($result);
+        $showsAdditionalInfo = $exception->getMessage() === 'Invalid - fieldName: Title';
+        $this->assertSame($expected, $showsAdditionalInfo);
+    }
+
+    public static function provideAdditonalInfoDataObject(): array
+    {
+        return [
+            'dataObject' => [
+                'type' => 'DataObject',
+                'expect' => 'all-info',
+            ],
+            'formField' => [
+                'type' => 'FormField',
+                'expect' => 'partial-info',
+            ],
+            'error' => [
+                'type' => 'NoFieldName',
+                'expect' => 'no-info',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideAdditonalInfoDataObject')]
+    public function testAdditonalInfoDataObject(string $type, string $expect): void
+    {
+        // Set cli override to ensure additonal info is shown
+        $reflectionCli = new ReflectionClass(Environment::class);
+        $reflectionCli->setStaticPropertyValue('isCliOverride', true);
+        // Run test
+        $obj = new TestObject(['Email' => 'valid@example.com']);
+        $recordID = $obj->write();
+        $dataClass = get_class($obj);
+        $actual = null;
+        if ($type === 'DataObject') {
+            try {
+                $obj->update(['Email' => 'invalid'])->write();
+            } catch (ValidationException $e) {
+                $actual = $e->getMessage();
+            }
+        } elseif ($type === 'FormField') {
+            $result = (new EmailField('Email', 'Email', 'invalid'))->validate();
+            $exception = new ValidationException($result);
+            $actual = $exception->getMessage();
+        } else {
+            $result = new ValidationResult();
+            $result->addError('Invalid email address');
+            $exception = new ValidationException($result);
+            $actual = $exception->getMessage();
+        }
+        $expected = match ($expect) {
+            'all-info' => "Invalid email address - fieldName: Email, recordID: $recordID, dataClass: $dataClass",
+            'partial-info' => 'Invalid email address - fieldName: Email',
+            'no-info' => 'Invalid email address',
+        };
+        $this->assertSame($expected, $actual);
     }
 }

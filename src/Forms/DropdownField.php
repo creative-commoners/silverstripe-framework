@@ -97,7 +97,7 @@ class DropdownField extends SingleSelectField
     protected function getFieldOption($value, $title)
     {
         // Check selection
-        $selected = $this->isSelectedValue($value, $this->Value());
+        $selected = $this->isSelectedValue($value, $this->getValue());
 
         // Check disabled
         $disabled = false;

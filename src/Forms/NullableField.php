@@ -17,7 +17,7 @@ namespace SilverStripe\Forms;
  * When a form is submitted the field tests the value of the "is null" checkbox and sets its value
  * accordingly. You can retrieve the value of the wrapped field from the NullableField as follows:
  *
- * $field->Value() or $field->dataValue()
+ * $field->getValue() or $field->dataValue()
  *
  * You can specify the label to use for the "is null" checkbox. If you want to use i18n for this
  * label then specify it like this:
@@ -61,7 +61,7 @@ class NullableField extends FormField
         parent::__construct(
             $valueField->getName(),
             $valueField->Title(),
-            $valueField->Value()
+            $valueField->getValue()
         );
 
         $this->setForm($valueField->getForm());

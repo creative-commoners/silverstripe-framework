@@ -1258,6 +1258,8 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
     public function validate(): ValidationResult
     {
         $result = ValidationResult::create();
+        $result->setModelClass(static::class);
+        $result->setRecordID($this->ID);
         // Call DBField::validate() on every DBField
         $specs = DataObject::getSchema()->fieldSpecs(static::class);
         foreach (array_keys($specs) as $fieldName) {
@@ -4375,8 +4377,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
         $pluralName = $this->plural_name();
         $singularName = $this->singular_name();
         $conjunction = preg_match('/^[aeiou]/i', $singularName ?? '') ? 'An ' : 'A ';
-        return [
-            static::class . '.CLASS_DESCRIPTION' => $this->classDescription(),
+        $entities = [
             static::class . '.SINGULARNAME' => $singularName,
             static::class . '.PLURALNAME' => $pluralName,
             static::class . '.PLURALS' => [
@@ -4384,6 +4385,11 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
                 'other' => '{count} ' . $pluralName
             ]
         ];
+        $classDescription = $this->classDescription();
+        if ($classDescription) {
+            $entities[static::class . '.CLASS_DESCRIPTION'] = $classDescription;
+        }
+        return $entities;
     }
 
     /**

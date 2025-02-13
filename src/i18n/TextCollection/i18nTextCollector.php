@@ -882,7 +882,7 @@ class i18nTextCollector
                     $inTransFn = false;
                     $inConcat = false;
                     // Ensure key is valid before saving
-                    if (!empty($currentEntity[0])) {
+                    if (!empty($currentEntity[0]) && !str_ends_with($currentEntity[0], '.')) {
                         $key = $currentEntity[0];
                         $default = $currentEntity[1] ?? '';
                         $comment = $currentEntity[2] ?? '';

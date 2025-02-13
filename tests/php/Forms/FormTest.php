@@ -183,11 +183,11 @@ class FormTest extends FunctionalTest
         $form->loadDataFrom($requestData);
 
         $fields = $form->Fields();
-        $this->assertEquals('val1', $fields->fieldByName('key1')->Value());
-        $this->assertEquals('val2', $fields->fieldByName('namespace[key2]')->Value());
-        $this->assertEquals('val4', $fields->fieldByName('namespace[key3][key4]')->Value());
-        $this->assertEquals('val7', $fields->fieldByName('othernamespace[key5][key6][key7]')->Value());
-        $this->assertEquals('dot.field val', $fields->fieldByName('dot.field')->Value());
+        $this->assertEquals('val1', $fields->fieldByName('key1')->getValue());
+        $this->assertEquals('val2', $fields->fieldByName('namespace[key2]')->getValue());
+        $this->assertEquals('val4', $fields->fieldByName('namespace[key3][key4]')->getValue());
+        $this->assertEquals('val7', $fields->fieldByName('othernamespace[key5][key6][key7]')->getValue());
+        $this->assertEquals('dot.field val', $fields->fieldByName('dot.field')->getValue());
     }
 
     public function testSubmitReadonlyFields()
@@ -469,7 +469,7 @@ class FormTest extends FunctionalTest
         $form = $this->getStubForm();
         $form->setFormMethod('PUT');
         $this->assertEquals(
-            $form->Fields()->dataFieldByName('_method')->Value(),
+            $form->Fields()->dataFieldByName('_method')->getValue(),
             'PUT',
             'PUT override in forms has PUT in hiddenfield'
         );
@@ -482,7 +482,7 @@ class FormTest extends FunctionalTest
         $form = $this->getStubForm();
         $form->setFormMethod('DELETE');
         $this->assertEquals(
-            $form->Fields()->dataFieldByName('_method')->Value(),
+            $form->Fields()->dataFieldByName('_method')->getValue(),
             'DELETE',
             'PUT override in forms has PUT in hiddenfield'
         );

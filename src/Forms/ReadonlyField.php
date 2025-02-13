@@ -70,7 +70,7 @@ class ReadonlyField extends FormField
     public function getSchemaStateDefaults()
     {
         $state = parent::getSchemaStateDefaults();
-        $state['value'] = $this->dataValue();
+        $state['value'] = $this->getFormattedValue();
 
         return $state;
     }
@@ -79,7 +79,7 @@ class ReadonlyField extends FormField
     /**
      * @return mixed|string
      */
-    public function Value()
+    public function getFormattedValue(): mixed
     {
         // Get raw value
         $value = $this->dataValue();

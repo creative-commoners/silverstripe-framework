@@ -39,7 +39,7 @@ abstract class MultiSelectField extends SelectField
      */
     public function getValueArray()
     {
-        return $this->getListValues($this->Value());
+        return $this->getListValues($this->getFormattedValue());
     }
 
     /**

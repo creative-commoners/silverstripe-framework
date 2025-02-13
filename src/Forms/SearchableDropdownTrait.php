@@ -319,7 +319,7 @@ trait SearchableDropdownTrait
      */
     public function getValueArray(): array
     {
-        $value = $this->Value();
+        $value = $this->getFormattedValue();
         if (empty($value)) {
             return [];
         }
@@ -474,7 +474,7 @@ trait SearchableDropdownTrait
         if (!$this->getIsLazyLoaded() && $this->hasMethod('getDefaultValue')) {
             return $this->getDefaultValue();
         }
-        return $this->Value();
+        return $this->getFormattedValue();
     }
 
     private function getOptionsForSearchRequest(string $term): array

@@ -248,6 +248,13 @@ nl:
     has_one_Parent: Bovenliggende
     many_many_Members: Leden
     many_many_Roles: Rollen
+  SilverStripe\Security\InheritedPermissionsExtension:
+    db_CanEditType: 'Kan bewerken type'
+    db_CanViewType: 'Kan bekijken type'
+    many_many_EditorGroups: Redacteursgroepen
+    many_many_EditorMembers: Redacteurs
+    many_many_ViewerGroups: Bekijkersgroepen
+    many_many_ViewerMembers: Bekijk-gebruikers
   SilverStripe\Security\LoginAttempt:
     Email: 'E-mailadres '
     EmailHashed: 'E-mailadres (versleuteld)'
@@ -298,8 +305,10 @@ nl:
     ValidationIdentifierFailed: 'Een bestaande gebruiker #{id} kan niet dezelfde unieke velden hebben ({name} = {value}))'
     WELCOMEBACK: 'Welkom terug, {firstname}'
     YOUROLDPASSWORD: 'Je oude wachtwoord'
+    belongs_many_many_BlogPosts: 'Blog Artikelen'
     belongs_many_many_Groups: Groepen
     db_AccountResetExpired: 'Het opnieuw instellen van het account is verlopen'
+    db_BlogProfileSummary: 'Blogprofiel samenvatting'
     db_Email: E-mail
     db_FirstName: Voornaam
     db_LastSynced: 'Laatst gesynchroniseerd'
@@ -308,6 +317,7 @@ nl:
     db_Password: Wachtwoord
     db_PasswordExpiry: 'Wachtwoord vervaldatum'
     db_Surname: Achternaam
+    has_one_BlogProfileImage: 'Blogprofiel afbeelding'
   SilverStripe\Security\MemberAuthenticator\CMSMemberLoginForm:
     AUTHENTICATORNAME: Inlogformulier
     BUTTONFORGOTPASSWORD: 'Wachtwoord vergeten'
