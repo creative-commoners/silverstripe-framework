@@ -12,6 +12,7 @@ use SilverStripe\Security\Security;
 use SilverStripe\View\SSViewer;
 use SilverStripe\View\TemplateEngine;
 use SilverStripe\View\TemplateGlobalProvider;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * Controllers are the cornerstone of all site functionality in SilverStripe. The {@link Director}
@@ -534,6 +535,7 @@ class Controller extends RequestHandler implements TemplateGlobalProvider
         if (Controller::$controller_stack) {
             return Controller::$controller_stack[0];
         }
+        // This user_error() will be removed in the next major version of Silverstripe CMS
         user_error("No current controller available", E_USER_WARNING);
         return null;
     }
@@ -543,9 +545,11 @@ class Controller extends RequestHandler implements TemplateGlobalProvider
      * controller in the stack.
      *
      * @return bool
+     * @deprecated 5.4.0 Will be removed without equivalent functionality to replace it
      */
     public static function has_curr()
     {
+        Deprecation::noticeWithNoReplacment('5.4.0');
         return Controller::$controller_stack ? true : false;
     }
 
