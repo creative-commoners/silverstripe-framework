@@ -1034,4 +1034,26 @@ PHP;
             'TestEntity.REGULARCONTEXT' => "test {type}",
         ], $collectedTranslatables);
     }
+
+    public function testDoesNotCollectInvalidKeys()
+    {
+        // From the code below this will previously collect `'.' => 'generic'`
+        // Code was added to i18nTextCollector::collectFromCode() to ignore keys
+        // that end with "."
+        $c = i18nTextCollector::create();
+        $mymodule = ModuleLoader::inst()->getManifest()->getModule('i18ntestmodule');
+        $php = <<<'PHP'
+        $data = [
+            $foo,
+            static::get_something($foo),
+            'generic'
+        ];
+        _t(
+            __CLASS__ . '.' . ucfirst($foo) . 'Type',
+            $hello[$foo]
+        );
+        PHP;
+        $collectedTranslatables = $c->collectFromCode($php, null, $mymodule);
+        $this->assertEmpty($collectedTranslatables);
+    }
 }
