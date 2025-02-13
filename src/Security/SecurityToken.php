@@ -184,7 +184,7 @@ class SecurityToken implements TemplateGlobalProvider
         $injector = Injector::inst();
         if ($injector->has(HTTPRequest::class)) {
             return $injector->get(HTTPRequest::class)->getSession();
-        } elseif (Controller::has_curr()) {
+        } elseif (Controller::curr()) {
             return Controller::curr()->getRequest()->getSession();
         }
         throw new Exception('No HTTPRequest object or controller available yet!');

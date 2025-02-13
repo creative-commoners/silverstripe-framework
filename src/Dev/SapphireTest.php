@@ -597,7 +597,7 @@ abstract class SapphireTest extends TestCase implements TestOnly
         // Note: Ideally a clean Controller should be created for each test.
         // Now all tests executed in a batch share the same controller.
         if (class_exists(Controller::class)) {
-            $controller = Controller::has_curr() ? Controller::curr() : null;
+            $controller = Controller::curr();
             if ($controller && ($response = $controller->getResponse()) && $response->getHeader('Location')) {
                 $response->setStatusCode(200);
                 $response->removeHeader('Location');

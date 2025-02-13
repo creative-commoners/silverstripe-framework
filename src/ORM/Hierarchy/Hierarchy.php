@@ -609,10 +609,10 @@ class Hierarchy extends Extension
      */
     public function showingCMSTree()
     {
-        if (!Controller::has_curr() || !class_exists(LeftAndMain::class)) {
+        $controller = Controller::curr();
+        if (!$controller || !class_exists(LeftAndMain::class)) {
             return false;
         }
-        $controller = Controller::curr();
         return $controller instanceof LeftAndMain
             && in_array($controller->getAction(), ["treeview", "listview", "getsubtree"]);
     }
