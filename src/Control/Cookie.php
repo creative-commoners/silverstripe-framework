@@ -133,10 +133,7 @@ class Cookie
      */
     private static function getRequest(): ?HTTPRequest
     {
-        $request = null;
-        if (Controller::has_curr()) {
-            $request = Controller::curr()->getRequest();
-        }
+        $request = Controller::curr()?->getRequest();
         // NullHTTPRequest always has a scheme of http - set to null so we can fallback on default_base_url
         return ($request instanceof NullHTTPRequest) ? null : $request;
     }

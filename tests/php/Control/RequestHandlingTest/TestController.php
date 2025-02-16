@@ -42,8 +42,9 @@ class TestController extends Controller implements TestOnly
     {
         $this->failover = new ControllerFailover();
         parent::__construct();
-        if (Controller::has_curr()) {
-            $this->setRequest(Controller::curr()->getRequest());
+        $controller = Controller::curr();
+        if ($controller) {
+            $this->setRequest($controller->getRequest());
         }
     }
 

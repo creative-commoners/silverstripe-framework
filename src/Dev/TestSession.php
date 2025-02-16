@@ -71,11 +71,11 @@ class TestSession
     {
         // Shift off anything else that's on the stack.  This can happen if something throws
         // an exception that causes a premature TestSession::__destruct() call
-        while (Controller::has_curr() && Controller::curr() !== $this->controller) {
+        while (Controller::curr() && Controller::curr() !== $this->controller) {
             Controller::curr()->popCurrent();
         }
 
-        if (Controller::has_curr()) {
+        if (Controller::curr()) {
             $this->controller->popCurrent();
         }
     }

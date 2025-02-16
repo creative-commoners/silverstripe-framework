@@ -169,7 +169,7 @@ class ErrorOutputHandler extends AbstractProcessingHandler
             return;
         }
 
-        if (Controller::has_curr()) {
+        if (Controller::curr()) {
             $response = Controller::curr()->getResponse();
         } else {
             $response = new HTTPResponse();

@@ -384,7 +384,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
             return $controller->getRequest();
         }
         // Fall back to current controller
-        if (Controller::has_curr() && !(Controller::curr()->getRequest() instanceof NullHTTPRequest)) {
+        if (Controller::curr() && !(Controller::curr()->getRequest() instanceof NullHTTPRequest)) {
             return Controller::curr()->getRequest();
         }
         return null;

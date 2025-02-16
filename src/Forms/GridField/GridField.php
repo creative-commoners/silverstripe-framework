@@ -475,7 +475,7 @@ class GridField extends FormField
     private function addStateFromRequest(): void
     {
         $request = $this->getRequest();
-        if (($request instanceof NullHTTPRequest) && Controller::has_curr()) {
+        if (($request instanceof NullHTTPRequest) && Controller::curr()) {
             $request = Controller::curr()->getRequest();
         }
 

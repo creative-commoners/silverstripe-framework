@@ -326,7 +326,7 @@ class Security extends Controller implements TemplateGlobalProvider
             ];
         };
 
-        if (!$controller && Controller::has_curr()) {
+        if (!$controller && Controller::curr()) {
             $controller = Controller::curr();
         }
 
@@ -526,8 +526,9 @@ class Security extends Controller implements TemplateGlobalProvider
             return $request;
         }
 
-        if (Controller::has_curr() && Controller::curr() !== $this) {
-            return Controller::curr()->getRequest();
+        $controller = Controller::curr();
+        if ($controller && $controller !== $this) {
+            return $controller->getRequest();
         }
 
         return null;
