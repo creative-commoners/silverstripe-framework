@@ -4,6 +4,7 @@ namespace SilverStripe\ORM\FieldType;
 
 use SilverStripe\Forms\CurrencyField;
 use SilverStripe\Forms\FormField;
+use SilverStripe\Forms\NumericField;
 use SilverStripe\Model\ModelData;
 
 /**
@@ -67,5 +68,10 @@ class DBCurrency extends DBDecimal
     public function scaffoldFormField(?string $title = null, array $params = []): ?FormField
     {
         return CurrencyField::create($this->getName(), $title);
+    }
+
+    public function scaffoldSearchField(?string $title = null): ?FormField
+    {
+        return NumericField::create($this->getName(), $title);
     }
 }

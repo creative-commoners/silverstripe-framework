@@ -5,6 +5,7 @@ namespace SilverStripe\ORM\FieldType;
 use SilverStripe\ORM\FieldType\DBVarchar;
 use SilverStripe\Core\Validation\FieldValidation\UrlFieldValidator;
 use SilverStripe\Forms\FormField;
+use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\UrlField;
 
 class DBUrl extends DBVarchar
@@ -18,5 +19,10 @@ class DBUrl extends DBVarchar
         $field = UrlField::create($this->name, $title);
         $field->setMaxLength($this->getSize());
         return $field;
+    }
+
+    public function scaffoldSearchField(?string $title = null): ?FormField
+    {
+        return TextField::create($this->getName(), $title);
     }
 }
