@@ -116,9 +116,13 @@ class GridFieldFilterHeader extends AbstractGridFieldComponent implements GridFi
         $state->Columns = [];
 
         if ($actionName === 'filter') {
-            if (isset($data['filter'][$gridField->getName()])) {
-                foreach ($data['filter'][$gridField->getName()] as $key => $filter) {
-                    $state->Columns->$key = $filter;
+            $filterValues = $data['filter'][$gridField->getName()] ?? null;
+            if ($filterValues !== null) {
+                $form = $this->getSearchForm($gridField);
+                $this->removeSearchPrefixFromFields($form->Fields());
+                $form->loadDataFrom($filterValues);
+                foreach ($filterValues as $fieldName => $rawFilterValue) {
+                    $state->Columns->$fieldName = $form->Fields()->dataFieldByName($fieldName)?->dataValue() ?? $rawFilterValue;
                 }
             }
         }
@@ -494,6 +498,16 @@ class GridFieldFilterHeader extends AbstractGridFieldComponent implements GridFi
             $field->setName('Search__' . $field->getName());
             if ($field instanceof CompositeField) {
                 $this->addSearchPrefixToFields($field->getChildren());
+            }
+        }
+    }
+
+    private function removeSearchPrefixFromFields(FieldList $fields): void
+    {
+        foreach ($fields as $field) {
+            $field->setName(str_replace('Search__', '', $field->getName()));
+            if ($field instanceof CompositeField) {
+                $this->removeSearchPrefixFromFields($field->getChildren());
             }
         }
     }
