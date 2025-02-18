@@ -3,6 +3,8 @@
 namespace SilverStripe\ORM\Tests\DataObjectTest;
 
 use SilverStripe\Dev\TestOnly;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\FormField;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\Tests\DataObjectTest;
@@ -47,5 +49,13 @@ class Player extends Member implements TestOnly
     public function ReturnsNull()
     {
         return null;
+    }
+
+    public function scaffoldSearchField(): FormField
+    {
+        // This is a weird scenario, given you have to explicitly say the relation name here.
+        // This is just here to ensure we don't break this in a minor or patch. There's no
+        // reason not to break this in a major (or else improve it so the relation name is passed in)
+        return DropdownField::create('Captain.ID', null, Player::get()->map());
     }
 }

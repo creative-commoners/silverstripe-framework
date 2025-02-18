@@ -15,6 +15,7 @@ use SilverStripe\View\TemplateGlobalProvider;
 use SilverStripe\Model\ModelData;
 use SilverStripe\Core\Validation\FieldValidation\DateFieldValidator;
 use SilverStripe\Core\Validation\FieldValidation\DatetimeFieldValidator;
+use SilverStripe\ORM\Tests\Search\SearchContextTest\WithinRangeFilterModel;
 
 /**
  * Represents a date-time field.
@@ -368,5 +369,15 @@ class DBDatetime extends DBDate implements TemplateGlobalProvider
     public function getISOFormat(): string
     {
         return DBDatetime::ISO_DATETIME;
+    }
+
+    public static function getMinValue(): string
+    {
+        return '0000-00-00 00:00:00';
+    }
+
+    public static function getMaxValue(): string
+    {
+        return '9999-12-31 23:59:59';
     }
 }

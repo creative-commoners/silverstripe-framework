@@ -181,4 +181,14 @@ class DBTime extends DBField
         }
         return 0;
     }
+
+    public static function getMinValue(): string
+    {
+        return '00:00:00';
+    }
+
+    public static function getMaxValue(): string
+    {
+        return '23:59:59';
+    }
 }

@@ -135,4 +135,14 @@ class DBDecimal extends DBField
 
         return (float) $value;
     }
+
+    public static function getMinValue(): float
+    {
+        return PHP_FLOAT_MIN;
+    }
+
+    public static function getMaxValue(): float
+    {
+        return PHP_FLOAT_MAX;
+    }
 }

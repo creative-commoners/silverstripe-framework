@@ -13,6 +13,18 @@ use SilverStripe\Model\ModelData;
  */
 class DBInt extends DBField
 {
+    /**
+     * The minimum value for a signed 32-bit integer.
+     * Defined as string instead of int because be cast to a float
+     * on 32-bit systems if defined as an int
+     */
+    protected const MIN_INT = '-2147483648';
+
+    /**
+     * The maximum value for a signed 32-bit integer.
+     */
+    protected const MAX_INT = '2147483647';
+
     private static array $field_validators = [
         IntFieldValidator::class
     ];
@@ -88,5 +100,15 @@ class DBInt extends DBField
         }
 
         return (int)$value;
+    }
+
+    public static function getMinValue(): string|int
+    {
+        return static::MIN_INT;
+    }
+
+    public static function getMaxValue(): string|int
+    {
+        return static::MAX_INT;
     }
 }

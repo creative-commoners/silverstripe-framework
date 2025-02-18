@@ -2,14 +2,8 @@
 
 namespace SilverStripe\ORM\FieldType;
 
-use SilverStripe\Assets\File;
-use SilverStripe\Assets\Image;
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Validation\FieldValidation\IntFieldValidator;
-use SilverStripe\Forms\FileHandleField;
 use SilverStripe\Forms\FormField;
-use SilverStripe\Forms\SearchableDropdownField;
-use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Model\ModelData;
 
@@ -78,7 +72,7 @@ class DBForeignKey extends DBInt
         return parent::setValue($value, $record, $markChanged);
     }
 
-    public function getMinValue(): int
+    public static function getMinValue(): int
     {
         return 0;
     }

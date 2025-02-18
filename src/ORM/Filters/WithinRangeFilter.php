@@ -6,18 +6,27 @@ use SilverStripe\ORM\DataQuery;
 
 class WithinRangeFilter extends SearchFilter
 {
+    private mixed $min = null;
+    private mixed $max = null;
 
-    private $min;
-    private $max;
-
-    public function setMin($min)
+    public function setMin(mixed $min)
     {
         $this->min = $min;
     }
 
-    public function setMax($max)
+    public function getMin(): mixed
+    {
+        return $this->min;
+    }
+
+    public function setMax(mixed $max)
     {
         $this->max = $max;
+    }
+
+    public function getMax(): mixed
+    {
+        return $this->max;
     }
 
     protected function applyOne(DataQuery $query)

@@ -19,7 +19,10 @@ use InvalidArgumentException;
 use Exception;
 use LogicException;
 use SilverStripe\Core\Config\Config;
+use SilverStripe\Forms\DateField;
 use SilverStripe\ORM\DataQuery;
+use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\ORM\Filters\WithinRangeFilter;
 
 /**
  * Manages searching of properties on one or more {@link DataObject}
@@ -77,6 +80,13 @@ class SearchContext
      * @var array
      */
     protected $searchParams = [];
+
+    /**
+     * A list of fields that use WithinRangeFilter that have already been included in the query.
+     * This prevents the "from" and "to" fields from both independently affecting the query since they
+     * have to be paired together in the same filter.
+     */
+    protected $withinRangeFieldsChecked = [];
 
     /**
      * A key value pair of values that should be searched for.
@@ -161,6 +171,7 @@ class SearchContext
      */
     private function search(DataList $query): DataList
     {
+        $this->withinRangeFieldsChecked = [];
         /** @var DataObject $modelObj */
         $modelObj = Injector::inst()->create($this->modelClass);
         $searchableFields = $modelObj->searchableFields();
@@ -296,8 +307,35 @@ class SearchContext
             return $query;
         }
         $filter->setModel($this->modelClass);
-        $filter->setValue($searchPhrase);
-        $searchableFieldSpec = $searchableFields[$searchField] ?? [];
+        // WithinRangeFilter needs a bit of help knowing what its "from" and "to" values are
+        if ($filter instanceof WithinRangeFilter) {
+            $baseName = preg_replace('/_Search(From|To)$/', '', $searchField);
+            if (array_key_exists($baseName, $this->withinRangeFieldsChecked)) {
+                return $query;
+            }
+            $allSearchParams = $this->getSearchParams();
+            $searchableFieldSpec = $searchableFields[$baseName] ?? [];
+            $from = $allSearchParams[$baseName . '_SearchFrom'] ?? $searchableFieldSpec['rangeFromDefault'];
+            $to = $allSearchParams[$baseName . '_SearchTo'] ?? $searchableFieldSpec['rangeToDefault'];
+            // If we're using DateField for a DBDateTime, set "from" to the start of the day, and "to" to the end of the day.
+            // Though if we're using the default values, we don't need to add this as it should already be there.
+            if (is_a($searchableFieldSpec['dataType'] ?? '', DBDatetime::class, true)
+                && is_a($searchableFieldSpec['field'] ?? '', DateField::class, true)
+            ) {
+                if ($from !== $searchableFieldSpec['rangeFromDefault']) {
+                    $from .= ' 00:00:00';
+                }
+                if ($to !== $searchableFieldSpec['rangeToDefault']) {
+                    $to .= ' 23:59:59';
+                }
+            }
+            $filter->setMin($from);
+            $filter->setMax($to);
+            $this->withinRangeFieldsChecked[$baseName] = true;
+        } else {
+            $filter->setValue($searchPhrase);
+            $searchableFieldSpec = $searchableFields[$searchField] ?? [];
+        }
         return $query->alterDataQuery(function ($dataQuery) use ($filter, $searchableFieldSpec) {
             $this->applyFilter($filter, $dataQuery, $searchableFieldSpec);
         });
@@ -318,9 +356,13 @@ class SearchContext
             $modifiers = $filter->getModifiers();
             $subGroup = $dataQuery->disjunctiveGroup();
             foreach ($searchFields as $matchField) {
-                /** @var SearchFilter $filter */
-                $filter = Injector::inst()->create($filterClass, $matchField, $value, $modifiers);
-                $filter->apply($subGroup);
+                /** @var SearchFilter $subFilter */
+                $subFilter = Injector::inst()->create($filterClass, $matchField, $value, $modifiers);
+                if ($subFilter instanceof WithinRangeFilter) {
+                    $subFilter->setMin($filter->getMin());
+                    $subFilter->setMax($filter->getMax());
+                }
+                $subFilter->apply($subGroup);
             }
         } else {
             $filter->apply($dataQuery);
@@ -364,11 +406,8 @@ class SearchContext
      */
     public function getFilter($name)
     {
-        if (isset($this->filters[$name])) {
-            return $this->filters[$name];
-        } else {
-            return null;
-        }
+        $withinRangeFilterCheck = preg_replace('/_Search(From|To)$/', '', $name);
+        return $this->filters[$name] ?? $this->filters[$withinRangeFilterCheck] ?? null;
     }
 
     /**
