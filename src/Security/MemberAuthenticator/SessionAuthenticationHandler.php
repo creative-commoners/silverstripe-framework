@@ -82,11 +82,6 @@ class SessionAuthenticationHandler implements AuthenticationHandler
         if (Member::config()->get('login_marker_cookie')) {
             Cookie::set(Member::config()->get('login_marker_cookie'), 1, 0);
         }
-
-        // Activate sudo mode on login so the user doesn't have to reauthenticate for sudo
-        // actions until the sudo mode timeout expires
-        $service = Injector::inst()->get(SudoModeServiceInterface::class);
-        $service->activate($session);
     }
 
     /**

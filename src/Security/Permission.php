@@ -100,6 +100,8 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
         'EDIT_PERMISSIONS'
     ];
 
+    private static bool $require_sudo_mode = true;
+
     /**
      * Check that the current member has the given permission.
      *
