@@ -322,7 +322,15 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
         if ($cb) {
             $cb($form, $this);
         }
+
         $this->extend("updateItemEditForm", $form);
+
+        // Check if the the record is a DataObject and if that DataObject requires sudo mode
+        // If so then require sudo mode for the item edit form
+        if (is_a($this->record, DataObject::class) && $this->record->getRequireSudoMode()) {
+            $form->requireSudoMode();
+        }
+
         return $form;
     }
 

@@ -28,6 +28,9 @@ use SilverStripe\ORM\Sortable;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\View\HTML;
 use SilverStripe\View\ViewableData;
+use SilverStripe\Security\SudoMode\SudoModeServiceInterface;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\GridField\GridFieldViewButton;
 
 /**
  * Displays a {@link SS_List} in a grid format.
@@ -521,6 +524,31 @@ class GridField extends FormField
     {
         $this->extend('onBeforeRenderHolder', $this, $properties);
 
+        // Set GridField to read-only if sudo mode is required for the DataObject being managed
+        // and sudo mode is not active
+        $sudoModeTransformation = false;
+        $modelClass = null;
+        try {
+            $modelClass = $this->getModelClass();
+        } catch (LogicException) {
+            // noop - it's possible to have a gridfield with custom components that don't rely on columns
+            // from the records in the list.
+        }
+        if (is_a($modelClass, DataObject::class, true)) {
+            /** @var DataObject $obj */
+            $obj = Injector::inst()->create($modelClass);
+            if ($obj->getRequireSudoMode()) {
+                $session = Controller::curr()?->getRequest()?->getSession();
+                if ($session) {
+                    $service = Injector::inst()->get(SudoModeServiceInterface::class);
+                    if (!$service->check($session)) {
+                        $this->performReadonlyTransformation();
+                        $sudoModeTransformation = true;
+                    }
+                }
+            }
+        }
+
         $columns = $this->getColumns();
 
         $list = $this->getManipulatedList();
@@ -551,6 +579,13 @@ class GridField extends FormField
             }
             if ($item instanceof GridFieldPaginator) {
                 $total = $item->getTotalItems();
+            }
+            if ($sudoModeTransformation) {
+                // Modify the GridFieldViewButton on any GridFields so that it doesn't suffix the view URL with 'view'
+                // This allows us to gracefully reload a form in readonly mode when sudo mode is activated
+                if ($item instanceof GridFieldViewButton) {
+                    $item->setSuffixViewToUrl(false);
+                }
             }
         }
 

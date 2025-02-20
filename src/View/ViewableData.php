@@ -78,6 +78,13 @@ class ViewableData implements IteratorAggregate
      */
     private array $dynamicData = [];
 
+    /**
+     * Config of whether the model requires sudo mode to be active in order to be modified in admin
+     * Sudo mode is a security feature that requires the user to re-enter their password before
+     * making changes to the database.
+     */
+    private static bool $require_sudo_mode = false;
+
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
@@ -259,6 +266,14 @@ class ViewableData implements IteratorAggregate
     public function hasDynamicData(string $field): bool
     {
         return array_key_exists($field, $this->dynamicData);
+    }
+
+    /**
+     * Whether the model requires sudo mode to be active in order to be modified in admin
+     */
+    public function getRequireSudoMode(): bool
+    {
+        return static::config()->get('require_sudo_mode');
     }
 
     /**

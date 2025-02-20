@@ -108,6 +108,8 @@ class Member extends DataObject
         //'AutoLoginHash' => Array('type'=>'unique', 'value'=>'AutoLoginHash', 'ignoreNulls'=>true)
     ];
 
+    private static bool $require_sudo_mode = true;
+
     /**
      * @config
      * @var boolean
