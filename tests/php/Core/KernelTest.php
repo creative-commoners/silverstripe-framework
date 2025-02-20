@@ -3,16 +3,20 @@
 namespace SilverStripe\Core\Tests;
 
 use BadMethodCallException;
+use Exception;
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
+use ReflectionClass;
 use SilverStripe\Control\Director;
+use SilverStripe\Control\Middleware\AllowedHostsMiddleware;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Config\ConfigLoader;
 use SilverStripe\Core\CoreKernel;
+use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Injector\InjectorLoader;
 use SilverStripe\Core\Kernel;
 use SilverStripe\Dev\SapphireTest;
-use SilverStripe\Core\Environment;
-use ReflectionClass;
 use SilverStripe\ORM\DB;
 use ReflectionObject;
 use SilverStripe\Core\Tests\KernelTest\TestFlushable;
@@ -125,5 +129,60 @@ class KernelTest extends SapphireTest
 
         // reset the kernel Flush flag
         $kernel->boot();
+    }
+
+    public function provideAllowedHostsWarning(): array
+    {
+        $scenarios = [
+            [
+                'config' => [],
+                'isCli' => true,
+                'shouldLog' => true,
+            ],
+            [
+                'config' => ['*'],
+                'isCli' => true,
+                'shouldLog' => false,
+            ],
+            [
+                'config' => ['www.example.com', 'example.org'],
+                'isCli' => true,
+                'shouldLog' => false,
+            ],
+        ];
+        // Test both in CLI and non-CLI context
+        foreach ($scenarios as $name => $scenario) {
+            $scenario['isCli'] = false;
+            $scenarios[$name . ' (non-CLI)'] = $scenario;
+        }
+        return $scenarios;
+    }
+
+    /**
+     * @dataProvider provideAllowedHostsWarning
+     */
+    public function testAllowedHostsWarning(array $config, bool $isCli, bool $shouldLog): void
+    {
+        // Prepare mock to check if a warning is logged or not
+        $mockLogger = $this->getMockBuilder(Logger::class)->setConstructorArgs(['testLogger'])->getMock();
+        $expectLog = $shouldLog ? $this->once() : $this->never();
+        $mockLogger->expects($expectLog)->method('warning');
+        Injector::inst()->registerService($mockLogger, LoggerInterface::class);
+
+        // Set the config in our middleware
+        $middleware = Injector::inst()->get(AllowedHostsMiddleware::class, true);
+        $middleware->setAllowedHosts($config);
+
+        $reflectionEnvironment = new ReflectionClass(Environment::class);
+        $origIsCli = $reflectionEnvironment->getStaticPropertyValue('isCliOverride');
+        $reflectionEnvironment->setStaticPropertyValue('isCliOverride', $isCli);
+
+        try {
+            $kernel = Injector::inst()->get(Kernel::class);
+            $kernel->nest(); // $kernel is no longer current kernel
+            $kernel->boot();
+        } finally {
+            $reflectionEnvironment->setStaticPropertyValue('isCliOverride', $origIsCli);
+        }
     }
 }
