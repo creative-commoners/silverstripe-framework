@@ -30,6 +30,7 @@ class CurrencyField extends TextField
             . number_format((double)preg_replace('/[^0-9.\-]/', '', $value ?? ''), 2);
         return $this;
     }
+
     /**
      * Overwrite the datavalue before saving to the db ;-)
      * return 0.00 if no value, or value is non-numeric

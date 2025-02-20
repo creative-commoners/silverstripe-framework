@@ -186,7 +186,7 @@ class DBHTMLText extends DBText
 
     public function scaffoldSearchField(?string $title = null): ?FormField
     {
-        return new TextField($this->name, $title);
+        return TextField::create($this->name, $title);
     }
 
     /**

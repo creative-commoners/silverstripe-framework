@@ -21,8 +21,8 @@ class DBYear extends DBField
 
     private static $field_validators = [
         YearFieldValidator::class => [
-            'minValue' => 'getMinYear',
-            'maxValue' => 'getMaxYear'
+            'minValue' => 'getMinValue',
+            'maxValue' => 'getMaxValue'
         ],
     ];
 
@@ -70,12 +70,12 @@ class DBYear extends DBField
         return $this;
     }
 
-    public function getMinYear(): int
+    public static function getMinValue(): int
     {
         return DBYear::MIN_YEAR;
     }
 
-    public function getMaxYear(): int
+    public static function getMaxValue(): int
     {
         return DBYear::MAX_YEAR;
     }

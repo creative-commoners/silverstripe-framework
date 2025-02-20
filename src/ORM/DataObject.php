@@ -16,6 +16,7 @@ use SilverStripe\Core\Validation\ValidationInterface;
 use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Dev\Debug;
 use SilverStripe\Dev\Deprecation;
+use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\FormScaffolder;
@@ -46,6 +47,7 @@ use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use SilverStripe\View\SSViewer;
 use SilverStripe\Model\ModelData;
+use SilverStripe\ORM\Filters\WithinRangeFilter;
 use stdClass;
 
 /**
@@ -2438,40 +2440,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
                 continue;
             }
 
-            // If a custom fieldclass is provided as a string, use it
-            $field = null;
-            if ($params['fieldClasses'] && isset($params['fieldClasses'][$fieldName])) {
-                $fieldClass = $params['fieldClasses'][$fieldName];
-                $field = new $fieldClass($fieldName);
-            // If we explicitly set a field, then construct that
-            } elseif (isset($spec['field'])) {
-                // If it's a string, use it as a class name and construct
-                if (is_string($spec['field'])) {
-                    $fieldClass = $spec['field'];
-                    $field = new $fieldClass($fieldName);
-
-                // If it's a FormField object, then just use that object directly.
-                } elseif ($spec['field'] instanceof FormField) {
-                    $field = $spec['field'];
-
-                // Otherwise we have a bug
-                } else {
-                    user_error("Bad value for searchable_fields, 'field' value: "
-                        . var_export($spec['field'], true), E_USER_WARNING);
-                }
-
-            // Otherwise, use the database field's scaffolder
-            } elseif ($object = $this->relObject($fieldName)) {
-                if (is_object($object) && $object->hasMethod('scaffoldSearchField')) {
-                    $field = $object->scaffoldSearchField();
-                } else {
-                    throw new Exception(sprintf(
-                        "SearchField '%s' on '%s' does not return a valid DBField instance.",
-                        $fieldName,
-                        get_class($this)
-                    ));
-                }
-            }
+            $field = $this->scaffoldSingleSearchField($fieldName, $spec, $params);
 
             // Allow fields to opt out of search
             if (!$field) {
@@ -2482,6 +2451,24 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
                 $field->setName(str_replace('.', '__', $fieldName ?? ''));
             }
             $field->setTitle($spec['title']);
+
+            // If we're using a WithinRangeFilter, split the field into two separate fields (from and to)
+            if (is_a($spec['filter'] ?? '', WithinRangeFilter::class, true)) {
+                $fieldFrom = $field;
+                $fieldTo = clone $field;
+                $originalTitle = $field->Title();
+                $originalName = $field->getName();
+
+                $fieldFrom->setName($originalName . '_SearchFrom');
+                $fieldFrom->setTitle(_t(__CLASS__ . '.FILTER_WITHINRANGE_FROM', 'From'));
+                $fieldTo->setName($originalName . '_SearchTo');
+                $fieldTo->setTitle(_t(__CLASS__ . '.FILTER_WITHINRANGE_TO', 'To'));
+
+                $field = FieldGroup::create(
+                    $originalTitle,
+                    [$fieldFrom, $fieldTo]
+                )->setName($originalName)->addExtraClass('fieldgroup--fill-width');
+            }
 
             $fields->push($field);
         }
@@ -2496,6 +2483,56 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
         }
 
         return $fields;
+    }
+
+    /**
+     * Scaffold a single form field for use by the search context form.
+     */
+    private function scaffoldSingleSearchField(string $fieldName, array $spec, ?array $params): ?FormField
+    {
+        // If a custom fieldclass is provided as a string, use it
+        $field = null;
+        if ($params['fieldClasses'] && isset($params['fieldClasses'][$fieldName])) {
+            $fieldClass = $params['fieldClasses'][$fieldName];
+            $field = new $fieldClass($fieldName);
+        // If we explicitly set a field, then construct that
+        } elseif (isset($spec['field'])) {
+            // If it's a string, use it as a class name and construct
+            if (is_string($spec['field'])) {
+                $fieldClass = $spec['field'];
+                $field = new $fieldClass($fieldName);
+
+            // If it's a FormField object, then just use that object directly.
+            } elseif ($spec['field'] instanceof FormField) {
+                $field = $spec['field'];
+
+            // Otherwise we have a bug
+            } else {
+                user_error("Bad value for searchable_fields, 'field' value: "
+                    . var_export($spec['field'], true), E_USER_WARNING);
+            }
+        // Use the explicitly defined dataType if one was set
+        } elseif (isset($spec['dataType'])) {
+            $object = Injector::inst()->get($spec['dataType'], true);
+            $field = $this->scaffoldFieldFromObject($object, $fieldName);
+            $field->setName($fieldName);
+        // Otherwise, use the database field's scaffolder
+        } elseif ($object = $this->relObject($fieldName)) {
+            $field = $this->scaffoldFieldFromObject($object, $fieldName);
+        }
+        return $field;
+    }
+
+    private function scaffoldFieldFromObject(mixed $object, string $fieldName): FormField
+    {
+        if (!is_object($object) || !$object->hasMethod('scaffoldSearchField')) {
+            throw new LogicException(sprintf(
+                "SearchField '%s' on '%s' does not return a valid DBField instance.",
+                $fieldName,
+                get_class($this)
+            ));
+        }
+        return $object->scaffoldSearchField();
     }
 
     /**
@@ -3896,6 +3933,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
         $rewrite = [];
         foreach ($fields as $name => $specOrName) {
             $identifier = (is_int($name)) ? $specOrName : $name;
+            $relObject = isset($specOrName['match_any']) ? null : $this->relObject($identifier);
 
             if (is_int($name)) {
                 // Format: array('MyFieldName')
@@ -3903,14 +3941,22 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
             } elseif (is_array($specOrName) && (isset($specOrName['match_any']))) {
                 $rewrite[$identifier] = $fields[$identifier];
                 $rewrite[$identifier]['match_any'] = $specOrName['match_any'];
-            } elseif (is_array($specOrName) && ($relObject = $this->relObject($identifier))) {
+            } elseif (is_array($specOrName)) {
                 // Format: array('MyFieldName' => array(
                 //   'filter => 'ExactMatchFilter',
                 //   'field' => 'NumericField', // optional
                 //   'title' => 'My Title', // optional
+                //   'dataType' => DBInt::class // optional
+                // These two are only required if using WithinRangeFilter with a data type that doesn't
+                // inherently represent a date, time, or number
+                //   'rangeFromDefault' => PHP_INT_MIN
+                //   'rangeToDefault' => PHP_INT_MAX
                 // ))
                 $rewrite[$identifier] = array_merge(
-                    ['filter' => $relObject->config()->get('default_search_filter_class')],
+                    [
+                        'filter' => $relObject?->config()->get('default_search_filter_class'),
+                        'dataType' => $relObject ? get_class($relObject) : null,
+                    ],
                     (array)$specOrName
                 );
             } else {
@@ -3918,6 +3964,9 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
                 $rewrite[$identifier] = [
                     'filter' => $specOrName,
                 ];
+                if ($relObject !== null) {
+                    $rewrite[$identifier]['dataType'] ??= get_class($relObject);
+                }
             }
             if (!isset($rewrite[$identifier]['title'])) {
                 $rewrite[$identifier]['title'] = (isset($labels[$identifier]))
@@ -3925,6 +3974,33 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
             }
             if (!isset($rewrite[$identifier]['filter'])) {
                 $rewrite[$identifier]['filter'] = 'PartialMatchFilter';
+            }
+            // When using a WithinRangeFilter we need to know what the default from and to values
+            // should be, so that if a user only enters one of the two fields the other can be
+            // populated appropriately within the filter.
+            if (is_a($rewrite[$identifier]['filter'], WithinRangeFilter::class, true)) {
+                // The dataType requirement here is explicitly for WithinRangeFilter.
+                // DO NOT make it mandatory for other filters without first checking if this breaks
+                // anything for filtering a relation, where the class on the other end of the relation
+                // implements scaffoldSearchField().
+                $dataType = $rewrite[$identifier]['dataType'] ?? null;
+                if (!is_a($dataType ?? '', DBField::class, true)) {
+                    throw new LogicException("dataType must be set to a DBField class for '$identifier'");
+                }
+                if (!isset($rewrite[$identifier]['rangeFromDefault'])) {
+                    $fromDefault = $dataType::getMinValue();
+                    if ($fromDefault === null) {
+                        throw new LogicException("rangeFromDefault must be set for '$identifier'");
+                    }
+                    $rewrite[$identifier]['rangeFromDefault'] = $fromDefault;
+                }
+                if (!isset($rewrite[$identifier]['rangeToDefault'])) {
+                    $toDefault = $dataType::getMaxValue();
+                    if ($toDefault === null) {
+                        throw new LogicException("rangeToDefault must be set for '$identifier'");
+                    }
+                    $rewrite[$identifier]['rangeToDefault'] = $toDefault;
+                }
             }
         }
 

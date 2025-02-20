@@ -13,6 +13,19 @@ use SilverStripe\View\SSViewer;
  */
 class GridFieldViewButton extends AbstractGridFieldComponent implements GridField_ColumnProvider, GridField_ActionMenuLink
 {
+    private bool $suffixViewToUrl = true;
+
+    public function getSuffixViewToUrl(): bool
+    {
+        return $this->suffixViewToUrl;
+    }
+
+    public function setSuffixViewToUrl(bool $suffixViewToUrl): static
+    {
+        $this->suffixViewToUrl = $suffixViewToUrl;
+        return $this;
+    }
+
     /**
      * @inheritdoc
      */
@@ -44,7 +57,11 @@ class GridFieldViewButton extends AbstractGridFieldComponent implements GridFiel
      */
     public function getUrl($gridField, $record, $columnName)
     {
-        $link = Controller::join_links($gridField->Link('item'), $record->ID, 'view');
+        $parts = [$gridField->Link('item'), $record->ID];
+        if ($this->getSuffixViewToUrl()) {
+            $parts[] = 'view';
+        }
+        $link = Controller::join_links(...$parts);
         return $gridField->addAllStateToUrl($link);
     }
 

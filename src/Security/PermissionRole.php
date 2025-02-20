@@ -48,6 +48,8 @@ class PermissionRole extends DataObject
 
     private static $plural_name = 'Roles';
 
+    private static bool $require_sudo_mode = true;
+
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();

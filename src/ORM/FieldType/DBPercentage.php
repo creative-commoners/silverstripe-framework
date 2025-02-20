@@ -39,12 +39,12 @@ class DBPercentage extends DBDecimal
         parent::__construct($name, $precision + 1, $precision);
     }
 
-    public function getMinValue(): float
+    public static function getMinValue(): float
     {
         return 0.0;
     }
 
-    public function getMaxValue(): float
+    public static function getMaxValue(): float
     {
         return 1.0;
     }

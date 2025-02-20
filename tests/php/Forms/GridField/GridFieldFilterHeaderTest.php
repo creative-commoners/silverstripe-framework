@@ -15,6 +15,7 @@ use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
 use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\Cheerleader;
 use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\CheerleaderHat;
+use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\ModelWithBadSearchableFields;
 use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\Mom;
 use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\NonDataObject;
 use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\Team;
@@ -59,6 +60,7 @@ class GridFieldFilterHeaderTest extends SapphireTest
         Cheerleader::class,
         CheerleaderHat::class,
         Mom::class,
+        ModelWithBadSearchableFields::class,
     ];
 
     protected function setUp(): void
@@ -222,15 +224,16 @@ class GridFieldFilterHeaderTest extends SapphireTest
         Config::modify()->set(Team::class, 'searchable_fields', ['Name']);
         $this->assertTrue($filterHeader->canFilterAnyColumns($gridField));
 
-        // test that you can filterBy if searchable_fields even if it is not a legit field
-        // this is because we're making a blind assumption it will be filterable later in a SearchContext
-        Config::modify()->set(Team::class, 'searchable_fields', ['WhatIsThis']);
-        $this->assertTrue($filterHeader->canFilterAnyColumns($gridField));
-
         // test that you cannot filter by non-db field when it falls back to summary_fields
         Config::modify()->remove(Team::class, 'searchable_fields');
         Config::modify()->set(Team::class, 'summary_fields', ['MySummaryField']);
         $this->assertFalse($filterHeader->canFilterAnyColumns($gridField));
+
+        // test that you can filterBy even if searchableFields() includes a non-db field
+        // this is because we're making a blind assumption it will be filterable in a custom SearchContext
+        $gridField->setList(ModelWithBadSearchableFields::get());
+        $gridField->setModelClass(ModelWithBadSearchableFields::class);
+        $this->assertTrue($filterHeader->canFilterAnyColumns($gridField));
     }
 
     public function testCanFilterAnyColumnsNonDataObject()

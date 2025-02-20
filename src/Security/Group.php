@@ -96,6 +96,8 @@ class Group extends DataObject
         'Code' => true,
         'Sort' => true,
     ];
+    
+    private static bool $require_sudo_mode = true;
 
     public function getAllChildren()
     {

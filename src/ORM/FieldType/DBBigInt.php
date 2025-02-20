@@ -14,6 +14,21 @@ use SilverStripe\ORM\DB;
  */
 class DBBigInt extends DBInt
 {
+    /**
+     * The minimum value for a signed 64-bit integer.
+     * Defined as string instead of int otherwise will end up as a float
+     * on 64-bit systems
+     *
+     * When this is cast to an int in IntFieldValidator::__construct()
+     * it will be properly cast to an int
+     */
+    protected const MIN_INT = '-9223372036854775808';
+
+    /**
+     * The maximum value for a signed 64-bit integer.
+     */
+    protected const MAX_INT = '9223372036854775807';
+
     private static array $field_validators = [
         // Remove parent validator and add BigIntValidator instead
         IntFieldValidator::class => null,

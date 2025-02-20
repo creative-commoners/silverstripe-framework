@@ -26,3 +26,41 @@ SilverStripe\ORM\Tests\Search\SearchContextTest\GeneralSearch:
     PartialMatchField: MatchNothing
     MatchAny1: MatchNothing
     MatchAny2: MatchNothing
+
+SilverStripe\ORM\Tests\Search\SearchContextTest\WithinRangeFilterModel:
+  lowrange:
+    DateOnly: '1912-05-03'
+    Datetime: '1912-05-03 01:23:45'
+    DatetimeWithDateField: '1912-05-03 01:23:45'
+    TimeOnly: '01:23:45'
+    IntRange: 13
+    DecimalRange: 1.234
+    FloatRange: 1.234
+    PercentageRange: 0.05
+    YearRange: 1912
+    CurrencyRange: 1.23
+    VarcharRangeWithConfig: 'c'
+  midrange:
+    DateOnly: '2005-04-06'
+    Datetime: '2005-04-06 12:34:56'
+    DatetimeWithDateField: '2005-04-06 12:34:56'
+    TimeOnly: '12:34:56'
+    IntRange: 500
+    DecimalRange: 12.34
+    FloatRange: 12.34
+    PercentageRange: 0.53
+    YearRange: 2005
+    CurrencyRange: 12.34
+    VarcharRangeWithConfig: 'l'
+  highrange:
+    DateOnly: '2123-03-07'
+    Datetime: '2123-03-07 23:45:47'
+    DatetimeWithDateField: '2123-03-07 23:45:47'
+    TimeOnly: '23:45:47'
+    IntRange: 1234
+    DecimalRange: 123.4
+    FloatRange: 123.4
+    PercentageRange: 0.95
+    YearRange: 2123
+    CurrencyRange: 123.4
+    VarcharRangeWithConfig: 'x'

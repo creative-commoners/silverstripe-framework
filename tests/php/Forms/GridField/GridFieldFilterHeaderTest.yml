@@ -74,3 +74,7 @@ SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\TeamGroup:
     City: Melbourne
     Cheerleader: =>SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\Cheerleader.cheerleader1
     CheerleadersMom: =>SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\Mom.mom1
+
+SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\ModelWithBadSearchableFields:
+  record1:
+    Name: Record 1

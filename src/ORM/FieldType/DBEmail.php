@@ -6,6 +6,7 @@ use SilverStripe\Forms\EmailField;
 use SilverStripe\ORM\FieldType\DBVarchar;
 use SilverStripe\Core\Validation\FieldValidation\EmailFieldValidator;
 use SilverStripe\Forms\FormField;
+use SilverStripe\Forms\TextField;
 
 class DBEmail extends DBVarchar
 {
@@ -18,5 +19,10 @@ class DBEmail extends DBVarchar
         $field = EmailField::create($this->name, $title);
         $field->setMaxLength($this->getSize());
         return $field;
+    }
+
+    public function scaffoldSearchField(?string $title = null): ?FormField
+    {
+        return TextField::create($this->getName(), $title);
     }
 }

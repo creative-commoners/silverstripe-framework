@@ -3,6 +3,7 @@
 namespace SilverStripe\Forms;
 
 use BadMethodCallException;
+use SilverStripe\Admin\LeftAndMain;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HasRequestHandler;
 use SilverStripe\Control\HTTPRequest;
@@ -22,6 +23,8 @@ use SilverStripe\View\AttributesHTML;
 use SilverStripe\View\SSViewer;
 use SilverStripe\Model\ModelData;
 use SilverStripe\Forms\Validation\Validator;
+use SilverStripe\Security\SudoMode\SudoModeServiceInterface;
+use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 
 /**
  * Base class for all forms.
@@ -321,6 +324,46 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
     }
 
     /**
+     * Make the form require sudo mode, which will make the form readonly and add a sudo mode password field
+     * unless the current user previously activated sudo mode.
+     *
+     * Note that if the parent request handler for this form isn't LeftAndMain or GridFieldDetailForm_ItemRequest,
+     * sudo mode will not be required by this form.
+     */
+    public function requireSudoMode(): void
+    {
+        // Check that the current request handler for the form is one that's used
+        // in an admin context where sudo mode makes sense
+        $classes = [
+            LeftAndMain::class,
+            GridFieldDetailForm_ItemRequest::class,
+        ];
+        $enableSudoMode = false;
+        foreach ($classes as $class) {
+            if (is_a($this->getController(), $class)) {
+                $enableSudoMode = true;
+                break;
+            }
+        }
+        if (!$enableSudoMode) {
+            return;
+        }
+        // Check if sudo mode is currently enabled
+        $service = Injector::inst()->get(SudoModeServiceInterface::class);
+        $session = $this->getRequest()->getSession();
+        if ($service->check($session)) {
+            return;
+        }
+        // If sudo mode is not active, make the form readonly and add a sudo mode password field
+        $this->makeReadonly();
+        $field = SudoModePasswordField::create(SudoModePasswordField::FIELD_NAME);
+        // Manually call setForm() to the field as the field list is being updated after the
+        // form is created, which is when setForm() is normally being created
+        $field->setForm($this);
+        $this->Fields()->unshift($field);
+    }
+
+    /**
      * @return bool
      */
     public function getNotifyUnsavedChanges()
@@ -384,7 +427,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
             return $controller->getRequest();
         }
         // Fall back to current controller
-        if (Controller::has_curr() && !(Controller::curr()->getRequest() instanceof NullHTTPRequest)) {
+        if (Controller::curr() && !(Controller::curr()->getRequest() instanceof NullHTTPRequest)) {
             return Controller::curr()->getRequest();
         }
         return null;

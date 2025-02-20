@@ -15,8 +15,9 @@ class TestController extends Controller
     public function __construct()
     {
         parent::__construct();
-        if (Controller::has_curr()) {
-            $this->setRequest(Controller::curr()->getRequest());
+        $controller = Controller::curr();
+        if ($controller) {
+            $this->setRequest($controller->getRequest());
         }
     }
 

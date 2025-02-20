@@ -619,4 +619,14 @@ class DBDate extends DBField
         $parts[] = $matches['time'];
         return $parts;
     }
+
+    public static function getMinValue(): string
+    {
+        return '0000-00-00';
+    }
+
+    public static function getMaxValue(): string
+    {
+        return '9999-12-31';
+    }
 }
