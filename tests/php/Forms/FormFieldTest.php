@@ -96,6 +96,7 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\SegmentField;
 use SilverStripe\Core\Validation\FieldValidation\TimeFieldValidator;
 use SilverStripe\Core\Validation\FieldValidation\DatetimeFieldValidator;
+use SilverStripe\Forms\SudoModePasswordField;
 
 class FormFieldTest extends SapphireTest
 {
@@ -936,6 +937,9 @@ class FormFieldTest extends SapphireTest
                 CompositeFieldValidator::class,
             ],
             SingleLookupField::class => [],
+            SudoModePasswordField::class => [
+                StringFieldValidator::class,
+            ],
             Tab::class => [
                 CompositeFieldValidator::class,
             ],
