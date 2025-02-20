@@ -164,6 +164,11 @@ abstract class SapphireTest extends TestCase implements TestOnly
     protected FixtureFactory|bool $fixtureFactory;
 
     /**
+     * The original value of ini 'max_execution_time' before any code or tests change it
+     */
+    private int $origMaxExecutionTime;
+
+    /**
      * @return TempDatabase
      */
     public static function tempDB()
@@ -332,6 +337,8 @@ abstract class SapphireTest extends TestCase implements TestOnly
         Email::config()->remove('send_all_emails_from');
         Email::config()->remove('cc_all_emails_to');
         Email::config()->remove('bcc_all_emails_to');
+
+        $this->origMaxExecutionTime = ini_get('max_execution_time');
     }
 
     /**
@@ -563,6 +570,10 @@ abstract class SapphireTest extends TestCase implements TestOnly
 
         // Call state helpers
         static::$state->tearDown($this);
+
+        // Reset max_execution_time in case some code or a unit test changed it,
+        // either via ini_set() or set_time_limit()
+        ini_set('max_execution_time', $this->origMaxExecutionTime);
     }
 
     /**
