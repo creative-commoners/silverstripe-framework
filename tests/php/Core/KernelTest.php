@@ -20,6 +20,7 @@ use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DB;
 use ReflectionObject;
 use SilverStripe\Core\Tests\KernelTest\TestFlushable;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class KernelTest extends SapphireTest
 {
@@ -131,7 +132,7 @@ class KernelTest extends SapphireTest
         $kernel->boot();
     }
 
-    public function provideAllowedHostsWarning(): array
+    public static function provideAllowedHostsWarning(): array
     {
         $scenarios = [
             [
@@ -158,9 +159,7 @@ class KernelTest extends SapphireTest
         return $scenarios;
     }
 
-    /**
-     * @dataProvider provideAllowedHostsWarning
-     */
+    #[DataProvider('provideAllowedHostsWarning')]
     public function testAllowedHostsWarning(array $config, bool $isCli, bool $shouldLog): void
     {
         // Prepare mock to check if a warning is logged or not
