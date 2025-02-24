@@ -9,12 +9,13 @@ use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Environment;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Control\Middleware\AllowedHostsMiddleware;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class AllowedHostsMiddlewareTest extends SapphireTest
 {
     protected $usesDatabase = false;
 
-    public function provideProcess(): array
+    public static function provideProcess(): array
     {
         return [
             'cli allow all' => [
@@ -75,9 +76,7 @@ class AllowedHostsMiddlewareTest extends SapphireTest
         ];
     }
 
-    /**
-     * @dataProvider provideProcess
-     */
+    #[DataProvider('provideProcess')]
     public function testProcess(string|array $allowedHosts, bool $isCli, bool $allowed): void
     {
         $reflectionEnvironment = new ReflectionClass(Environment::class);

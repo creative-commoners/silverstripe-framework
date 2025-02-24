@@ -25,6 +25,11 @@ interface SudoModeServiceInterface
     public function activate(Session $session): bool;
 
     /**
+     * De-register sudo mode permission in the provided session.
+     */
+    public function deactivate(Session $session): void;
+
+    /**
      * How long the sudo mode activation lasts for in minutes.
      */
     public function getLifetime(): int;
