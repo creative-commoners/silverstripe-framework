@@ -7,6 +7,7 @@ use SilverStripe\Admin\FormSchemaController;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\ClassInfo;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
@@ -279,9 +280,14 @@ class GridFieldFilterHeader extends AbstractGridFieldComponent implements GridFi
      *
      * @param GridField $gridfield
      * @return string
+     * @deprecated 5.4.0 Will be replaced with SilverStripe\ORM\Search\SearchContextForm::getSchemaData()
      */
     public function getSearchFieldSchema(GridField $gridField)
     {
+        Deprecation::noticeWithNoReplacment(
+            '5.4.0',
+            'Will be replaced with SilverStripe\ORM\Search\SearchContextForm::getSchemaData()'
+        );
         $schemaUrl = Controller::join_links($gridField->Link(), 'schema/SearchForm');
         $inst = singleton($gridField->getModelClass());
         $context = $this->getSearchContext($gridField);
@@ -385,9 +391,14 @@ class GridFieldFilterHeader extends AbstractGridFieldComponent implements GridFi
      *
      * @param GridField $gridfield
      * @return HTTPResponse
+     * @deprecated 5.4.0 Will be replaced with SilverStripe\Forms\FormRequestHandler::getSchema()
      */
     public function getSearchFormSchema(GridField $gridField)
     {
+        Deprecation::noticeWithNoReplacment(
+            '5.4.0',
+            'Will be replaced with SilverStripe\Forms\FormRequestHandler::getSchema()'
+        );
         $form = $this->getSearchForm($gridField);
 
         // If there are no filterable fields, return a 400 response
@@ -395,7 +406,7 @@ class GridFieldFilterHeader extends AbstractGridFieldComponent implements GridFi
             return new HTTPResponse(_t(__CLASS__ . '.SearchFormFaliure', 'No search form could be generated'), 400);
         }
 
-        $parts = $gridField->getRequest()->getHeader(FormSchemaController::SCHEMA_HEADER);
+        $parts = $gridField->getRequest()->getHeader(FormSchema::SCHEMA_HEADER);
         $schemaID = $gridField->getRequest()->getURL();
         $data = FormSchema::singleton()
             ->getMultipartSchema($parts, $schemaID, $form);
