@@ -41,6 +41,11 @@ class FormSchema
     const PART_AUTO = 'auto';
 
     /**
+     * Form schema header identifier
+     */
+    public const SCHEMA_HEADER = 'X-Formschema-Request';
+
+    /**
      * Returns a representation of the provided {@link Form} as structured data,
      * based on the request data.
      *
