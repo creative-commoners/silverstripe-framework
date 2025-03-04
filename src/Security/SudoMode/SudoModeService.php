@@ -4,11 +4,13 @@ namespace SilverStripe\Security\SudoMode;
 
 use SilverStripe\Control\Session;
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Extensible;
 use SilverStripe\ORM\FieldType\DBDatetime;
 
 class SudoModeService implements SudoModeServiceInterface
 {
     use Configurable;
+    use Extensible;
 
     /**
      * The lifetime that sudo mode authorization lasts for, in minutes.
