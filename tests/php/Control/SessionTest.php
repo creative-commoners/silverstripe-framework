@@ -85,6 +85,7 @@ class SessionTest extends SapphireTest
             ->setScheme('https');
         Cookie::set(session_name(), '1234');
         $session = new Session(null); // unstarted session
+        $session->config()->set('cookie_secure', false);
         $session->start($req);
         $this->assertNotEquals(session_name(), $session->config()->get('cookie_name_secure'));
     }
@@ -97,7 +98,6 @@ class SessionTest extends SapphireTest
             ->setScheme('https');
         Cookie::set(session_name(), '1234');
         $session = new Session(null); // unstarted session
-        $session->config()->set('cookie_secure', true);
         $session->start($req);
         $this->assertEquals(session_name(), $session->config()->get('cookie_name_secure'));
     }
@@ -357,6 +357,7 @@ class SessionTest extends SapphireTest
         $methodIsCookieSecure = new ReflectionMethod($session, 'isCookieSecure');
         $methodIsCookieSecure->setAccessible(true);
 
+        Config::modify()->set(Session::class, 'cookie_secure', false);
         $this->assertFalse($methodIsCookieSecure->invoke($session, 'Lax', true));
         $this->assertFalse($methodIsCookieSecure->invoke($session, 'Lax', false));
         $this->assertTrue($methodIsCookieSecure->invoke($session, 'None', false));
@@ -383,7 +384,7 @@ class SessionTest extends SapphireTest
                 'domain' => null,
                 'secure' => false,
                 'httponly' => true,
-                'samesite' => 'Lax',
+                'samesite' => Cookie::SAMESITE_STRICT,
             ],
             $params
         );
@@ -399,7 +400,7 @@ class SessionTest extends SapphireTest
                 'domain' => 'test-domain',
                 'secure' => false,
                 'httponly' => true,
-                'samesite' => 'Lax',
+                'samesite' => Cookie::SAMESITE_STRICT,
             ],
             $params
         );
@@ -412,9 +413,9 @@ class SessionTest extends SapphireTest
                 'lifetime' => 123,
                 'path' => '/some-path/',
                 'domain' => 'test-domain',
-                'secure' => false,
+                'secure' => true,
                 'httponly' => true,
-                'samesite' => 'Lax',
+                'samesite' => Cookie::SAMESITE_STRICT,
             ],
             $params
         );
