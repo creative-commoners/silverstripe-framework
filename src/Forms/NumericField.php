@@ -101,24 +101,14 @@ class NumericField extends TextField
         return NumberFormatter::TYPE_DOUBLE;
     }
 
-    /**
-     * In some cases and locales, validation expects non-breaking spaces.
-     * This homogenises regular, narrow and thin non-breaking spaces to a regular space character.
-     *
-     */
-    private function clean(?string $value): string
-    {
-        return trim(str_replace(["\u{00A0}", "\u{202F}", "\u{2009}"], ' ', $value ?? ''));
-    }
 
     public function setSubmittedValue($value, $data = null)
     {
         // Save original value in case parse fails
-        $value = $this->clean($value);
         $this->originalValue = $value;
 
         // Empty string is no-number (not 0)
-        if (strlen($value ?? '') === 0) {
+        if (mb_strlen($value ?? '') === 0) {
             $this->value = null;
             return $this;
         }
@@ -128,7 +118,7 @@ class NumericField extends TextField
         $parsed = 0;
         $this->value = $formatter->parse($value, $this->getNumberType(), $parsed); // Note: may store literal `false` for invalid values
         // Ensure that entire string is parsed
-        if ($parsed < strlen($value ?? '')) {
+        if ($parsed < mb_strlen($value ?? '')) {
             $this->value = false;
         }
         return $this;
@@ -164,7 +154,7 @@ class NumericField extends TextField
      */
     protected function cast($value)
     {
-        if (strlen($value ?? '') === 0) {
+        if (mb_strlen($value ?? '') === 0) {
             return null;
         }
         if ($this->getScale() === 0) {
