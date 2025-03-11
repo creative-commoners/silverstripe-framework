@@ -124,9 +124,8 @@ class Session
 
     /**
      * @config
-     * @var boolean
      */
-    private static $cookie_secure = false;
+    private static bool $cookie_secure = true;
 
     /**
      * @config
@@ -138,7 +137,7 @@ class Session
      * Must be "Strict", "Lax", or "None".
      * @config
      */
-    private static string $cookie_samesite = Cookie::SAMESITE_LAX;
+    private static string $cookie_samesite = Cookie::SAMESITE_STRICT;
 
     /**
      * Name of session cache limiter to use.
