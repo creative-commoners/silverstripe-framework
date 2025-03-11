@@ -119,15 +119,6 @@ class NumericField extends TextField
         return NumberFormatter::TYPE_DOUBLE;
     }
 
-    /**
-     * In some cases and locales, validation expects non-breaking spaces.
-     * This homogenises regular, narrow and thin non-breaking spaces to a regular space character.
-     */
-    private function clean(?string $value): string
-    {
-        return trim(str_replace(["\u{00A0}", "\u{202F}", "\u{2009}"], ' ', $value ?? ''));
-    }
-
     public function setValue($value, $data = null)
     {
         $this->originalValue = $value;
@@ -143,11 +134,10 @@ class NumericField extends TextField
         }
 
         // Save original value in case parse fails
-        $value = $this->clean($value);
         $this->originalValue = $value;
 
         // Empty string is no-number (not 0)
-        if (strlen($value ?? '') === 0) {
+        if (mb_strlen($value ?? '') === 0) {
             $this->value = null;
             return $this;
         }
@@ -157,8 +147,8 @@ class NumericField extends TextField
         $parsed = 0;
         $value = $formatter->parse($value, $this->getNumberType(), $parsed); // Note: may store literal `false` for invalid values
         // Ensure that entire string is parsed
-        if ($parsed < strlen($this->originalValue ?? '')) {
-            $value = false;
+        if ($parsed < mb_strlen($this->originalValue ?? '')) {
+            $this->value = false;
         }
         $this->value = $this->cast($value);
         return $this;
@@ -218,7 +208,7 @@ class NumericField extends TextField
             return false;
         }
         // If null or empty string, return null
-        if (is_null($value) || is_string($value) && strlen($value) === 0) {
+        if (is_null($value) || is_string($value) && mb_strlen($value) === 0) {
             return null;
         }
         // If non-numeric, then return as-is. This will be caught by the validation.
