@@ -267,7 +267,7 @@ class ListDecoratorTest extends SapphireTest
     public function testTotalItems()
     {
         $this->list->expects($this->once())->method('count')->willReturn(5);
-        $this->assertSame(5, $this->decorator->TotalItems());
+        $this->assertSame(5, $this->decorator->getTotalItems());
     }
 
     public function testAdd()
