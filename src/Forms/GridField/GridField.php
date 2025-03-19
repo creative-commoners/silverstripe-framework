@@ -81,6 +81,7 @@ class GridField extends FormField
         GridFieldPaginator::class,
         GridFieldFilterHeader::class,
         GridFieldSortableHeader::class,
+        GridFieldSudoMode::class,
         GridFieldToolbarHeader::class,
         GridFieldViewButton::class,
         GridState_Component::class,
@@ -534,6 +535,7 @@ class GridField extends FormField
             // noop - it's possible to have a gridfield with custom components that don't rely on columns
             // from the records in the list.
         }
+        $this->setReadonly(false);
         if (is_a($modelClass, DataObject::class, true)) {
             /** @var DataObject $obj */
             $obj = Injector::inst()->create($modelClass);
@@ -543,8 +545,13 @@ class GridField extends FormField
                     $service = Injector::inst()->get(SudoModeServiceInterface::class);
                     if (!$service->check($session)) {
                         $this->performReadonlyTransformation();
+                        $this->setReadonly(true);
+                        $this->addSudoModeComponent();
                         $sudoModeTransformation = true;
                     }
+                } else {
+                    // explicity set to false to update state for AJAX requests that refresh the gridfield after activating sudo mode
+                    $this->setReadonly(false);
                 }
             }
         }
@@ -1394,5 +1401,28 @@ class GridField extends FormField
         }
 
         return '';
+    }
+
+    /**
+     * Add a GridFieldSudoMode component to this GridField.
+     */
+    private function addSudoModeComponent(): void
+    {
+        $newComponent = GridFieldSudoMode::create($this->Title(), $this->getColumnCount());
+        $components = $this->getComponents()->toArray();
+        $classes = array_map(fn($component) => get_class($component), $components);
+        $index = array_search(GridFieldToolbarHeader::class, $classes);
+        // Insert the as new either after the GridFieldToolbarHeader or as the first component
+        // This is done so that the component is rendered in the correct order
+        // This is not ideal as we should not have to rely on the order of components
+        // so do not assume that this is best practice
+        if ($index !== false) {
+            array_splice($components, $index + 1, 0, [$newComponent]);
+        } else {
+            array_unshift($components, $newComponent);
+        }
+        $newConfig = GridFieldConfig::create();
+        $newConfig->addComponents($components);
+        $this->setConfig($newConfig);
     }
 }
