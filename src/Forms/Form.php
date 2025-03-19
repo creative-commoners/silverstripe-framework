@@ -271,6 +271,8 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      */
     protected $notifyUnsavedChanges = false;
 
+    private bool $formRequiresSudoMode = false;
+
     /**
      * Create a new form, with the given fields an action buttons.
      *
@@ -358,11 +360,21 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
         }
         // If sudo mode is not active, make the form readonly and add a sudo mode password field
         $this->makeReadonly();
-        $field = SudoModePasswordField::create(SudoModePasswordField::FIELD_NAME);
+        $field = SudoModePasswordField::create();
         // Manually call setForm() to the field as the field list is being updated after the
         // form is created, which is when setForm() is normally being created
         $field->setForm($this);
         $this->Fields()->unshift($field);
+        $this->formRequiresSudoMode = true;
+    }
+
+    /**
+     * Whether the form requires sudo mode.
+     * Note this is different from DataObject::getRequireSudoMode() which checks configuration instead
+     */
+    public function getFormRequiresSudoMode(): bool
+    {
+        return $this->formRequiresSudoMode;
     }
 
     /**
