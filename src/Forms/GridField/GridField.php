@@ -548,7 +548,8 @@ class GridField extends FormField
                 if ($session) {
                     $service = Injector::inst()->get(SudoModeServiceInterface::class);
                     if (!$service->check($session)) {
-                        $this->performReadonlyTransformation();
+                        $copy = $this->performReadonlyTransformation();
+                        $this->setConfig($copy->getConfig());
                         $this->setReadonly(true);
                         $this->addSudoModeComponent();
                         $sudoModeTransformation = true;
