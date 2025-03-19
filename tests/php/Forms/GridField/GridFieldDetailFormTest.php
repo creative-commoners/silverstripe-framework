@@ -359,9 +359,10 @@ class GridFieldDetailFormTest extends FunctionalTest
             '//tr[contains(@class, "ss-gridfield-item") and contains(@data-id, "'
             . $group->ID . '")]//a'
         );
-        $this->assertEquals(
-            'GridFieldDetailFormTest_GroupController/Form/field/testfield/item/' . $group->ID . '/edit',
-            (string)$groupEditLink[0]['href']
+        $this->assertSame(
+            '/GridFieldDetailFormTest_GroupController/Form/field/testfield/item/' . $group->ID
+            . '/edit?gridState-testfield-0=%7B%22Readonly%22%3Afalse%7D',
+            (string) $groupEditLink[0]['href']
         );
 
         // Get second level form (GridField managing Person)
@@ -372,15 +373,11 @@ class GridFieldDetailFormTest extends FunctionalTest
             '//fieldset[@id="Form_ItemEditForm_People"]' .
             '//tr[contains(@class, "ss-gridfield-item") and contains(@data-id, "' . $person->ID . '")]//a'
         );
-        $this->assertEquals(
-            sprintf(
-                '/GridFieldDetailFormTest_GroupController/Form/field/testfield/item/%d/ItemEditForm/field/People'
-                . '/item/%d/edit%s',
-                $group->ID,
-                $person->ID,
-                '?gridState-People-1=%7B%22GridFieldAddRelation%22%3Anull%7D'
-            ),
-            (string)$personEditLink[0]['href']
+        $this->assertSame(
+            "/GridFieldDetailFormTest_GroupController/Form/field/testfield/item/{$group->ID}/ItemEditForm/field/People"
+            . "/item/{$person->ID}/edit"
+            . '?gridState-People-1=%7B%22Readonly%22%3Afalse%2C%22GridFieldAddRelation%22%3Anull%7D',
+            (string) $personEditLink[0]['href']
         );
 
         // Get third level form (GridField managing Category)
@@ -391,16 +388,11 @@ class GridFieldDetailFormTest extends FunctionalTest
             '//fieldset[@id="Form_ItemEditForm_Categories"]'
             . '//tr[contains(@class, "ss-gridfield-item") and contains(@data-id, "' . $category->ID . '")]//a'
         );
-        $this->assertEquals(
-            sprintf(
-                '/GridFieldDetailFormTest_GroupController/Form/field/testfield/item/%d/ItemEditForm/field/People'
-                . '/item/%d/ItemEditForm/field/Categories/item/%d/edit%s',
-                $group->ID,
-                $person->ID,
-                $category->ID,
-                '?gridState-Categories-2=%7B%22GridFieldAddRelation%22%3Anull%7D'
-            ),
-            (string)$categoryEditLink[0]['href']
+        $this->assertSame(
+            "/GridFieldDetailFormTest_GroupController/Form/field/testfield/item/{$group->ID}/ItemEditForm/field/People"
+            . "/item/{$person->ID}/ItemEditForm/field/Categories/item/{$category->ID}/edit"
+            . '?gridState-Categories-2=%7B%22Readonly%22%3Afalse%2C%22GridFieldAddRelation%22%3Anull%7D',
+            (string) $categoryEditLink[0]['href']
         );
 
         // Fourth level form would be a Category detail view

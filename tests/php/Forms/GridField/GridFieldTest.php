@@ -4,6 +4,7 @@ namespace SilverStripe\Forms\Tests\GridField;
 
 use InvalidArgumentException;
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Dev\CSSContentParser;
@@ -22,13 +23,13 @@ use SilverStripe\Forms\GridField\GridFieldToolbarHeader;
 use SilverStripe\Forms\GridField\GridState;
 use SilverStripe\Forms\GridField\GridState_Component;
 use SilverStripe\Forms\GridField\GridState_Data;
-use SilverStripe\Forms\Validation\RequiredFieldsValidator;
 use SilverStripe\Forms\Tests\GridField\GridFieldTest\Cheerleader;
 use SilverStripe\Forms\Tests\GridField\GridFieldTest\Component;
 use SilverStripe\Forms\Tests\GridField\GridFieldTest\Component2;
 use SilverStripe\Forms\Tests\GridField\GridFieldTest\HTMLFragments;
 use SilverStripe\Forms\Tests\GridField\GridFieldTest\Permissions;
 use SilverStripe\Forms\Tests\GridField\GridFieldTest\Player;
+use SilverStripe\Forms\Tests\GridField\GridFieldTest\RequiresSudoMode;
 use SilverStripe\Forms\Tests\GridField\GridFieldTest\Team;
 use SilverStripe\Forms\Tests\ValidatorTest\TestValidator;
 use SilverStripe\Model\List\ArrayList;
@@ -36,6 +37,8 @@ use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Forms\GridField\GridFieldConfig_Base;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
+use SilverStripe\Security\SudoMode\SudoModeServiceInterface;
+use SilverStripe\Core\Injector\Injector;
 
 class GridFieldTest extends SapphireTest
 {
@@ -44,7 +47,19 @@ class GridFieldTest extends SapphireTest
         Cheerleader::class,
         Player::class,
         Team::class,
+        RequiresSudoMode::class,
     ];
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $session = Controller::curr()->getRequest()->getSession();
+        $service = Injector::inst()->get(SudoModeServiceInterface::class);
+        // deactivate() isn't part of the interface
+        if (method_exists($service, 'deactivate')) {
+            call_user_func([$service, 'deactivate'], $session);
+        }
+    }
 
     public function testGridField()
     {
@@ -635,5 +650,86 @@ class GridFieldTest extends SapphireTest
         foreach ($config->getComponents() as $component) {
             $this->assertNotSame($component, $clone->getConfig()->getComponentsByType(get_class($component)));
         }
+    }
+
+    public static function provideSudoModeComponentRendered(): array
+    {
+        return [
+            'form-protected-do-protected-sudo-active' => [
+                'formProtected' => true,
+                'dataObjectProtected' => true,
+                'sudoActive' => true,
+                'expected' => false,
+            ],
+            'form-protected-do-protected-sudo-inactive' => [
+                'formProtected' => true,
+                'dataObjectProtected' => true,
+                'sudoActive' => false,
+                'expected' => true,
+            ],
+            'form-protected-do-unprotected-sudo-active' => [
+                'formProtected' => true,
+                'dataObjectProtected' => false,
+                'sudoActive' => true,
+                'expected' => false,
+            ],
+            'form-protected-do-unprotected-sudo-inactive' => [
+                'formProtected' => true,
+                'dataObjectProtected' => false,
+                'sudoActive' => false,
+                'expected' => false,
+            ],
+            'form-unprotected-do-protected-sudo-active' => [
+                'formProtected' => false,
+                'dataObjectProtected' => true,
+                'sudoActive' => true,
+                'expected' => false,
+            ],
+            'form-unprotected-do-protected-sudo-inactive' => [
+                'formProtected' => false,
+                'dataObjectProtected' => true,
+                'sudoActive' => false,
+                'expected' => true,
+            ],
+            'form-unprotected-do-unprotected-sudo-active' => [
+                'formProtected' => false,
+                'dataObjectProtected' => false,
+                'sudoActive' => true,
+                'expected' => false,
+            ],
+            'form-unprotected-do-unprotected-sudo-inactive' => [
+                'formProtected' => false,
+                'dataObjectProtected' => false,
+                'sudoActive' => false,
+                'expected' => false,
+            ],
+        ];
+    }
+
+    /**
+     * Test to see if a GridFieldSudoMode component is added to the GridField in different scenarios
+     */
+    #[DataProvider('provideSudoModeComponentRendered')]
+    public function testSudoModeComponentRendered(
+        bool $formProtected,
+        bool $dataObjectProtected,
+        bool $sudoActive,
+        bool $expected
+    ): void {
+        if ($sudoActive) {
+            $session = Controller::curr()->getRequest()->getSession();
+            Injector::inst()->get(SudoModeServiceInterface::class)->activate($session);
+        }
+        $form = new Form();
+        if ($formProtected) {
+            $form->requireSudoMode();
+        }
+        $dataList = $dataObjectProtected ? RequiresSudoMode::get() : Team::get();
+        $gridField = new GridField('testfield', dataList: $dataList);
+        $gridField->setForm($form);
+        // call FieldHolder() as it's where the GridFieldSudoMode component will be added
+        $html = $gridField->FieldHolder();
+        $actual = str_contains($html, 'SudoModePasswordField');
+        $this->assertSame($expected, $actual);
     }
 }
