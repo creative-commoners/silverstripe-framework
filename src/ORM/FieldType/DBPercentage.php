@@ -56,14 +56,4 @@ class DBPercentage extends DBDecimal
     {
         return number_format($this->value * 100, $this->decimalSize - 2) . '%';
     }
-
-    public function saveInto(ModelData $model): void
-    {
-        parent::saveInto($model);
-
-        $fieldName = $this->name;
-        if ($fieldName && $model->$fieldName > 1.0) {
-            $model->__set($fieldName, 1.0);
-        }
-    }
 }

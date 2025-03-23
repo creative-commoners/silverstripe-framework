@@ -90,24 +90,6 @@ class DBDecimal extends DBField
         return $this;
     }
 
-    public function saveInto(ModelData $model): void
-    {
-        $fieldName = $this->name;
-
-        if ($fieldName) {
-            if ($this->value instanceof DBField) {
-                $this->value->saveInto($model);
-            } else {
-                $value = (float) preg_replace('/[^0-9.\-\+]/', '', $this->value ?? '');
-                $model->__set($fieldName, $value);
-            }
-        } else {
-            throw new \UnexpectedValueException(
-                "DBField::saveInto() Called on a nameless '" . static::class . "' object"
-            );
-        }
-    }
-
     public function scaffoldFormField(?string $title = null, array $params = []): ?FormField
     {
         return NumericField::create($this->name, $title)

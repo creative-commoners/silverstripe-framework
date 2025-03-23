@@ -69,7 +69,7 @@ class DBBoolean extends DBField
             if ($this->value instanceof DBField) {
                 $this->value->saveInto($dataObject);
             } else {
-                $dataObject->__set($fieldName, (bool) $this->value);
+                $dataObject->__set($fieldName, $this->value);
             }
         } else {
             $class = static::class;
@@ -118,6 +118,7 @@ class DBBoolean extends DBField
                 case 'false':
                 case 'f':
                 case '0':
+                case '':
                     return false;
                 case 'true':
                 case 't':
