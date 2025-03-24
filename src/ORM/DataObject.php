@@ -2526,7 +2526,7 @@ class DataObject extends ViewableData implements DataObjectInterface, i18nEntity
         $overThreshold = $threshold === 0 || $list->count() > $threshold;
         $field = SearchableDropdownField::create($fieldName, $fieldTitle, $list, $ownerRecord->{$relationName . 'ID'}, $labelField)
             ->setIsLazyLoaded($overThreshold);
-        if($threshold > 0) {
+        if ($threshold > 0) {
             $field->setLazyLoadLimit($threshold);
         }
         return $field;
