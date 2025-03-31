@@ -14,7 +14,6 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\Relation;
 use SilverStripe\Model\List\SS_List;
-use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Model\ArrayData;
 use SilverStripe\ORM\Search\SearchContext;
 use SilverStripe\Security\SecurityToken;
@@ -223,6 +222,9 @@ trait SearchableDropdownTrait
 
     /**
      * Get whether to use a search context instead searching on labelField
+     *
+     * If the label field doesn't map to a database field and instead uses a getter e.g. 'MyField' calls
+     * a 'getMyField()' method, then search context will be used regardless of what is returned here
      */
     public function getUseSearchContext(): bool
     {
@@ -231,6 +233,9 @@ trait SearchableDropdownTrait
 
     /**
      * Set whether to use a search context instead searching on labelField
+     *
+     * If the label field doesn't map to a database field and instead uses a getter e.g. 'MyField' calls
+     * a 'getMyField()' method, then search context will be used regardless of what is set here
      */
     public function setUseSearchContext(bool $useSearchContext): static
     {
@@ -283,8 +288,10 @@ trait SearchableDropdownTrait
 
     /**
      * Get the field to use for the label of the option
+     * This field is also used for searching if that field exists in the database and search context is not being used
      *
-     * The default value of 'Title' will map to DataObject::getTitle() if a Title DB field does not exist
+     * If the label field does not map to a database field then a getter will be used if it exists
+     * e.g. the default value of 'Title' will map to DataObject::getTitle() if a Title DB field does not exist
      */
     public function getLabelField(): string
     {
@@ -293,6 +300,7 @@ trait SearchableDropdownTrait
 
     /**
      * Set the field to use for the label of the option
+     * This field is also used for searching if that field exists in the database and search context is not being used
      */
     public function setLabelField(string $labelField): static
     {
@@ -486,9 +494,14 @@ trait SearchableDropdownTrait
         $labelField = $this->getLabelField();
         /** @var DataObject $obj */
         $obj = $dataClass::create();
-        $key = $this->getUseSearchContext() ? $obj->getGeneralSearchFieldName() : $this->getLabelField();
-        $searchParams = [$key => $term];
         $hasLabelField = (bool) $obj->getSchema()->fieldSpec($dataClass, $labelField);
+        $key = $labelField;
+        // Label field still works for making labels if there's a getter method
+        // on the object e.g. 'Title' ... getTitle(), however we can't use it for database queries
+        if (!$hasLabelField || $this->getUseSearchContext()) {
+            $key = $obj->getGeneralSearchFieldName();
+        }
+        $searchParams = [$key => $term];
         $sort = $hasLabelField ? $labelField : null;
         $limit = $this->getLazyLoadLimit();
         $newList = $this->getSearchContext()->getQuery($searchParams, $sort, $limit);

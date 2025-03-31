@@ -16,6 +16,7 @@ use SilverStripe\Forms\HiddenField;
 use stdClass;
 use SilverStripe\Forms\Form;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Security\Member;
 
 class SearchableDropdownTraitTest extends SapphireTest
 {
@@ -258,5 +259,56 @@ class SearchableDropdownTraitTest extends SapphireTest
         $mockField->setSource(Team::get());
         $mockField->setForm(new Form());
         $mockField->$methodToCall();
+    }
+
+    public static function provideSearchDataObjectWithMethodForLabelField(): array
+    {
+        return [
+            'single' => [
+                'term' => 'alex',
+                'expected' => '[{"value":0,"label":"Aziel, Alex"}]',
+            ],
+            'multi' => [
+                'term' => 'z',
+                'expected' => '[{"value":0,"label":"Aziel, Alex"},{"value":0,"label":"Cazton, Cindy"}]',
+            ],
+            'email' => [
+                'term' => '@example.com',
+                'expected' => implode('', [
+                    '[{"value":0,"label":"Aziel, Alex"},{"value":0,"label":"Brown, Bob"}',
+                    ',{"value":0,"label":"Cazton, Cindy"}]',
+                ]),
+            ],
+        ];
+    }
+
+    /**
+     * Member has a method getTitle() that returns "Surname, FirstName"
+     * The default label field on the field is "Title", which doesn't exist on the Member database table
+     * It should fall back to using search context in this scenario
+     *
+     * @dataProvider provideSearchDataObjectWithMethodForLabelField
+     */
+    public function testSearchDataObjectWithMethodForLabelField(string $term, string $expected): void
+    {
+        $data = [
+            ['FirstName' => 'Alex', 'Surname' => 'Aziel', 'Email' => 'aaron.aziel@example.com'],
+            ['FirstName' => 'Bob', 'Surname' => 'Brown', 'Email' => 'bob.brown@example.com'],
+            ['FirstName' => 'Cindy', 'Surname' => 'Cazton', 'Email' => 'cindy.cazton@example.com'],
+        ];
+        foreach ($data as $row) {
+            $member = new Member($row);
+            $member->write();
+        }
+        // 4 members because of the 3 members above and the default admin member
+        $this->assertSame(4, Member::get()->count());
+        $field = new SearchableDropdownField('MyField', 'MyField', Member::get());
+        $field->setLabelField('Title');
+        $request = new HTTPRequest('GET', 'someurl', ['term' => $term]);
+        $request->addHeader('X-SecurityID', SecurityToken::getSecurityID());
+        $body = $field->search($request)->getBody();
+        // Replace the member ID value with 0 to make the test more stable
+        $body = preg_replace('/"value":[0-9]+/', '"value":0', $body);
+        $this->assertSame($expected, $body);
     }
 }
