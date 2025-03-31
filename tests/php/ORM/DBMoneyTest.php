@@ -7,6 +7,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\i18n\i18n;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class DBMoneyTest extends SapphireTest
 {
@@ -339,6 +340,84 @@ class DBMoneyTest extends SapphireTest
         $this->assertFalse($obj->MyMoney->hasAmount());
     }
 
+    public static function provideSetGetValue(): array
+    {
+        return [
+            'int' => [
+                'amount' => 3,
+                'currency' => 'NZD',
+                'expected' => '3 NZD',
+            ],
+            'string-int' => [
+                'amount' => '3',
+                'currency' => 'NZD',
+                'expected' => '3 NZD',
+            ],
+            'negative-int' => [
+                'amount' => -3,
+                'currency' => 'NZD',
+                'expected' => '-3 NZD',
+            ],
+            'negative-string-int' => [
+                'amount' => '-3',
+                'currency' => 'NZD',
+                'expected' => '-3 NZD',
+            ],
+            'float' => [
+                'amount' => 3.65,
+                'currency' => 'NZD',
+                'expected' => '3.65 NZD',
+            ],
+            'string-float' => [
+                'amount' => '3.65',
+                'currency' => 'NZD',
+                'expected' => '3.65 NZD',
+            ],
+            'negative-float' => [
+                'amount' => -3.65,
+                'currency' => 'NZD',
+                'expected' => '-3.65 NZD',
+            ],
+            'negative-string-float' => [
+                'amount' => '-3.65',
+                'currency' => 'NZD',
+                'expected' => '-3.65 NZD',
+            ],
+            'no-curency' => [
+                'amount' => '1.23',
+                'currency' => null,
+                'expected' => '1.23',
+            ],
+            'non-numeric-no-currency' => [
+                'amount' => 'fish',
+                'currency' => null,
+                'expected' => 'fish',
+            ],
+            'string' => [
+                'amount' => 'fish',
+                'currency' => 'NZD',
+                'expected' => 'fish NZD',
+            ],
+            'array' => [
+                'amount' => [],
+                'currency' => 'NZD',
+                'expected' => null,
+            ],
+            'null' => [
+                'amount' => null,
+                'currency' => 'NZD',
+                'expected' => null,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideSetGetValue')]
+    public function testSetGetValue(mixed $amount, ?string $currency, mixed $expected): void
+    {
+        $field = new DBMoney('MyField');
+        $field->setValue(['Amount' => $amount, 'Currency' => $currency]);
+        $this->assertSame($expected, $field->getValue());
+    }
 
     /**
      * In some cases and locales, validation expects non-breaking spaces.
@@ -352,5 +431,104 @@ class DBMoneyTest extends SapphireTest
     {
         $nbsp = html_entity_decode('&nbsp;', 0, 'UTF-8');
         return str_replace(' ', $nbsp ?? '', trim($input ?? ''));
+    }
+
+    public static function provideValidate(): array
+    {
+        return [
+            'zero' => [
+                'currency' => 'NZD',
+                'amount' => 1,
+                'expected' => true,
+            ],
+            'no-cents' => [
+                'currency' => 'NZD',
+                'amount' => 1,
+                'expected' => true,
+            ],
+            'cents' => [
+                'currency' => 'NZD',
+                'amount' => 1.52,
+                'expected' => true,
+            ],
+            'negative-zero-point-five' => [
+                'currency' => 'NZD',
+                'amount' => -0.5,
+                'expected' => true,
+            ],
+            'string-zero' => [
+                'currency' => 'NZD',
+                'amount' => '0',
+                'expected' => true,
+            ],
+            'string-no-cents' => [
+                'currency' => 'NZD',
+                'amount' => '1',
+                'expected' => true,
+            ],
+            'string-cents' => [
+                'currency' => 'NZD',
+                'amount' => '1.5',
+                'expected' => true,
+            ],
+            'string-negative-zero-point-five' => [
+                'currency' => 'NZD',
+                'amount' => '-0.5',
+                'expected' => true,
+            ],
+            'string-fish' => [
+                'currency' => 'NZD',
+                'amount' => 'fish',
+                'expected' => false,
+            ],
+            'empty-string' => [
+                'currency' => 'NZD',
+                'amount' => '',
+                'expected' => false,
+            ],
+            'null' => [
+                'currency' => 'NZD',
+                'amount' => null,
+                'expected' => true,
+            ],
+            'true' => [
+                'currency' => 'NZD',
+                'amount' => true,
+                'expected' => false,
+            ],
+            'false' => [
+                'currency' => 'NZD',
+                'amount' => false,
+                'expected' => false,
+            ],
+            'currency-blank' => [
+                'currency' => '',
+                'amount' => 1,
+                'expected' => true,
+            ],
+            'currency-null' => [
+                'currency' => null,
+                'amount' => 1,
+                'expected' => true,
+            ],
+            'currency-true' => [
+                'currency' => true,
+                'amount' => 1,
+                'expected' => false,
+            ],
+            'currency-false' => [
+                'currency' => false,
+                'amount' => 1,
+                'expected' => false,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideValidate')]
+    public function testValidate(mixed $currency, mixed $amount, bool $expected): void
+    {
+        $money = new DBMoney();
+        $money->setValue(['Currency' => $currency, 'Amount' => $amount]);
+        $this->assertEquals($expected, $money->validate()->isValid());
     }
 }

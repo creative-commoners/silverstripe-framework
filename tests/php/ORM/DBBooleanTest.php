@@ -57,6 +57,10 @@ class DBBooleanTest extends SapphireTest
                 'value' => 'F',
                 'expected' => false,
             ],
+            'blank-string' => [
+                'value' => '',
+                'expected' => false,
+            ],
             'true-string' => [
                 'value' => 'true',
                 'expected' => true,
@@ -64,6 +68,10 @@ class DBBooleanTest extends SapphireTest
             'false-string' => [
                 'value' => 'false',
                 'expected' => false,
+            ],
+            'fish-string' => [
+                'value' => 'fish',
+                'expected' => 'fish',
             ],
             '2-int' => [
                 'value' => 2,

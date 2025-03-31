@@ -2,6 +2,7 @@
 
 namespace SilverStripe\ORM\FieldType;
 
+use Stringable;
 use NumberFormatter;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\MoneyField;
@@ -39,7 +40,7 @@ class DBMoney extends DBComposite
     public function Nice(): string
     {
         if (!$this->exists()) {
-            return null;
+            return '';
         }
         $amount = $this->getAmount();
         $currency = $this->getCurrency();
@@ -59,10 +60,11 @@ class DBMoney extends DBComposite
      */
     public function getValue(): ?string
     {
-        if (!$this->exists()) {
+        $amount = $this->getAmount();
+        // Ensure $amount is stringable
+        if (!is_scalar($amount) && !($amount instanceof Stringable)) {
             return null;
         }
-        $amount = $this->getAmount();
         $currency = $this->getCurrency();
         if (empty($currency)) {
             return $amount;
@@ -81,7 +83,7 @@ class DBMoney extends DBComposite
         return $this;
     }
 
-    public function getAmount(): ?float
+    public function getAmount(): mixed
     {
         return $this->getField('Amount');
     }
