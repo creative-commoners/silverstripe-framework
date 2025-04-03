@@ -132,9 +132,10 @@ class HTTP
 
     /**
      * Will try to include a GET parameter for an existing URL, preserving existing parameters and
-     * fragments. If no URL is given, falls back to $_SERVER['REQUEST_URI']. Uses parse_url() to
-     * dissect the URL, and http_build_query() to reconstruct it with the additional parameter.
-     * Converts any '&' (ampersand) URL parameter separators to the more XHTML compliant '&amp;'.
+     * fragments. If no URL is given, falls back to getting the URL from the current request.
+     * Uses parse_url() to dissect the URL, and http_build_query() to reconstruct it with the
+     * additional parameter. Converts any '&' (ampersand) URL parameter separators to the more
+     * XHTML compliant '&amp;'.
      *
      * CAUTION: If the URL is determined to be relative, it is prepended with Director::absoluteBaseURL().
      * This method will always return an absolute URL because Director::makeRelative() can lead to

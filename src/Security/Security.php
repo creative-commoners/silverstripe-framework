@@ -408,11 +408,12 @@ class Security extends Controller implements TemplateGlobalProvider
         $message = $messageSet['default'];
 
         $request = $controller->getRequest();
+        $requestUrl = '/' . ltrim($request->getURL(true), '/');
         if ($request->hasSession()) {
             list($messageText, $messageCast) = $parseMessage($message);
             static::singleton()->setSessionMessage($messageText, ValidationResult::TYPE_WARNING, $messageCast);
 
-            $request->getSession()->set("BackURL", $_SERVER['REQUEST_URI']);
+            $request->getSession()->set('BackURL', $requestUrl);
         }
 
         // Audit logging hook
@@ -420,7 +421,7 @@ class Security extends Controller implements TemplateGlobalProvider
 
         return $controller->redirect(Controller::join_links(
             Security::config()->uninherited('login_url'),
-            "?BackURL=" . urlencode($_SERVER['REQUEST_URI'] ?? '')
+            "?BackURL=" . urlencode($requestUrl)
         ));
     }
 

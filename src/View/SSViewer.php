@@ -11,6 +11,8 @@ use SilverStripe\Control\Director;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Injector\Injector;
 
 /**
@@ -336,17 +338,7 @@ class SSViewer
 
         // If we have our crazy base tag, then fix # links referencing the current page.
         if ($rewrite) {
-            if (strpos($output ?? '', '<base') !== false) {
-                if ($rewrite === 'php') {
-                    $thisURLRelativeToBase = <<<PHP
-<?php echo \\SilverStripe\\Core\\Convert::raw2att(preg_replace("/^(\\\\/)+/", "/", \$_SERVER['REQUEST_URI'])); ?>
-PHP;
-                } else {
-                    $thisURLRelativeToBase = Convert::raw2att(preg_replace("/^(\\/)+/", "/", $_SERVER['REQUEST_URI'] ?? ''));
-                }
-
-                $output = preg_replace('/(<a[^>]+href *= *)"#/i', '\\1"' . $thisURLRelativeToBase . '#', $output ?? '');
-            }
+            $output = $this->rewriteHashLinks($output, $rewrite === 'php');
         }
 
         // Wrap the HTML in a `DBHTMLText`. We use `HTMLFragment` here because shortcodes should
@@ -357,6 +349,32 @@ PHP;
         // Reset global state
         static::setRewriteHashLinksDefault($origRewriteDefault);
         return $html;
+    }
+
+    private function rewriteHashLinks(string $output, bool $rewritePHP) : string
+    {
+        if (!Injector::inst()->has(HTTPRequest::class)) {
+            Injector::inst()->get(LoggerInterface::class)->warning('No HTTPRequest is available to get the path for rewriting hash links.');
+            return $output;
+        }
+        $request = Injector::inst()->get(HTTPRequest::class);
+        $url = '/' . $request->getURL(true);
+        if (strpos($output ?? '', '<base') !== false) {
+            if ($rewritePHP) {
+                $thisURLRelativeToBase = <<<PHP
+                <?php echo \\SilverStripe\\Core\\Convert::raw2att(preg_replace(
+                    "/^(\\\\/)+/",
+                    "/",
+                    \$_SERVER['REQUEST_URI'] ?? SilverStripe\\Control\\Controller::curr()?->getRequest()?->getURL(true) ?? '$url'
+                )); ?>
+                PHP;
+            } else {
+                $thisURLRelativeToBase = Convert::raw2att($url);
+            }
+
+            $output = preg_replace('/(<a[^>]+href *= *)"#/i', '\\1"' . $thisURLRelativeToBase . '#', $output ?? '');
+        }
+        return $output;
     }
 
     /**

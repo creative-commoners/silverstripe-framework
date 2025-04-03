@@ -209,8 +209,12 @@ class SSViewerTest extends SapphireTest
         $result = $tmpl->process('pretend this is a model');
 
         $code = <<<'EOC'
-<a class="inserted" href="<?php echo \SilverStripe\Core\Convert::raw2att(preg_replace("/^(\/)+/", "/", $_SERVER['REQUEST_URI'])); ?>#anchor">InsertedLink</a>
-EOC;
+        <a class="inserted" href="<?php echo \SilverStripe\Core\Convert::raw2att(preg_replace(
+            "/^(\/)+/",
+            "/",
+            $_SERVER['REQUEST_URI'] ?? SilverStripe\Control\Controller::curr()?->getRequest()?->getURL(true) ?? '/about-us'
+        )); ?>#anchor">InsertedLink</a>
+        EOC;
         $this->assertStringContainsString($code, $result);
         $this->assertStringContainsString(
             '<svg><use xlink:href="#sprite"></use></svg>',
