@@ -241,7 +241,7 @@ class GridFieldPrintButton extends AbstractGridFieldComponent implements GridFie
 
                 foreach ($printColumns as $field => $label) {
                     $value = $gridFieldColumnsComponent
-                        ? strip_tags($gridFieldColumnsComponent->getColumnContent($gridField, $item, $field))
+                        ? strip_tags($gridFieldColumnsComponent->getColumnContent($gridField, $item, $field) ?? '')
                         : $gridField->getDataFieldValue($item, $field);
 
                     $itemRow->push(new ArrayData([
