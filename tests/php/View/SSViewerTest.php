@@ -3,7 +3,9 @@
 namespace SilverStripe\View\Tests;
 
 use SilverStripe\Control\Controller;
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Convert;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\Requirements;
@@ -142,7 +144,13 @@ class SSViewerTest extends SapphireTest
         $oldServerVars = $_SERVER;
 
         try {
-            $_SERVER['REQUEST_URI'] = '//file.com?foo"onclick="alert(\'xss\')""';
+            $origRequest = Injector::inst()->has(HTTPRequest::class)
+                ? Injector::inst()->get(HTTPRequest::class)
+                : null;
+            Injector::inst()->registerService(
+                new HTTPRequest('GET', '//file.com?foo"onclick="alert(\'xss\')""'),
+                HTTPRequest::class
+            );
 
             // Note that leading double slashes have been rewritten to prevent these being mis-interepreted
             // as protocol-less absolute urls
@@ -187,6 +195,11 @@ class SSViewerTest extends SapphireTest
             );
         } finally {
             $_SERVER = $oldServerVars;
+            if ($origRequest) {
+                Injector::inst()->registerService($origRequest, HTTPRequest::class);
+            } else {
+                Injector::inst()->unregisterNamedObject(HTTPRequest::class);
+            }
         }
     }
 
@@ -206,11 +219,31 @@ class SSViewerTest extends SapphireTest
             </html>'
         );
         $tmpl = new SSViewer([], $engine);
-        $result = $tmpl->process('pretend this is a model');
+
+        try {
+            $origRequest = Injector::inst()->has(HTTPRequest::class)
+                ? Injector::inst()->get(HTTPRequest::class)
+                : null;
+            Injector::inst()->registerService(
+                new HTTPRequest('GET', 'about-us'),
+                HTTPRequest::class
+            );
+            $result = $tmpl->process('pretend this is a model');
+        } finally {
+            if ($origRequest) {
+                Injector::inst()->registerService($origRequest, HTTPRequest::class);
+            } else {
+                Injector::inst()->unregisterNamedObject(HTTPRequest::class);
+            }
+        }
 
         $code = <<<'EOC'
-<a class="inserted" href="<?php echo \SilverStripe\Core\Convert::raw2att(preg_replace("/^(\/)+/", "/", $_SERVER['REQUEST_URI'])); ?>#anchor">InsertedLink</a>
-EOC;
+        <a class="inserted" href="<?php echo \SilverStripe\Core\Convert::raw2att(preg_replace(
+            "/^(\/)+/",
+            "/",
+            $_SERVER['REQUEST_URI'] ?? SilverStripe\Control\Controller::curr()?->getRequest()?->getURL(true) ?? '/about-us'
+        )); ?>#anchor">InsertedLink</a>
+        EOC;
         $this->assertStringContainsString($code, $result);
         $this->assertStringContainsString(
             '<svg><use xlink:href="#sprite"></use></svg>',
