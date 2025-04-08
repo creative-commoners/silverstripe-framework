@@ -7,6 +7,7 @@ use SilverStripe\Core\Flushable;
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Cache\MemberCacheFlusher;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * @extends Extension<Member|Group>
