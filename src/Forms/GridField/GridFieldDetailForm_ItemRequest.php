@@ -268,7 +268,7 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
             $form->makeReadonly();
             // Hack to re-enable delete button if user can delete
             if ($this->record->hasMethod('canDelete') && $this->record->canDelete()) {
-                $form->Actions()->fieldByName('action_doDelete')->setReadonly(false);
+                $form->Actions()->fieldByName('action_doDelete')?->setReadonly(false);
             }
         } elseif (!$this->record->ID
             && (!$this->record->hasMethod('canCreate') || !$this->record->canCreate(null, $this->getCreateContext()))

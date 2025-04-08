@@ -1463,19 +1463,6 @@ class Member extends DataObject
         return $labels;
     }
 
-    public function scaffoldFormFieldForHasOne(
-        string $fieldName,
-        ?string $fieldTitle,
-        string $relationName,
-        DataObject $ownerRecord
-    ): FormField {
-        $field = parent::scaffoldFormFieldForHasOne($fieldName, $fieldTitle, $relationName, $ownerRecord);
-        if ($field instanceof SearchableDropdownField) {
-            $field->setUseSearchContext(true);
-        }
-        return $field;
-    }
-
     public function scaffoldFormFieldForHasMany(
         string $relationName,
         ?string $fieldTitle,

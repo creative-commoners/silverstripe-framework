@@ -21,6 +21,7 @@ use SilverStripe\ORM\RelationList;
 use SilverStripe\ORM\UnsavedRelationList;
 use SilverStripe\Core\Injector\Injector;
 use Psr\Log\LoggerInterface;
+use SilverStripe\Dev\Deprecation;
 
 trait SearchableDropdownTrait
 {
