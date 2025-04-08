@@ -16,6 +16,8 @@ use SilverStripe\Security\IdentityStore;
 use SilverStripe\Security\LoginAttempt;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
+use SilverStripe\Dev\Deprecation;
+use SilverStripe\Security\RandomGenerator;
 
 class ChangePasswordHandler extends RequestHandler
 {
@@ -66,21 +68,46 @@ class ChangePasswordHandler extends RequestHandler
     {
         $request = $this->getRequest();
 
-        // Extract the member from the URL.
+        // Check is we're resetting via a token in URL i.e. reset password email link
         $member = null;
         if ($request->getVar('m') !== null) {
             $member = Member::get()->filter(['ID' => (int)$request->getVar('m')])->first();
         }
         $token = $request->getVar('t');
-
-        // Check whether we are merely changing password, or resetting.
         if ($token !== null && $member && $member->validateAutoLoginToken($token)) {
-            $this->setSessionToken($member, $token);
-
-            // Redirect to myself, but without the hash in the URL
-            return $this->redirect($this->link);
+            // Redirect to current url, though with a temporary hash in the URL
+            // This will ensure that that the member ID and token will not appear in browser history
+            // Instead only a harmless temporary hash will appear in the browser history
+            // We do this instead of setting the session value at this point because if
+            // cookie SameSite is set to Strict, then  when clicking a password reset link via a
+            // webmail client, then the redirect will be treated as cross-origin request and value
+            // of the session cookie will not be accessible
+            $autoLoginTempHash = $this->createAutoLoginTempHash();
+            $member->AutoLoginTempHash = $autoLoginTempHash;
+            $member->write();
+            $response = $this->redirect($this->link . '?th=' . $autoLoginTempHash);
+            return $response;
         }
 
+        // Check the if we're processing a temp token redirect
+        $tempToken = $request->getVar('th');
+        if ($tempToken !== null) {
+            $member = Member::get()->find('AutoLoginTempHash', $tempToken);
+            if ($member) {
+                // Delete the temp token from the member so that it cannot be used again
+                // This prevents the browser history from being used to access the change password form
+                $member->AutoLoginTempHash = '';
+                $member->write();
+                // Add the token to the session so that the change password form can be submitted
+                // with the token in the session, instead of the URL
+                $encryptedToken = $member->AutoLoginHash;
+                $this->setSessionTokenShared($member, $encryptedToken, false);
+            }
+        }
+
+        // If there is AutoLoginHash in the session, then create a form
+        // If the token is valid then Member will be automatically logined in
+        // as part of doChangePassword() which is the form action handler of the change password form
         $session = $this->getRequest()->getSession();
         if ($session->get('AutoLoginHash')) {
             $message = DBField::create_field(
@@ -144,21 +171,17 @@ class ChangePasswordHandler extends RequestHandler
         );
     }
 
-
     /**
+     * Set the session token for the member with a token that has not been encrypted
+     *
      * @param Member $member
      * @param string $token
+     * @deprecated 5.4.0 Will be removed without equivalent functionality to replace it
      */
     protected function setSessionToken($member, $token)
     {
-        // if there is a current member, they should be logged out
-        if ($curMember = Security::getCurrentUser()) {
-            Injector::inst()->get(IdentityStore::class)->logOut();
-        }
-
-        $this->getRequest()->getSession()->regenerateSessionId();
-        // Store the hash for the change password form. Will be unset after reload within the ChangePasswordForm.
-        $this->getRequest()->getSession()->set('AutoLoginHash', $member->encryptWithUserSettings($token));
+        Deprecation::noticeWithNoReplacment('5.4.0');
+        $this->setSessionTokenShared($member, $token, true);
     }
 
     /**
@@ -217,8 +240,9 @@ class ChangePasswordHandler extends RequestHandler
 
         $session = $this->getRequest()->getSession();
         if (!$member) {
-            if ($session->get('AutoLoginHash')) {
-                $member = Member::member_from_autologinhash($session->get('AutoLoginHash'));
+            $autoLoginHash = $session->get('AutoLoginHash');
+            if ($autoLoginHash) {
+                $member = Member::member_from_autologinhash($autoLoginHash);
             }
 
             // The user is not logged in and no valid auto login hash is available
@@ -347,5 +371,38 @@ class ChangePasswordHandler extends RequestHandler
             }
         }
         return true;
+    }
+
+    /**
+     * Generate a temporary auto login hash for the member
+     */
+    private function createAutoLoginTempHash(): string
+    {
+        $member = null;
+        $autoLoginTempHash = '';
+        do {
+            $autoLoginTempHash = Injector::inst()->get(RandomGenerator::class)->randomToken('sha256');
+            $member = Member::get()->find('AutoLoginTempHash', $autoLoginTempHash);
+        } while ($member !== null);
+        return $autoLoginTempHash;
+    }
+
+    /**
+     * Shared function to set the session token
+     */
+    private function setSessionTokenShared(Member $member, string $token, bool $encrypt): void
+    {
+        // if there is a current member, they should be logged out
+        if (Security::getCurrentUser()) {
+            Injector::inst()->get(IdentityStore::class)->logOut();
+        }
+        $this->getRequest()->getSession()->regenerateSessionId();
+        // Store the hash for the change password form. Will be unset after reload within the ChangePasswordForm.
+        if ($encrypt) {
+            $autoLoginHash = $member->encryptWithUserSettings($token);
+        } else {
+            $autoLoginHash = $token;
+        }
+        $this->getRequest()->getSession()->set('AutoLoginHash', $autoLoginHash);
     }
 }

@@ -533,12 +533,12 @@ class SecurityTest extends FunctionalTest
         // Check.
         $response = $this->get('Security/changepassword/?m=' . $admin->ID . '&t=' . $token);
         $this->assertEquals(302, $response->getStatusCode());
-        $this->assertEquals(
-            Director::absoluteURL('Security/changepassword'),
-            Director::absoluteURL((string) $response->getHeader('Location'))
+        $location = (string) $response->getHeader('Location');
+        $this->assertStringStartsWith(
+            Director::absoluteURL('Security/changepassword?th='),
+            Director::absoluteURL($location)
         );
-        // Follow redirection to form without hash in GET parameter
-        $this->get('Security/changepassword');
+        $this->get($location);
         $this->doTestChangepasswordForm('1nitialPassword', 'changedPassword#123');
         $this->assertEquals($this->idFromFixture(Member::class, 'test'), $this->session()->get('loggedInAs'));
 
