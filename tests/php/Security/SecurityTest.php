@@ -533,12 +533,12 @@ class SecurityTest extends FunctionalTest
         // Check.
         $response = $this->get('Security/changepassword/?m=' . $admin->ID . '&t=' . $token);
         $this->assertEquals(302, $response->getStatusCode());
-        $location = (string) $response->getHeader('Location');
-        $this->assertStringStartsWith(
-            Director::absoluteURL('Security/changepassword?th='),
-            Director::absoluteURL($location)
+        $this->assertEquals(
+            Director::absoluteURL('Security/changepassword'),
+            Director::absoluteURL((string) $response->getHeader('Location'))
         );
-        $this->get($location);
+        // Follow redirection to form without hash in GET parameter
+        $this->get('Security/changepassword');
         $this->doTestChangepasswordForm('1nitialPassword', 'changedPassword#123');
         $this->assertEquals($this->idFromFixture(Member::class, 'test'), $this->session()->get('loggedInAs'));
 
@@ -808,6 +808,41 @@ class SecurityTest extends FunctionalTest
                 'action_doChangePassword' => 1,
             ]
         );
+    }
+
+    public function provideWithMinimumExecutionTime(): array
+    {
+        return [
+            'check default is used' => [
+                'useDefault' => false,
+                'minExecution' => 100,
+            ],
+            'check arg is used' => [
+                'useDefault' => true,
+                'minExecution' => 100,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideWithMinimumExecutionTime
+     */
+    public function testWithMinimumExecutionTime(bool $useDefault, int $minExecution): void
+    {
+        if ($useDefault) {
+            Security::config()->set('secure_min_execution_time', $minExecution);
+            $minExecutionArg = 0;
+        } else {
+            Security::config()->set('secure_min_execution_time', 1);
+            $minExecutionArg = $minExecution;
+        }
+
+        $start = hrtime(true);
+        Security::withMinimumExecutionTime(fn() => null, $minExecutionArg);
+        $timeTaken = hrtime(true) - $start;
+        $this->assertGreaterThanOrEqual($minExecution, $timeTaken / 1000000);
+        // Make sure it wasn't much longer than the min - the test empty callback should take basically no time at all.
+        $this->assertLessThan($minExecution + 1, ($timeTaken / 1000000));
     }
 
     /**

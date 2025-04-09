@@ -293,6 +293,7 @@ class SearchableDropdownTraitTest extends SapphireTest
      */
     public function testSearchDataObjectWithMethodForLabelField(string $term, string $expected): void
     {
+        Member::config()->set('title_format', ['columns' => ['Surname', 'FirstName'], 'sep' => ', ']);
         $data = [
             ['FirstName' => 'Alex', 'Surname' => 'Aziel', 'Email' => 'aaron.aziel@example.com'],
             ['FirstName' => 'Bob', 'Surname' => 'Brown', 'Email' => 'bob.brown@example.com'],

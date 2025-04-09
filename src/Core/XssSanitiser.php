@@ -201,7 +201,9 @@ class XssSanitiser
             $this->splitWithWhitespaceRegex('vbscript:'),
         ];
         // Regex is "starts with any of these, with optional whitespace at the start, case insensitive"
-        return '#^\s*(' . implode('|', $regexes) . ')#iu';
+        // \x08 is the backspace character, though it only causes vulnerabilities if it's at the start
+        // or end of a string
+        return '#^(\s|\x08)*(' . implode('|', $regexes) . ')(\s|\x08)*#iu';
     }
 
     private function splitWithWhitespaceRegex(string $string): string

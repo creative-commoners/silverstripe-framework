@@ -10,6 +10,8 @@ use SilverStripe\View\Parsers\HTMLValue;
 
 class HTMLEditorSanitiserTest extends FunctionalTest
 {
+    // This is the backspace character. It needs to be escaped in double-quotes.
+    private const CHAR_BACKSPACE = "\x08";
 
     public function provideSanitise(): array
     {
@@ -82,6 +84,18 @@ class HTMLEditorSanitiserTest extends FunctionalTest
             ],
             [
                 'a[href|target|rel]',
+                '<a href="' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . 'javascript:alert(0);">Test</a>',
+                '<a>Test</a>',
+                'Javascript in the href attribute with leading backspace of a link is completely removed'
+            ],
+            [
+                'a[href|target|rel]',
+                '<a href="javascript:alert(0);' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . '">Test</a>',
+                '<a>Test</a>',
+                'Javascript in the href attribute with backspace in middle of a link is completely removed'
+            ],
+            [
+                'a[href|target|rel]',
                 '<a href="' . implode("\n", str_split(' javascript:')) . '">Test</a>',
                 '<a>Test</a>',
                 'Javascript in the href attribute of a link is completely removed even for multiline markup'
@@ -111,6 +125,12 @@ class HTMLEditorSanitiserTest extends FunctionalTest
                 'Javascript with tab elements the src attribute of an iframe is completely removed'
             ],
             [
+                'iframe[src]',
+                '<iframe src="' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . 'javascript:alert(0);"></iframe>',
+                '<iframe></iframe>',
+                'Javascript in the src attribute of an iframe with a backspace is completely removed'
+            ],
+            [
                 'object[data]',
                 '<object data="OK"></object>',
                 '<object data="OK"></object>',
@@ -127,6 +147,12 @@ class HTMLEditorSanitiserTest extends FunctionalTest
                 '<object data="javascript:alert()">',
                 '<object></object>',
                 'Object with dangerous javascript content in data attribute with quotes is completely removed'
+            ],
+            [
+                'object[data]',
+                '<object data="' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . 'javascript:alert()">',
+                '<object></object>',
+                'Object with dangerous javascript content in data attribute with backspace is completely removed'
             ],
             [
                 'object[data]',
