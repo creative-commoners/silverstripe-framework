@@ -297,6 +297,7 @@ class DevelopmentAdmin extends Controller implements PermissionProvider
             $items['dev/' . $urlSegment] = $info;
         }
 
+        ksort($items);
         return $items;
     }
 
