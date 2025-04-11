@@ -804,6 +804,41 @@ class SecurityTest extends FunctionalTest
         );
     }
 
+    public function provideWithMinimumExecutionTime(): array
+    {
+        return [
+            'check default is used' => [
+                'useDefault' => false,
+                'minExecution' => 100,
+            ],
+            'check arg is used' => [
+                'useDefault' => true,
+                'minExecution' => 100,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideWithMinimumExecutionTime
+     */
+    public function testWithMinimumExecutionTime(bool $useDefault, int $minExecution): void
+    {
+        if ($useDefault) {
+            Security::config()->set('secure_min_execution_time', $minExecution);
+            $minExecutionArg = 0;
+        } else {
+            Security::config()->set('secure_min_execution_time', 1);
+            $minExecutionArg = $minExecution;
+        }
+
+        $start = hrtime(true);
+        Security::withMinimumExecutionTime(fn() => null, $minExecutionArg);
+        $timeTaken = hrtime(true) - $start;
+        $this->assertGreaterThanOrEqual($minExecution, $timeTaken / 1000000);
+        // Make sure it wasn't much longer than the min - the test empty callback should take basically no time at all.
+        $this->assertLessThan($minExecution + 1, ($timeTaken / 1000000));
+    }
+
     /**
      * Assert this message is in the current login form errors
      *

@@ -359,12 +359,22 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
             return;
         }
         // If sudo mode is not active, make the form readonly and add a sudo mode password field
+        // assuming that wasn't already there
         $this->makeReadonly();
-        $field = SudoModePasswordField::create();
-        // Manually call setForm() to the field as the field list is being updated after the
-        // form is created, which is when setForm() is normally being created
-        $field->setForm($this);
-        $this->Fields()->unshift($field);
+        $hasSudoModeField = false;
+        foreach ($this->Fields() as $field) {
+            if (is_a($field, SudoModePasswordField::class)) {
+                $hasSudoModeField = true;
+                break;
+            }
+        }
+        if (!$hasSudoModeField) {
+            $field = SudoModePasswordField::create();
+            // Manually call setForm() to the field as the field list is being updated after the
+            // form is created, which is when setForm() is normally being created
+            $field->setForm($this);
+            $this->Fields()->unshift($field);
+        }
         $this->formRequiresSudoMode = true;
     }
 

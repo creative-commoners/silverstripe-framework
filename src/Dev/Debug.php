@@ -5,9 +5,6 @@ namespace SilverStripe\Dev;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\ORM\DB;
-use SilverStripe\Security\Permission;
-use SilverStripe\Security\Security;
 
 /**
  * Supports debugging and core error handling.
@@ -194,56 +191,5 @@ class Debug
             return true;
         }
         return false;
-    }
-
-    /**
-     * Check if the user has permissions to run URL debug tools,
-     * else redirect them to log in.
-     * @deprecated 5.4.0 Will be removed without equivalent functionality.
-     */
-    public static function require_developer_login()
-    {
-        Deprecation::noticeWithNoReplacment('5.4.0');
-        // Don't require login for dev mode
-        if (Director::isDev()) {
-            return;
-        }
-
-        if (isset($_SESSION['loggedInAs'])) {
-            // We have to do some raw SQL here, because this method is called in Object::defineMethods().
-            // This means we have to be careful about what objects we create, as we don't want Object::defineMethods()
-            // being called again.
-            // This basically calls Permission::checkMember($_SESSION['loggedInAs'], 'ADMIN');
-
-            $memberID = $_SESSION['loggedInAs'];
-            $permission = DB::prepared_query(
-                '
-				SELECT "ID" FROM "Permission"
-				INNER JOIN "Group_Members" ON "Permission"."GroupID" = "Group_Members"."GroupID"
-				WHERE "Permission"."Code" = ?
-				AND "Permission"."Type" = ?
-				AND "Group_Members"."MemberID" = ?',
-                [
-                    'ADMIN', // Code
-                    Permission::GRANT_PERMISSION, // Type
-                    $memberID // MemberID
-                ]
-            )->value();
-
-            if ($permission) {
-                return;
-            }
-        }
-
-        // This basically does the same as
-        // Security::permissionFailure(null, "You need to login with developer access to make use of debugging tools.")
-        // We have to do this because of how early this method is called in execution.
-        $_SESSION['SilverStripe\\Security\\Security']['Message']['message']
-            = "You need to login with developer access to make use of debugging tools.";
-        $_SESSION['SilverStripe\\Security\\Security']['Message']['type'] =  'warning';
-        $_SESSION['BackURL'] = $_SERVER['REQUEST_URI'];
-        header($_SERVER['SERVER_PROTOCOL'] . " 302 Found");
-        header("Location: " . Director::baseURL() . Security::login_url());
-        die();
     }
 }
