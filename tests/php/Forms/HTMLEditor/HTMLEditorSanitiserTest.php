@@ -13,6 +13,9 @@ use SilverStripe\Forms\HTMLEditor\TextAreaConfig;
 
 class HTMLEditorSanitiserTest extends FunctionalTest
 {
+    // This is the backspace character. It needs to be escaped in double-quotes.
+    private const CHAR_BACKSPACE = "\x08";
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -145,6 +148,16 @@ class HTMLEditorSanitiserTest extends FunctionalTest
                 'input' => '<a href="javascript:alert(0);">Test</a>',
                 'expected' => '<a>Test</a>',
             ],
+            'remove JS with preceding backspace char in link href' => [
+                'validElements' => ['a' => ['attributes' => ['href' => true, 'target' => true, 'rel' => true]]],
+                'input' => '<a href="' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . 'javascript:alert(0);">Test</a>',
+                'expected' => '<a>Test</a>',
+            ],
+            'remove JS with trailing backspace char in link href' => [
+                'validElements' => ['a' => ['attributes' => ['href' => true, 'target' => true, 'rel' => true]]],
+                'input' => '<a href="javascript:alert(0);' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . '">Test</a>',
+                'expected' => '<a>Test</a>',
+            ],
             'remove multiline JS in link href' => [
                 'validElements' => ['a' => ['attributes' => ['href' => true, 'target' => true, 'rel' => true]]],
                 'input' => '<a href="' . implode("\n", str_split(' javascript:')) . '">Test</a>',
@@ -181,6 +194,11 @@ class HTMLEditorSanitiserTest extends FunctionalTest
                 'input' => "<iframe src=\"java\tscript:alert(0);\"></iframe>",
                 'expected' => '<iframe></iframe>',
             ],
+            'remove js with backspace char in iframe src' => [
+                'validElements' => ['iframe' => ['attributes' => ['src' => true]]],
+                'input' => '<iframe src="' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . 'javascript:alert(0);"></iframe>',
+                'expected' => '<iframe></iframe>',
+            ],
             'keep safe data attributes when allowed' => [
                 'validElements' => ['object' => ['attributes' => ['data' => true]]],
                 'input' => '<object data="OK"></object>',
@@ -195,6 +213,13 @@ class HTMLEditorSanitiserTest extends FunctionalTest
                 'validElements' => ['object' => ['attributes' => ['data' => true]]],
                 'input' => '<object data="javascript:alert()">',
                 'expected' => '<object></object>',
+            ],
+            'remove JS with backspace char from data attribute' => [
+                'validElements' => ['object' => ['attributes' => ['data' => true]]],
+                'input' => '<object data="' . HTMLEditorSanitiserTest::CHAR_BACKSPACE . 'javascript:alert()">',
+                'expected' => '<object></object>',
+
+                'object[data]',
             ],
             'remove text/html from data attribute' => [
                 'validElements' => ['object' => ['attributes' => ['data' => true]]],

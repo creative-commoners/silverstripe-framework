@@ -159,38 +159,28 @@ class LostPasswordHandler extends RequestHandler
      */
     public function forgotPassword(array $data, Form $form): HTTPResponse
     {
-        // Run a first pass validation check on the data
-        $dataValidation = $this->validateForgotPasswordData($data, $form);
-        if ($dataValidation instanceof HTTPResponse) {
-            return $dataValidation;
-        }
+        return Security::withMinimumExecutionTime(function () use ($data, $form) {
+            // Run a first pass validation check on the data
+            $dataValidation = $this->validateForgotPasswordData($data, $form);
+            if ($dataValidation instanceof HTTPResponse) {
+                return $dataValidation;
+            }
 
-        $member = $this->getMemberFromData($data);
+            $member = $this->getMemberFromData($data);
 
-        // Allow vetoing forgot password requests
-        $results = $this->extend('onForgotPassword', $member);
-        if ($results && is_array($results) && in_array(false, $results ?? [], true)) {
-            return $this->redirectToLostPassword();
-        }
-
-        if ($member) {
-            $token = $member->generateAutologinTokenAndStoreHash();
-
-            $success = $this->sendEmail($member, $token);
-            if (!$success) {
-                $form->sessionMessage(
-                    _t(
-                        Member::class . '.EMAIL_FAILED',
-                        'There was an error when trying to email you a password reset link.'
-                    ),
-                    'bad'
-                );
-
+            // Allow vetoing forgot password requests
+            $results = $this->extend('onForgotPassword', $member);
+            if ($results && is_array($results) && in_array(false, $results ?? [], true)) {
                 return $this->redirectToLostPassword();
             }
-        }
 
-        return $this->redirectToSuccess($data);
+            if ($member) {
+                $token = $member->generateAutologinTokenAndStoreHash();
+                $this->sendEmail($member, $token);
+            }
+
+            return $this->redirectToSuccess($data);
+        });
     }
 
     /**

@@ -2593,10 +2593,12 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
         $labelField = $this->hasField('Title') ? 'Title' : 'Name';
         $list = DataList::create(static::class);
         $threshold = DBForeignKey::config()->get('dropdown_field_threshold');
-        $overThreshold = $list->count() > $threshold;
+        $overThreshold = $threshold === 0 || $list->count() > $threshold;
         $field = SearchableDropdownField::create($fieldName, $fieldTitle, $list, $ownerRecord->{$relationName . 'ID'}, $labelField)
-            ->setIsLazyLoaded($overThreshold)
-            ->setLazyLoadLimit($threshold);
+            ->setIsLazyLoaded($overThreshold);
+        if ($threshold > 0) {
+            $field->setLazyLoadLimit($threshold);
+        }
         return $field;
     }
 

@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Security;
 
+use InvalidArgumentException;
 use LogicException;
 use Page;
 use ReflectionClass;
@@ -162,6 +163,12 @@ class Security extends Controller implements TemplateGlobalProvider
      * @var boolean $login_recording
      */
     private static $login_recording = false;
+
+    /**
+     * Minimum execution time in milliseconds for sensitive execution paths.
+     * Helps to protect against time-based enumeration attacks.
+     */
+    private static int $secure_min_execution_time = 1000;
 
     /**
      * @var boolean If set to TRUE or FALSE, {@link database_is_ready()}
@@ -1223,6 +1230,43 @@ class Security extends Controller implements TemplateGlobalProvider
     public static function lost_password_url()
     {
         return Controller::join_links(Director::baseURL(), static::config()->get('lost_password_url'));
+    }
+
+    /**
+     * Ensure execution of a callback takes some minimum amount of time by inserting a delay if that execution
+     * time is not elapsed.
+     *
+     * This helps to prevent time-based enumeration attacks by making execution of a sensitive code path always
+     * take the same amount of time. Note that if $minExecutionTime is too low, the enumeration attack will still
+     * be possible - but if it is too high, it could impact the user experience.
+     *
+     * @param integer $minExecutionTime The minimum amount of time in milliseconds that execution should take.
+     * If 0, the secure_min_execution_time configuration property value will be used.
+     * @return mixed The value returned from the callback, if any.
+     */
+    public static function withMinimumExecutionTime(callable $callback, int $minExecutionTime = 0): mixed
+    {
+        if ($minExecutionTime < 0) {
+            throw new InvalidArgumentException('$minExecutionTime must not be negative');
+        }
+        // Start capturing execution time
+        $startTime = hrtime(true);
+        // Execute callback
+        $retVal = $callback();
+        $stopTime = hrtime(true);
+        // Delay by remaining execution time
+        if (!$minExecutionTime) {
+            $minExecutionTime = Security::config()->get('secure_min_execution_time');
+        }
+        // $timeTaken gets converted from nanoseconds to microseconds
+        // $minExecutionTime gets converted from milliseconds to microseconds
+        // $waitFor gets cast to int for use in usleep.
+        $timeTaken = ($stopTime - $startTime) / 1000;
+        $waitFor = (int) round(($minExecutionTime * 1000) - $timeTaken);
+        if ($waitFor > 0) {
+            usleep($waitFor);
+        }
+        return $retVal;
     }
 
     /**

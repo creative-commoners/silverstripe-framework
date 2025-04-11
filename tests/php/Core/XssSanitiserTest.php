@@ -10,6 +10,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 class XssSanitiserTest extends SapphireTest
 {
+    // This is the backspace character. It needs to be escaped in double-quotes.
+    private const CHAR_BACKSPACE = "\x08";
+
     protected $usesDatabase = false;
 
     public static function provideSanitise(): array
@@ -75,6 +78,14 @@ class XssSanitiserTest extends SapphireTest
                 'expected' => '<a>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</a>',
             ],
             [
+                'input' => '<a href="' . XssSanitiserTest::CHAR_BACKSPACE . 'javascript:alert(\'ok\')">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</a>',
+                'expected' => '<a>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</a>',
+            ],
+            [
+                'input' => '<a href="javascript:alert(\'ok\')' . XssSanitiserTest::CHAR_BACKSPACE . '">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</a>',
+                'expected' => '<a>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</a>',
+            ],
+            [
                 // Not exploitable XSS
                 'input' => '<<a href="javascript:evil"/>a href="javascript:evil"/>',
                 'expected' => '<a>a href="javascript:evil"/&gt;</a>',
@@ -131,6 +142,10 @@ class XssSanitiserTest extends SapphireTest
             ],
             [
                 'input' => '<IMG SRC="javascript:alert(\'XSS\');">',
+                'expected' => '<img>',
+            ],
+            [
+                'input' => '<IMG SRC="' . XssSanitiserTest::CHAR_BACKSPACE . 'javascript:alert(\'XSS\');">',
                 'expected' => '<img>',
             ],
             [
@@ -205,6 +220,10 @@ class XssSanitiserTest extends SapphireTest
             ],
             [
                 'input' => '<BGSOUND SRC="javascript:alert(\'XSS\');">',
+                'expected' => '<bgsound></bgsound>',
+            ],
+            [
+                'input' => '<BGSOUND SRC="' . XssSanitiserTest::CHAR_BACKSPACE . 'javascript:alert(\'XSS\');">',
                 'expected' => '<bgsound></bgsound>',
             ],
             [
