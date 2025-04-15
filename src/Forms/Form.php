@@ -3,7 +3,7 @@
 namespace SilverStripe\Forms;
 
 use BadMethodCallException;
-use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\Admin\AdminController;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HasRequestHandler;
 use SilverStripe\Control\HTTPRequest;
@@ -331,7 +331,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      * Make the form require sudo mode, which will make the form readonly and add a sudo mode password field
      * unless the current user previously activated sudo mode.
      *
-     * Note that if the parent request handler for this form isn't LeftAndMain or GridFieldDetailForm_ItemRequest,
+     * Note that if the parent request handler for this form isn't AdminController or GridFieldDetailForm_ItemRequest,
      * sudo mode will not be required by this form.
      */
     public function requireSudoMode(): void
@@ -339,7 +339,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
         // Check that the current request handler for the form is one that's used
         // in an admin context where sudo mode makes sense
         $classes = [
-            LeftAndMain::class,
+            AdminController::class,
             GridFieldDetailForm_ItemRequest::class,
         ];
         $enableSudoMode = false;
