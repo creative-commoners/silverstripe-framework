@@ -4,7 +4,6 @@ namespace SilverStripe\Control;
 
 use BadMethodCallException;
 use SilverStripe\Core\Config\Configurable;
-use SilverStripe\Dev\Deprecation;
 
 /**
  * Handles all manipulation of the session.
@@ -129,13 +128,6 @@ class Session
     private static bool $cookie_secure = true;
 
     /**
-     * @config
-     * @var string
-     * @deprecated 5.4.3 Will be removed without equivalent functionality to replace it
-     */
-    private static $cookie_name_secure = 'SECSESSID';
-
-    /**
      * Must be "Strict", "Lax", or "None".
      * @config
      */
@@ -231,7 +223,7 @@ class Session
      */
     public function init(HTTPRequest $request)
     {
-        if (!$this->isStarted() && $this->requestContainsSessionId($request)) {
+        if (!$this->isStarted() && $this->requestContainsSessionId()) {
             $this->start($request);
         }
 
@@ -266,19 +258,12 @@ class Session
     }
 
     /**
-     * @param HTTPRequest $request - deprecated will be removed
      * @return bool
      */
-    public function requestContainsSessionId(HTTPRequest $request)
+    public function requestContainsSessionId()
     {
-        Deprecation::noticeWithNoReplacment(
-            '5.4.3',
-            'The $request parameter is deprecated and will be removed',
-            Deprecation::SCOPE_GLOBAL
-        );
-        $secure = Director::is_https($request) && $this->config()->get('cookie_secure');
-        $name = $secure ? $this->config()->get('cookie_name_secure') : session_name();
-        return (bool)Cookie::get($name);
+        $name = session_name();
+        return (bool) Cookie::get($name);
     }
 
     /**
@@ -299,7 +284,7 @@ class Session
         // If the session cookie is already set, then the session can be read even if headers_sent() = true
         // This helps with edge-case such as debugging.
         $data = [];
-        if (!session_id() && (!headers_sent() || $this->requestContainsSessionId($request))) {
+        if (!session_id() && (!headers_sent() || $this->requestContainsSessionId())) {
             if (!headers_sent()) {
                 $cookieParams = $this->buildCookieParams($request);
                 session_set_cookie_params($cookieParams);
@@ -314,19 +299,11 @@ class Session
                     session_save_path($session_path);
                 }
 
-                // If we want a secure cookie for HTTPS, use a separate session name. This lets us have a
-                // separate (less secure) session for non-HTTPS requests
-                // if headers_sent() is true then it's best to throw the resulting error rather than risk
-                // a security hole.
-                if ($cookieParams['secure']) {
-                    session_name($this->config()->get('cookie_name_secure'));
-                }
-
                 session_start();
 
                 // Session start emits a cookie, but only if there's no existing session. If there is a session timeout
                 // tied to this request, make sure the session is held for the entire timeout by refreshing the cookie age.
-                if ($cookieParams['lifetime'] && $this->requestContainsSessionId($request)) {
+                if ($cookieParams['lifetime'] && $this->requestContainsSessionId()) {
                     Cookie::set(
                         session_name(),
                         session_id(),
