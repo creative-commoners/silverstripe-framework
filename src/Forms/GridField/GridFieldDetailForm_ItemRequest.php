@@ -98,6 +98,11 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
     ];
 
     /**
+     * Used to cache the results of getGridFieldItemAdjacencies();
+     */
+    private array $cachedGridFieldItemAdjacencies;
+
+    /**
      *
      * @param GridField $gridField
      * @param GridFieldDetailForm $component
@@ -628,18 +633,22 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
      */
     private function getGridFieldItemAdjacencies(): array
     {
-        $list = $this->getGridField()->getManipulatedList();
-        $paginator = $this->getGridFieldPaginatorState();
-        if (!$paginator) {
-            return [];
+        if (!isset($this->cachedGridFieldItemAdjacencies)) {
+            $paginator = $this->getGridFieldPaginatorState();
+            if (!$paginator) {
+                $this->cachedGridFieldItemAdjacencies = [];
+            } else {
+                $currentPage = $paginator->getData('currentPage');
+                $itemsPerPage = $paginator->getData('itemsPerPage');
+                $limit = $itemsPerPage + 2;
+                $limitOffset = max(0, $itemsPerPage * ($currentPage - 1) -1);
+                $this->cachedGridFieldItemAdjacencies = $this->getGridField()
+                    ->getManipulatedList()
+                    ->limit($limit, $limitOffset)
+                    ->column('ID');
+            }
         }
-        $currentPage = $paginator->getData('currentPage');
-        $itemsPerPage = $paginator->getData('itemsPerPage');
-
-        $limit = $itemsPerPage + 2;
-        $limitOffset = max(0, $itemsPerPage * ($currentPage-1) -1);
-
-        return $list->limit($limit, $limitOffset)->column('ID');
+        return $this->cachedGridFieldItemAdjacencies;
     }
 
     /**
