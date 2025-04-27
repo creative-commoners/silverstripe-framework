@@ -74,7 +74,7 @@ class SessionTest extends SapphireTest
         Cookie::set(session_name(), '1234');
         $session = new Session(null); // unstarted session
         $session->start($req);
-        $this->assertNotEquals(session_name(), $session->config()->get('cookie_name_secure'));
+        $this->assertEquals(session_name(), 'PHPSESSID');
     }
 
     #[RunInSeparateProcess]
@@ -87,7 +87,7 @@ class SessionTest extends SapphireTest
         $session = new Session(null); // unstarted session
         $session->config()->set('cookie_secure', false);
         $session->start($req);
-        $this->assertNotEquals(session_name(), $session->config()->get('cookie_name_secure'));
+        $this->assertEquals(session_name(), 'PHPSESSID');
     }
 
     #[RunInSeparateProcess]
@@ -99,7 +99,7 @@ class SessionTest extends SapphireTest
         Cookie::set(session_name(), '1234');
         $session = new Session(null); // unstarted session
         $session->start($req);
-        $this->assertEquals(session_name(), $session->config()->get('cookie_name_secure'));
+        $this->assertEquals(session_name(), 'PHPSESSID');
     }
 
     #[RunInSeparateProcess]
@@ -242,19 +242,9 @@ class SessionTest extends SapphireTest
     {
         $req = new HTTPRequest('GET', '/');
         $session = new Session(null); // unstarted session
-        $this->assertFalse($session->requestContainsSessionId($req));
+        $this->assertFalse($session->requestContainsSessionId());
         Cookie::set(session_name(), '1234');
-        $this->assertTrue($session->requestContainsSessionId($req));
-    }
-
-    public function testRequestContainsSessionIdRespectsCookieNameSecure()
-    {
-        $req = (new HTTPRequest('GET', '/'))
-            ->setScheme('https');
-        $session = new Session(null); // unstarted session
-        Cookie::set($session->config()->get('cookie_name_secure'), '1234');
-        $session->config()->set('cookie_secure', true);
-        $this->assertTrue($session->requestContainsSessionId($req));
+        $this->assertTrue($session->requestContainsSessionId());
     }
 
     public function testUserAgentLockout()
