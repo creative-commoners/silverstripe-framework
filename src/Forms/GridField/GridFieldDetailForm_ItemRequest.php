@@ -3,7 +3,7 @@
 namespace SilverStripe\Forms\GridField;
 
 use LogicException;
-use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\Admin\AdminController;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
@@ -285,7 +285,7 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
         }
 
         $toplevelController = $this->getToplevelController();
-        if ($toplevelController && $toplevelController instanceof LeftAndMain) {
+        if ($toplevelController && $toplevelController instanceof AdminController) {
             // Always show with base template (full width, no other panels),
             // regardless of overloaded CMS controller templates.
             $form->setTemplate([
@@ -513,7 +513,7 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
     {
         $backlink = '';
         $toplevelController = $this->getToplevelController();
-        if ($toplevelController && $toplevelController instanceof LeftAndMain) {
+        if ($toplevelController && $toplevelController instanceof AdminController) {
             if ($toplevelController->hasMethod('Backlink')) {
                 $backlink = $toplevelController->Backlink();
             } elseif ($this->popupController->hasMethod('Breadcrumbs')) {
@@ -849,7 +849,7 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
         );
 
         $toplevelController = $this->getToplevelController();
-        if ($toplevelController && $toplevelController instanceof LeftAndMain) {
+        if ($toplevelController && $toplevelController instanceof AdminController) {
             $backForm = $toplevelController->getEditForm();
             $backForm->sessionMessage($message, 'good', ValidationResult::CAST_HTML);
         } else {
