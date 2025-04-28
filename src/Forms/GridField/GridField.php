@@ -27,6 +27,7 @@ use SilverStripe\Model\ModelData;
 use SilverStripe\Security\SudoMode\SudoModeServiceInterface;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\GridField\GridFieldViewButton;
+use SilverStripe\Versioned\Versioned;
 
 /**
  * Displays a {@link SS_List} in a grid format.
@@ -520,6 +521,30 @@ class GridField extends FormField
     }
 
     /**
+     * Whether to use the the in-memory cased when calling the Versions table
+     */
+    private bool $useVersionsCache = false;
+
+    /**
+     * Get whether to use the Versions cache
+     */
+    public function getUseVersionsCache(): bool
+    {
+        return $this->useVersionedCache;
+    }
+
+    /**
+     * Set whether to use the Versions cache. Requies the silverstripe/versioned
+     * module to be installed and for the DataObject to have the Versioned extension
+     * applied to do anything
+     */
+    public function setUseVersionsCache(bool $useVersionsCache): static
+    {
+        $this->useVersionsCache = $useVersionsCache;
+        return $this;
+    }
+
+    /**
      * Returns the whole gridfield rendered with all the attached components.
      *
      * @param array $properties
@@ -532,6 +557,7 @@ class GridField extends FormField
         // Set GridField to read-only if sudo mode is required for the DataObject being managed
         // and sudo mode is not active
         $sudoModeTransformation = false;
+        /** @var DataObject|null $modelClass */
         $modelClass = null;
         try {
             $modelClass = $this->getModelClass();
@@ -539,9 +565,12 @@ class GridField extends FormField
             // noop - it's possible to have a gridfield with custom components that don't rely on columns
             // from the records in the list.
         }
+        $isDataObject = is_a($modelClass, DataObject::class, true);
+        $isVersionedDataObject = $isDataObject
+            && class_exists(Versioned::class)
+            && $modelClass::has_extension(Versioned::class);
         $this->setReadonly(false);
-        if (is_a($modelClass, DataObject::class, true)) {
-            /** @var DataObject $obj */
+        if ($isDataObject) {
             $obj = Injector::inst()->create($modelClass);
             if ($obj->getRequireSudoMode()) {
                 $session = Controller::curr()?->getRequest()?->getSession();
@@ -576,7 +605,6 @@ class GridField extends FormField
         foreach ($this->getComponents() as $item) {
             if ($item instanceof GridField_HTMLProvider) {
                 $fragments = $item->getHTMLFragments($this);
-
                 if ($fragments) {
                     foreach ($fragments as $fragmentKey => $fragmentValue) {
                         $fragmentKey = strtolower($fragmentKey ?? '');
@@ -696,7 +724,13 @@ class GridField extends FormField
                 $rowContent = '';
 
                 foreach ($this->getColumns() as $column) {
-                    $colContent = $this->getColumnContent($record, $column);
+                    if ($this->getUseVersionsCache() && $isVersionedDataObject) {
+                        $colContent = Versioned::withUseVersionsCache(
+                            fn() => $this->getColumnContent($record, $column)
+                        );
+                    } else {
+                        $colContent = $this->getColumnContent($record, $column);
+                    }
 
                     // Null means this columns should be skipped altogether.
 
