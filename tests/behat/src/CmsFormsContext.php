@@ -358,6 +358,20 @@ JS;
     }
 
     /**
+     * Asserts the field with specified id|name|label is empty (i.e. has no value set)
+     *
+     * @Then /^the "([^"]+)" field should be empty$/
+     */
+    public function theFieldShouldBeEmpty($name)
+    {
+        $name = $this->fixStepArgument($name);
+        $context = $this->getMainContext();
+        $fieldObj = $context->assertSession()->fieldExists($name);
+        $value = $fieldObj->getValue();
+        Assert::assertEmpty($value, sprintf('Field "%s" not empty. Value is %s', $name, json_encode($value)));
+    }
+
+    /**
      * @Given /^the "([^"]*)" field ((?:does not have)|(?:has)) property "([^"]*)"$/
      */
     public function assertTheFieldHasProperty($name, $cond, $property)
