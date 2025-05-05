@@ -58,8 +58,8 @@ class ReadonlyField extends FormField
 
     public function castingHelper(string $field, bool $useFallback = true): ?string
     {
-        // Get dynamic cast for 'Value' field
-        if (strcasecmp($field ?? '', 'Value') === 0) {
+        // Get dynamic cast for 'FormattedValue' field
+        if (strcasecmp($field ?? '', 'FormattedValue') === 0) {
             return $this->getValueCast();
         }
 
@@ -70,7 +70,7 @@ class ReadonlyField extends FormField
     public function getSchemaStateDefaults()
     {
         $state = parent::getSchemaStateDefaults();
-        $state['value'] = $this->getFormattedValue();
+        $state['value'] = $this->dataValue();
 
         return $state;
     }
@@ -107,6 +107,6 @@ class ReadonlyField extends FormField
 
         // Use default casting
         $casting = $this->config()->get('casting');
-        return $casting['Value'];
+        return $casting['FormattedValue'];
     }
 }
