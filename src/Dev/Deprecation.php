@@ -379,8 +379,8 @@ class Deprecation
         try {
             $data = null;
             if ($scope === Deprecation::SCOPE_CONFIG) {
-                // Deprecated config set via yaml will only be shown in the browser when using ?flush=1
-                // It will not show in CLI when running dev/build flush=1
+                // Deprecated config set via yaml will only be shown in the CLI when using flush=1
+                // It will not show in the browser with ?flush=1
                 $data = [
                     'key' => sha1($string),
                     'message' => $string,
