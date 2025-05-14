@@ -415,7 +415,10 @@ class Deprecation
                 }
 
                 $level = Deprecation::$insideNoticeSuppression ? 4 : 2;
-                $string .= " Called from " . Deprecation::get_called_method_from_trace($backtrace, $level) . '.';
+                $calledFrom = Deprecation::get_called_method_from_trace($backtrace, $level);
+                if ($calledFrom) {
+                    $string .= " Called from $calledFrom.";
+                }
                 if ($caller) {
                     $string = $caller . ' is deprecated.' . ($string ? ' ' . $string : '');
                 }
