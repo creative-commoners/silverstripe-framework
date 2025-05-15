@@ -8,6 +8,7 @@ use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Hierarchy\MarkedSet;
 use SilverStripe\Versioned\Versioned;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Test set of marked Hierarchy-extended DataObjects
@@ -18,6 +19,8 @@ class MarkedSetTest extends SapphireTest
 
     protected static $extra_dataobjects = [
         HierarchyTest\TestObject::class,
+        HierarchyTest\HierarchyOnSubclassTestObject::class,
+        HierarchyTest\HierarchyOnSubclassTestSubObject::class,
         HierarchyTest\HideTestObject::class,
         HierarchyTest\HideTestSubObject::class,
     ];
@@ -105,11 +108,13 @@ class MarkedSetTest extends SapphireTest
     </li>
     <li>Obj 3c
         <ul>
-            <li>Obj 3c
+            <li>Obj 3ca
             </li>
         </ul>
     </li>
     <li>Obj 3d
+    </li>
+    <li>Obj 3HfH1
     </li>
 </ul>
 
@@ -437,5 +442,42 @@ EOT;
         $expected = implode("\n", array_filter(array_map('trim', explode("\n", $expected ?? ''))));
         $actual = implode("\n", array_filter(array_map('trim', explode("\n", $actual ?? ''))));
         $this->assertXmlStringEqualsXmlString($expected, $actual, $message);
+    }
+
+    public static function provideGetChildrenMethod(): array
+    {
+        return [
+            'set-method' => [
+                'childrenMethod' => true,
+                'baseClassConfig' => true,
+                'expected' => 'getUniqueKey',
+            ],
+            'base-class-config' => [
+                'childrenMethod' => false,
+                'baseClassConfig' => true,
+                'expected' => 'myBaseClassMethod',
+            ],
+            'extension-config' => [
+                'childrenMethod' => false,
+                'baseClassConfig' => false,
+                'expected' => 'getChildrenForTree',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideGetChildrenMethod')]
+    public function testGetChildrenMethod(bool $childrenMethod, bool $baseClassConfig, string $expected): void
+    {
+        $baseClass = HierarchyTest\TestObject::class;
+        $markedSet = new MarkedSet($baseClass::singleton());
+        if ($childrenMethod) {
+            // This needs to be a method that actually exists, it's just a random method from DataObject
+            $markedSet->setChildrenMethod('getUniqueKey');
+        }
+        if ($baseClassConfig) {
+            $baseClass::config()->set('tree_children_method', 'myBaseClassMethod');
+        }
+        $actual = $markedSet->getChildrenMethod();
+        $this->assertSame($expected, $actual);
     }
 }

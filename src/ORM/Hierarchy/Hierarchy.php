@@ -20,6 +20,7 @@ use SilverStripe\Model\ModelData;
 use SilverStripe\ORM\HiddenClass;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * DataObjects that use the Hierarchy extension can be be organised as a hierarchy, with children and parents. The most
@@ -128,6 +129,28 @@ class Hierarchy extends Extension
      * @var boolean
      */
     private static $prepopulate_numchildren_cache = true;
+
+    /**
+     * The default method called on the Hierarchy class to get children
+     * This can be overriden on classes that use the Hierarchy extension, though it should only be
+     * defined on the base class that has the hierarchy extension applied to it. For instance:
+     * - MyBaseClass has the Hierarchy extension applied
+     * - MySubClass extends MyBaseClass
+     * Only define the tree_children_method on MyBaseClass
+     */
+    private static string $tree_children_method = 'getChildrenForTree';
+
+    /**
+     * Used to cache the children a node has in getChildrenForTree()
+     * @internal
+     */
+    private static array $children_for_tree_ids_cache = [];
+
+    /**
+     * Used to cache child dataobjects in getChildrenForTree()
+     * @internal
+     */
+    private static array $children_for_tree_obj_cache = [];
 
     /**
      * Prevent virtual page virtualising these fields
@@ -338,9 +361,11 @@ class Hierarchy extends Extension
      * - Everything else has "SameOnStage" set, as an indicator that this information has been looked up.
      *
      * @return ArrayList<DataObject&static>
+     * @deprecated 6.0.0 Use getChildrenForTree() instead.
      */
     public function AllChildrenIncludingDeleted()
     {
+        Deprecation::notice('6.0.0', 'Use getChildrenForTree() instead');
         /** @var DataObject|Hierarchy|Versioned $owner */
         $owner = $this->owner;
         $stageChildren = $owner->stageChildren(true);
@@ -358,6 +383,97 @@ class Hierarchy extends Extension
         }
         $owner->extend("augmentAllChildrenIncludingDeleted", $stageChildren);
         return $stageChildren;
+    }
+
+    /**
+     * Return direct children in the hierarchy for creating a tree
+     *
+     * This does much the same result as AllChildrenIncludingDeleted() and is far more performant,
+     * though there are some key differences:
+     * - Results will be cached in-memory to save on the number of database queries required
+     * - Database queries will be larger `WHERE "ID" IN (?, ?) style queries rather than many `WHERE "ID" = ?
+     * - While Hierarchy.node_threshold_total has not been exceeded, it will cache descendant record as
+     *   well to save future queries
+     * - Does not included deleted records, which could be done via Versioned::updateListToAlsoIncludeDeleted($children)
+     */
+    public function getChildrenForTree(): ArrayList
+    {
+        /** @var DataObject&Hierarchy */
+        $owner = $this->getOwner();
+        $parentID = $owner->ID;
+        $baseClass = $owner->getHierarchyBaseClass();
+        Hierarchy::$children_for_tree_ids_cache[$baseClass] ??= [];
+        Hierarchy::$children_for_tree_obj_cache[$baseClass] ??= [];
+        if (!array_key_exists($parentID, Hierarchy::$children_for_tree_obj_cache[$baseClass])) {
+            Hierarchy::$children_for_tree_obj_cache[$baseClass][$parentID] = $owner;
+        }
+        $this->recursivelyCacheDescendantsForTree($baseClass, [$parentID]);
+        $childIDs = [];
+        if (array_key_exists($parentID, Hierarchy::$children_for_tree_ids_cache[$baseClass])) {
+            $childIDs = Hierarchy::$children_for_tree_ids_cache[$baseClass][$parentID];
+        }
+        $childNodes = [];
+        foreach ($childIDs as $childID) {
+            if (array_key_exists($childID, Hierarchy::$children_for_tree_obj_cache[$baseClass])) {
+                $childNodes[] = Hierarchy::$children_for_tree_obj_cache[$baseClass][$childID];
+            }
+        }
+        $children = ArrayList::create($childNodes);
+        $owner->extend('updateGetChildrenForTree', $includeDeleted, $children);
+        return $children;
+    }
+
+    /**
+     * Inner recursive method used by getChildrenForTree()
+     */
+    private function recursivelyCacheDescendantsForTree(string $baseClass, array $parentIDs): void
+    {
+        // Only query records which have not be previously cached
+        $parentIDs = array_filter($parentIDs, function ($parentID) use ($baseClass) {
+            return !array_key_exists($parentID, Hierarchy::$children_for_tree_ids_cache[$baseClass]);
+        });
+        if (empty($parentIDs)) {
+            return;
+        }
+        $config = $this->getOwner()->config();
+        $count = count(Hierarchy::$children_for_tree_obj_cache[$baseClass]);
+        $threshold = $config->get('node_threshold_total');
+        if ($count > $threshold) {
+            return;
+        }
+        $nextIDs = [];
+        // This will use a hierarchical query method where it will initially fetched from the "second level down"
+        // where the ParentID equals the single DataObject at the "top level" of the hierarchy
+        // It will then fetch from the "third level down" in the hierarchy where the ParentID is of the ParentIDs in
+        // the "second level down". In will continue querying like this until the total number of cached objects has
+        // exceeded the configured value `node_threshold_total`, or all object have been fetched
+        /** @var DataList $children */
+        $children = $baseClass::get()->filter(['ParentID' => $parentIDs]);
+        $hideFromHierarchy = $config->get('hide_from_hierarchy');
+        $hideFromCMSTree = $config->get('hide_from_cms_tree');
+        if ($hideFromHierarchy) {
+            $children = $children->exclude(['ClassName' => $hideFromHierarchy]);
+        }
+        if ($hideFromCMSTree && $this->showingCMSTree()) {
+            $children = $children->exclude(['ClassName' => $hideFromCMSTree]);
+        }
+        foreach ($parentIDs as $parentID) {
+            Hierarchy::$children_for_tree_ids_cache[$baseClass][$parentID] = [];
+        }
+        foreach ($children as $child) {
+            $childID = $child->ID;
+            $parentID = $child->ParentID;
+            Hierarchy::$children_for_tree_ids_cache[$baseClass][$parentID][] = $childID;
+            Hierarchy::$children_for_tree_obj_cache[$baseClass][$childID] = $child;
+            if (!array_key_exists($childID, Hierarchy::$children_for_tree_ids_cache[$baseClass])
+                && !in_array($childID, $nextIDs)
+            ) {
+                $nextIDs[] = $childID;
+            }
+        }
+        if (count($nextIDs)) {
+            $this->recursivelyCacheDescendantsForTree($baseClass, $nextIDs);
+        }
     }
 
     /**
@@ -505,6 +621,14 @@ class Hierarchy extends Extension
     }
 
     /**
+     * Whether the internal Hierarchy::$cache_numChildren cache has been populated for $baseClass
+     */
+    public static function numChildrenCacheIsPopulated(string $baseClass): bool
+    {
+        return Hierarchy::$cache_numChildren[$baseClass]['numChildren']['_complete'] ?? false;
+    }
+
+    /**
      * Returns the class name of the default class for children of this page.
      * Note that this is intended for use with CMSMain and may not be respected with other model management methods.
      */
@@ -646,7 +770,7 @@ class Hierarchy extends Extension
      *
      * @return string
      */
-    private function getHierarchyBaseClass(): string
+    public function getHierarchyBaseClass(): string
     {
         $ancestry = ClassInfo::ancestry($this->owner);
         $ancestorClass = array_shift($ancestry);
