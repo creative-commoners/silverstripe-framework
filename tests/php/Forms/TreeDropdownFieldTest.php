@@ -16,6 +16,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Tests\HierarchyTest\HierarchyOnSubclassTestObject;
 use SilverStripe\ORM\Tests\HierarchyTest\HierarchyOnSubclassTestSubObject;
 use SilverStripe\ORM\Tests\HierarchyTest\TestObject;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class TreeDropdownFieldTest extends SapphireTest
 {
@@ -422,5 +423,41 @@ class TreeDropdownFieldTest extends SapphireTest
         $json = json_decode($tree);
         $children2After = count($json->children);
         $this->assertEquals($children2After, 8, 'StartsWith search for child has 8 results in fixture (excludes grandchild)');
+    }
+
+    public static function provideGetChildrenMethod(): array
+    {
+        return [
+            'set-method' => [
+                'childrenMethod' => true,
+                'baseClassConfig' => true,
+                'expected' => 'mySetMethod',
+            ],
+            'base-class-config' => [
+                'childrenMethod' => false,
+                'baseClassConfig' => true,
+                'expected' => 'myBaseClassMethod',
+            ],
+            'extension-config' => [
+                'childrenMethod' => false,
+                'baseClassConfig' => false,
+                'expected' => 'getChildrenForTree',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideGetChildrenMethod')]
+    public function testGetChildrenMethod(bool $childrenMethod, bool $baseClassConfig, string $expected): void
+    {
+        $baseClass = TestObject::class;
+        $field = new TreeDropdownField('Test', sourceObject: $baseClass);
+        if ($childrenMethod) {
+            $field->setChildrenMethod('mySetMethod');
+        }
+        if ($baseClassConfig) {
+            $baseClass::config()->set('tree_children_method', 'myBaseClassMethod');
+        }
+        $actual = $field->getChildrenMethod();
+        $this->assertSame($expected, $actual);
     }
 }

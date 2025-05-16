@@ -4,6 +4,7 @@ namespace SilverStripe\ORM\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
+use ReflectionProperty;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Versioned\Versioned;
@@ -18,6 +19,7 @@ class HierarchyTest extends SapphireTest
 
     protected static $extra_dataobjects = [
         HierarchyTest\TestObject::class,
+        HierarchyTest\TestObjectHideFromHierarchy::class,
         HierarchyTest\HideTestObject::class,
         HierarchyTest\HideTestSubObject::class,
         HierarchyTest\HierarchyOnSubclassTestObject::class,
@@ -51,6 +53,15 @@ class HierarchyTest extends SapphireTest
         if (!class_exists(Versioned::class)) {
             $this->markTestSkipped('HierarchyTest requires the Versioned extension');
         }
+    }
+
+    protected function tearDown(): void
+    {
+        $reflA = new ReflectionProperty(Hierarchy::class, 'children_for_tree_ids_cache');
+        $reflB = new ReflectionProperty(Hierarchy::class, 'children_for_tree_obj_cache');
+        $reflA->setValue(null, []);
+        $reflB->setValue(null, []);
+        parent::tearDown();
     }
 
     /**
@@ -112,12 +123,12 @@ class HierarchyTest extends SapphireTest
 
         // Check that all obj 3 children are returned
         $this->assertEquals(
-            ["Obj 3a", "Obj 3b", "Obj 3c", "Obj 3d"],
+            ["Obj 3a", "Obj 3b", "Obj 3c", "Obj 3d", "Obj 3HfH1"],
             $obj3->AllHistoricalChildren()->column('Title')
         );
 
         // Check numHistoricalChildren
-        $this->assertEquals(4, $obj3->numHistoricalChildren());
+        $this->assertEquals(5, $obj3->numHistoricalChildren());
     }
 
     public function testNumChildren()
@@ -139,7 +150,7 @@ class HierarchyTest extends SapphireTest
 
         $this->assertEquals(0, $obj1->numChildren());
         $this->assertEquals(2, $obj2->numChildren());
-        $this->assertEquals(4, $obj3->numChildren());
+        $this->assertEquals(5, $obj3->numChildren());
         $this->assertEquals(2, $obj2a->numChildren());
         $this->assertEquals(0, $obj2b->numChildren());
         $this->assertEquals(2, $obj3a->numChildren());
@@ -700,5 +711,156 @@ class HierarchyTest extends SapphireTest
         $group = new Group();
         $group->Title = '<b>My group</b>';
         $this->assertSame('<i>&lt;b&gt;My group&lt;/b&gt;</i>', $group->getTreeTitle());
+    }
+
+    public static function provideGetChildrenForTree(): array
+    {
+        return [
+            'threshold-1' => [
+                'threshold' => 1,
+                'hide' => true,
+                'expected' => [
+                    'Obj 3' => [
+                        'Obj 3a',
+                        'Obj 3b',
+                        'Obj 3c',
+                        'Obj 3d',
+                    ],
+                ]
+            ],
+            'threshold-4' => [
+                'threshold' => 4,
+                'hide' => true,
+                'expected' => [
+                    'Obj 3' => [
+                        'Obj 3a',
+                        'Obj 3b',
+                        'Obj 3c',
+                        'Obj 3d',
+                    ],
+                ]
+            ],
+            'threshold-5' => [
+                'threshold' => 5,
+                'hide' => true,
+                'expected' => [
+                    'Obj 3' => [
+                        'Obj 3a',
+                        'Obj 3b',
+                        'Obj 3c',
+                        'Obj 3d',
+                    ],
+                    'Obj 3a' => [
+                        'Obj 3aa',
+                        'Obj 3ab',
+                    ],
+                    'Obj 3b' => [
+                        'Obj 3ba',
+                        'Obj 3bb',
+                    ],
+                    'Obj 3c' => [
+                        'Obj 3ca'
+                    ],
+                    'Obj 3d' => [],
+                ]
+            ],
+            'threshold-6' => [
+                'threshold' => 6,
+                'hide' => true,
+                'expected' => [
+                    'Obj 3' => [
+                        'Obj 3a',
+                        'Obj 3b',
+                        'Obj 3c',
+                        'Obj 3d',
+                    ],
+                    'Obj 3a' => [
+                        'Obj 3aa',
+                        'Obj 3ab',
+                    ],
+                    'Obj 3b' => [
+                        'Obj 3ba',
+                        'Obj 3bb',
+                    ],
+                    'Obj 3c' => [
+                        'Obj 3ca'
+                    ],
+                    'Obj 3d' => [],
+                ]
+            ],
+            'threshold-50' => [
+                'threshold' => 50,
+                'hide' => true,
+                'expected' => [
+                    'Obj 3' => [
+                        'Obj 3a',
+                        'Obj 3b',
+                        'Obj 3c',
+                        'Obj 3d',
+                    ],
+                    'Obj 3a' => [
+                        'Obj 3aa',
+                        'Obj 3ab',
+                    ],
+                    'Obj 3b' => [
+                        'Obj 3ba',
+                        'Obj 3bb',
+                    ],
+                    'Obj 3c' => [
+                        'Obj 3ca'
+                    ],
+                    'Obj 3d' => [],
+                    'Obj 3aa' => [],
+                    'Obj 3ab' => [],
+                    'Obj 3ba' => [],
+                    'Obj 3bb' => [],
+                    'Obj 3ca' => [],
+                ]
+            ],
+            'show-hidden' => [
+                'threshold' => 5,
+                'hide' => false,
+                'expected' => [
+                    'Obj 3' => [
+                        'Obj 3a',
+                        'Obj 3b',
+                        'Obj 3c',
+                        'Obj 3d',
+                        'Obj 3HfH1',
+                    ],
+                ]
+            ],
+        ];
+    }
+
+    #[DataProvider('provideGetChildrenForTree')]
+    public function testGetChildrenForTree(int $threshold, bool $hide, array $expected): void
+    {
+        HierarchyTest\TestObject::config()->set('node_threshold_total', $threshold);
+        if ($hide) {
+            // Hierarchy::showingCMSTree() will always return false in this test, so
+            // hide_from_cms_tree is not tested
+            HierarchyTest\TestObject::config()->merge(
+                'hide_from_hierarchy',
+                [HierarchyTest\TestObjectHideFromHierarchy::class]
+            );
+        }
+        $dataClass = HierarchyTest\TestObject::class;
+        $obj3 = $this->objFromFixture($dataClass, 'obj3');
+        $children = $obj3->getChildrenForTree();
+        $this->assertSame($expected['Obj 3'], $children->column('Title'));
+        $reflA = new ReflectionProperty(Hierarchy::class, 'children_for_tree_ids_cache');
+        $reflB = new ReflectionProperty(Hierarchy::class, 'children_for_tree_obj_cache');
+        $cacheA = $reflA->getValue(null);
+        $cacheB = $reflB->getValue(null);
+        $actual = [];
+        foreach ($cacheA[$dataClass] as $id => $childIDs) {
+            $title = $cacheB[$dataClass][$id]->Title;
+            $actual[$title] = [];
+            foreach ($childIDs as $childID) {
+                $actual[$title][] = $cacheB[$dataClass][$childID]->Title;
+            }
+        }
+        $this->assertSame($expected, $actual);
     }
 }
