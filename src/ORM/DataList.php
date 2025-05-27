@@ -2061,4 +2061,17 @@ class DataList extends ModelData implements SS_List
             $currentChunk++;
         }
     }
+
+    /**
+     * Prepopulate any extension caches with the current dataclass and IDs of records
+     *
+     * Note that because this calls column() and may result in other database queries based on
+     * the IDs that returns, this should be called after all filtering, sorting, etc has already
+     * been set for this list.
+     */
+    public function prepopulateCaches(): void
+    {
+        $ids = $this->column('ID');
+        $this->extend('onPrepopulateCaches', $ids);
+    }
 }
