@@ -18,9 +18,15 @@ class TempFolder
     public static function getTempFolder($base)
     {
         $parent = static::getTempParentFolder($base);
+        $user = static::getTempFolderUsername();
+
+        // Append php version to username folder
+        if (Environment::getEnv('TEMP_FOLDER_VERSION')) {
+            $user .= '-' . preg_replace('/[^\w\-\.+]+/', '-', PHP_VERSION);
+        }
 
         // The actual temp folder is a subfolder of getTempParentFolder(), named by username
-        $subfolder = Path::join($parent, static::getTempFolderUsername());
+        $subfolder = Path::join($parent, $user);
 
         if (!@file_exists($subfolder ?? '')) {
             mkdir($subfolder ?? '');
