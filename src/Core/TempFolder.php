@@ -25,7 +25,7 @@ class TempFolder
             $user .= '-' . preg_replace('/[^\w\-\.+]+/', '-', PHP_VERSION);
         }
 
-        // The actual temp folder is a subfolder of getTempParentFolder(), named by username
+        // The actual temp folder is a subfolder of getTempParentFolder(), named by username and optionally including PHP version
         $subfolder = Path::join($parent, $user);
 
         if (!@file_exists($subfolder ?? '')) {
