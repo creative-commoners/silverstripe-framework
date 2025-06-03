@@ -18,7 +18,7 @@ class TempFolder
     public static function getTempFolder($base)
     {
         $parent = static::getTempParentFolder($base);
-        $user = static::getTempFolderUsername();
+        $folderName = static::getTempFolderUsername();
 
         // Append php version to username folder
         if (Environment::getEnv('SS_TEMP_FOLDER_INCLUDES_PHP_VERSION')) {
