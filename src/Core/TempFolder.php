@@ -21,7 +21,7 @@ class TempFolder
         $user = static::getTempFolderUsername();
 
         // Append php version to username folder
-        if (Environment::getEnv('TEMP_FOLDER_VERSION')) {
+        if (Environment::getEnv('SS_TEMP_FOLDER_INCLUDES_PHP_VERSION')) {
             $user .= '-' . preg_replace('/[^\w\-\.+]+/', '-', PHP_VERSION);
         }
 
