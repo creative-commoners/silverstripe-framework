@@ -688,6 +688,12 @@ class GridField extends FormField
         if ($total > 0) {
             $rows = [];
 
+            if (is_a($list, DataList::class)) {
+                // This will call Versioned::prepopulateVersionNumberCache() which reduces
+                // the number of database requests needed to do the canView() checks below
+                $list->prepopulateCaches();
+            }
+
             foreach ($list as $index => $record) {
                 if ($record->hasMethod('canView') && !$record->canView()) {
                     continue;
