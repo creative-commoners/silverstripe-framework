@@ -22,11 +22,11 @@ class TempFolder
 
         // Append php version to username folder
         if (Environment::getEnv('SS_TEMP_FOLDER_INCLUDES_PHP_VERSION')) {
-            $user .= '-' . preg_replace('/[^\w\-\.+]+/', '-', PHP_VERSION);
+            $folderName .= '-' . preg_replace('/[^\w\-\.+]+/', '-', PHP_VERSION);
         }
 
         // The actual temp folder is a subfolder of getTempParentFolder(), named by username and optionally including PHP version
-        $subfolder = Path::join($parent, $user);
+        $subfolder = Path::join($parent, $folderName);
 
         if (!@file_exists($subfolder ?? '')) {
             mkdir($subfolder ?? '');
