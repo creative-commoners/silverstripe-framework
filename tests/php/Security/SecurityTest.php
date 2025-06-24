@@ -237,7 +237,7 @@ class SecurityTest extends FunctionalTest
 
     public function testLogInAsSomeoneElse()
     {
-        $member = DataObject::get_one(Member::class);
+        $member = Member::get()->first();
 
         /* Log in with any user that we can find */
         Security::setCurrentUser($member);
@@ -325,7 +325,7 @@ class SecurityTest extends FunctionalTest
         $securityTokenWasEnabled = SecurityToken::is_enabled();
         SecurityToken::enable();
 
-        $member = DataObject::get_one(Member::class);
+        $member = Member::get()->first();
 
         /* Log in with any user that we can find */
         $this->logInAs($member);
@@ -530,7 +530,7 @@ class SecurityTest extends FunctionalTest
         $this->assertEmailSent('testuser@example.com');
 
         // Load password link from email
-        $admin = DataObject::get_by_id(Member::class, $admin->ID);
+        $admin = Member::get()->byID($admin->ID);
         $this->assertNotNull($admin->AutoLoginHash, 'Hash has been written after lost password');
 
         // We don't have access to the token - generate a new token and hash pair.
@@ -555,7 +555,7 @@ class SecurityTest extends FunctionalTest
         $this->assertEquals(302, $goodResponse->getStatusCode());
         $this->assertEquals($this->idFromFixture(Member::class, 'test'), $this->session()->get('loggedInAs'));
 
-        $admin = DataObject::get_by_id(Member::class, $admin->ID, false);
+        $admin = Member::get()->byID($admin->ID);
         $this->assertNull($admin->LockedOutUntil);
         $this->assertEquals(0, $admin->FailedLoginCount);
     }
@@ -647,7 +647,7 @@ class SecurityTest extends FunctionalTest
         for ($i = 1; $i <= 6; $i++) {
             $this->doTestLoginForm('testuser@example.com', 'incorrectpassword');
             /** @var Member $member */
-            $member = DataObject::get_by_id(Member::class, $this->idFromFixture(Member::class, 'test'));
+            $member = $this->objFromFixture(Member::class, 'test');
 
             if ($i < 5) {
                 $this->assertNull(
@@ -727,9 +727,9 @@ class SecurityTest extends FunctionalTest
         $this->doTestLoginForm('noexpiry@silverstripe.com', 'incorrectpassword');
 
         /** @var Member $member1 */
-        $member1 = DataObject::get_by_id(Member::class, $this->idFromFixture(Member::class, 'test'));
+        $member1 = $this->objFromFixture(Member::class, 'test');
         /** @var Member $member2 */
-        $member2 = DataObject::get_by_id(Member::class, $this->idFromFixture(Member::class, 'noexpiry'));
+        $member2 = $this->objFromFixture(Member::class, 'noexpiry');
 
         $this->assertNull($member1->LockedOutUntil);
         $this->assertNull($member2->LockedOutUntil);
@@ -738,11 +738,11 @@ class SecurityTest extends FunctionalTest
         // THIS SESSION
 
         $this->doTestLoginForm('testuser@example.com', 'incorrectpassword');
-        $member1 = DataObject::get_by_id(Member::class, $this->idFromFixture(Member::class, 'test'));
+        $member1 = $this->objFromFixture(Member::class, 'test');
         $this->assertNotNull($member1->LockedOutUntil);
 
         $this->doTestLoginForm('noexpiry@silverstripe.com', 'incorrectpassword');
-        $member2 = DataObject::get_by_id(Member::class, $this->idFromFixture(Member::class, 'noexpiry'));
+        $member2 = $this->objFromFixture(Member::class, 'noexpiry');
         $this->assertNotNull($member2->LockedOutUntil);
     }
 

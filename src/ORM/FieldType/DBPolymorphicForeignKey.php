@@ -79,7 +79,7 @@ class DBPolymorphicForeignKey extends DBComposite
         $id = $this->getIDValue();
         $class = $this->getClassValue();
         if ($id && $class && is_subclass_of($class, DataObject::class)) {
-            return DataObject::get_by_id($class, $id);
+            return DataObject::get($class)->setUseCache(true)->byID($id);
         }
         return null;
     }

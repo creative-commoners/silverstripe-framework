@@ -46,7 +46,7 @@ class SQLInsertTest extends SapphireTest
         $this->assertEquals(1, DB::affected_rows());
 
         // Check inserted object is correct
-        $firstObject = DataObject::get_one(SQLInsertTestBase::class, ['"Title"' => 'My Object'], false);
+        $firstObject = SQLInsertTestBase::get()->find('Title', 'My Object');
         $this->assertNotEmpty($firstObject);
         $this->assertEquals($firstObject->Title, 'My Object');
         $this->assertNotEmpty($firstObject->HasFun);
@@ -83,13 +83,13 @@ class SQLInsertTest extends SapphireTest
         $this->assertEquals(2, DB::affected_rows());
 
         // Check inserted objects are correct
-        $firstObject = DataObject::get_one(SQLInsertTestBase::class, ['"Title"' => 'First Object'], false);
+        $firstObject = SQLInsertTestBase::get()->find('Title', 'First Object');
         $this->assertNotEmpty($firstObject);
         $this->assertEquals($firstObject->Title, 'First Object');
         $this->assertEquals($firstObject->Age, 10);
         $this->assertEquals($firstObject->Description, 'First the worst');
 
-        $secondObject = DataObject::get_one(SQLInsertTestBase::class, ['"Title"' => 'Second object'], false);
+        $secondObject = SQLInsertTestBase::get()->find('Title', 'Second object');
         $this->assertNotEmpty($secondObject);
         $this->assertEquals($secondObject->Title, 'Second object');
         $this->assertEquals($secondObject->Age, 12);

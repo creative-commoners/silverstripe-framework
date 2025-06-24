@@ -62,7 +62,7 @@ class SessionAuthenticationHandler implements AuthenticationHandler
         if (!$id) {
             return null;
         }
-        $member = DataObject::get_by_id(Member::class, $id);
+        $member = Member::get()->setUseCache(true)->byID($id);
         return $member;
     }
 

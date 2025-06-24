@@ -557,9 +557,7 @@ class Member extends DataObject
             $generator = new RandomGenerator();
             $token = $generator->randomToken();
             $hash = $this->encryptWithUserSettings($token);
-        } while (DataObject::get_one(Member::class, [
-            '"Member"."AutoLoginHash"' => $hash
-        ]));
+        } while (Member::get()->setUseCache(true)->find('AutoLoginHash', $hash));
 
         $this->AutoLoginHash = $hash;
         $this->AutoLoginExpired = date('Y-m-d H:i:s', time() + $lifetime);
@@ -748,7 +746,7 @@ class Member extends DataObject
 
         // Transform ID to member
         if (is_numeric($member)) {
-            $member = DataObject::get_by_id(Member::class, $member);
+            $member = Member::get()->setUseCache(true)->byID($member);
         }
         Security::setCurrentUser($member);
 
@@ -775,13 +773,11 @@ class Member extends DataObject
         $identifierField = Member::config()->get('unique_identifier_field');
         if ($this->$identifierField) {
             // Note: Same logic as Member_Validator class
-            $filter = [
-                "\"Member\".\"$identifierField\"" => $this->$identifierField
-            ];
+            $filter = [$identifierField => $this->$identifierField];
             if ($this->ID) {
-                $filter[] = ['"Member"."ID" <> ?' => $this->ID];
+                $filter['ID:not'] = $this->ID;
             }
-            $existingRecord = DataObject::get_one(Member::class, $filter);
+            $existingRecord = Member::get()->setUseCache(true)->filter($filter)->first();
 
             if ($existingRecord) {
                 throw new ValidationException(_t(
@@ -944,11 +940,9 @@ class Member extends DataObject
     public function inGroup($group, $strict = false)
     {
         if (is_numeric($group)) {
-            $groupCheckObj = DataObject::get_by_id(Group::class, $group);
+            $groupCheckObj = Group::get()->setUseCache(true)->byID($group);
         } elseif (is_string($group)) {
-            $groupCheckObj = DataObject::get_one(Group::class, [
-                '"Group"."Code"' => $group
-            ]);
+            $groupCheckObj = Group::get()->setUseCache(true)->find('Code', $group);
         } elseif ($group instanceof Group) {
             $groupCheckObj = $group;
         } else {
@@ -973,9 +967,7 @@ class Member extends DataObject
      */
     public function addToGroupByCode($groupcode, $title = "")
     {
-        $group = DataObject::get_one(Group::class, [
-            '"Group"."Code"' => $groupcode
-        ]);
+        $group = Group::get()->setUseCache(true)->find('Code', $groupcode);
 
         if ($group) {
             $this->Groups()->add($group);
@@ -1000,7 +992,7 @@ class Member extends DataObject
      */
     public function removeFromGroupByCode($groupcode)
     {
-        $group = Group::get()->filter(['Code' => $groupcode])->first();
+        $group = Group::get()->find('Code', $groupcode);
 
         if ($group) {
             $this->Groups()->remove($group);

@@ -65,12 +65,7 @@ class CsvBulkLoaderTest extends SapphireTest
         $this->assertCount(5, $results, 'Test correct count of imported data');
 
         // Test that columns were correctly imported
-        $obj = DataObject::get_one(
-            Player::class,
-            [
-            '"CsvBulkLoaderTest_Player"."FirstName"' => 'John'
-            ]
-        );
+        $obj = Player::get()->find('FirstName', 'John');
         $this->assertNotNull($obj);
         $this->assertEquals("He's a good guy", $obj->Biography);
         $this->assertEquals("1988-01-31", $obj->Birthday);
@@ -156,23 +151,13 @@ class CsvBulkLoaderTest extends SapphireTest
         $this->assertCount(4, $results, 'Test correct count of imported data');
 
         // Test that columns were correctly imported
-        $obj = DataObject::get_one(
-            Player::class,
-            [
-            '"CsvBulkLoaderTest_Player"."FirstName"' => 'John'
-            ]
-        );
+        $obj = Player::get()->find('FirstName', 'John');
         $this->assertNotNull($obj);
         $this->assertEquals("He's a good guy", $obj->Biography);
         $this->assertEquals("1988-01-31", $obj->Birthday);
         $this->assertEquals("1", $obj->IsRegistered);
 
-        $obj2 = DataObject::get_one(
-            Player::class,
-            [
-            '"CsvBulkLoaderTest_Player"."FirstName"' => 'Jane'
-            ]
-        );
+        $obj2 = Player::get()->find('FirstName', 'Jane');
         $this->assertNotNull($obj2);
         $this->assertEquals('0', $obj2->IsRegistered);
 
@@ -212,17 +197,12 @@ class CsvBulkLoaderTest extends SapphireTest
         $this->assertCount(1, $results, 'Test correct count of imported data');
 
         // Test of augumenting existing relation (created by fixture)
-        $testTeam = DataObject::get_one(Team::class, null, null, '"Created" DESC');
+        $testTeam = Team::get()->sort('Created DESC')->first();
         $this->assertEquals('20', $testTeam->TeamSize, 'Augumenting existing has_one relation works');
 
         // Test of creating relation
-        $testContract = DataObject::get_one(PlayerContract::class);
-        $testPlayer = DataObject::get_one(
-            Player::class,
-            [
-            '"CsvBulkLoaderTest_Player"."FirstName"' => 'John'
-            ]
-        );
+        $testContract = PlayerContract::get()->first();
+        $testPlayer = Player::get()->find('FirstName', 'John');
         $this->assertEquals($testPlayer->ContractID, $testContract->ID, 'Creating new has_one relation works');
 
         // Test nested setting of relation properties
@@ -265,7 +245,7 @@ class CsvBulkLoaderTest extends SapphireTest
         $results = $loader->load($filepath);
 
         // HACK need to update the loaded record from the database
-        $player = DataObject::get_by_id(Player::class, $player->ID);
+        $player = Player::get()->byID($player->ID);
         $this->assertEquals($player->FirstName, 'JohnUpdated', 'Test updating of existing records works');
 
         // null values are valid imported

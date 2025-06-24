@@ -36,31 +36,15 @@ class DataExtensionTest extends SapphireTest
         $object->FieldOne = "Lorem ipsum dolor";
         $object->FieldTwo = "Random notes";
 
-        // The following code doesn't currently work:
-        // $contact->RelatedObjects()->add($object);
-        // $contact->write();
-
-        // Instead we have to do the following
+        $contact->RelatedObjects()->add($object);
         $contact->write();
-        $object->ContactID = $contact->ID;
-        $object->write();
 
         $contactID = $contact->ID;
         unset($contact);
         unset($object);
 
-        $contact = DataObject::get_one(
-            DataExtensionTest\TestMember::class,
-            [
-            '"DataExtensionTest_Member"."Website"' => 'http://www.example.com'
-            ]
-        );
-        $object = DataObject::get_one(
-            DataExtensionTest\RelatedObject::class,
-            [
-            '"DataExtensionTest_RelatedObject"."ContactID"' => $contactID
-            ]
-        );
+        $contact = DataExtensionTest\TestMember::get()->find('Website', 'http://www.example.com');
+        $object = DataExtensionTest\RelatedObject::get()->find('ContactID', $contactID);
 
         $this->assertNotNull($object, 'Related object not null');
         $this->assertInstanceOf(
@@ -124,10 +108,7 @@ class DataExtensionTest extends SapphireTest
         unset($player);
 
         // Pull the record out of the DB and examine the extended fields
-        $player = DataObject::get_one(
-            DataExtensionTest\Player::class,
-            [ '"DataExtensionTest_Player"."Name"' => 'Joe' ]
-        );
+        $player = DataExtensionTest\Player::get()->find('Name', 'Joe');
         $this->assertEquals('1990-05-10', $player->DateBirth);
         $this->assertEquals('123 somewhere street', $player->Address);
         $this->assertEquals('Goalie', $player->Status);

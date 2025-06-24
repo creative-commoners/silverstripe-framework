@@ -478,7 +478,7 @@ class TreeDropdownField extends FormField implements HasOneRelationFieldInterfac
         }
 
         if ($id && !$request->requestVar('forceFullTree')) {
-            $obj = DataObject::get_by_id($sourceObject, $id);
+            $obj = DataObject::get($sourceObject)->setUseCache(true)->byID($id);
             $isSubTree = true;
             if (!$obj) {
                 throw new Exception(
@@ -487,7 +487,7 @@ class TreeDropdownField extends FormField implements HasOneRelationFieldInterfac
             }
         } else {
             if ($this->getTreeBaseID()) {
-                $obj = DataObject::get_by_id($sourceObject, $this->getTreeBaseID());
+                $obj = DataObject::get($sourceObject)->setUseCache(true)->byID($this->getTreeBaseID());
             }
 
             if (!$this->getTreeBaseID() || !$obj) {

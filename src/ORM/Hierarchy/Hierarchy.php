@@ -879,11 +879,11 @@ class Hierarchy extends Extension
             return null;
         }
         $baseClass = $this->owner->baseClass();
-        $idSQL = $this->owner->getSchema()->sqlColumnForField($baseClass, 'ID');
-        return DataObject::get_one($baseClass, [
-            [$idSQL => $parentID],
-            $filter
-        ]);
+        $list = DataObject::get($baseClass)->setUseCache(true);
+        if ($filter !== null) {
+            $list = $list->where($filter);
+        }
+        return $list->byID($parentID);
     }
 
     /**

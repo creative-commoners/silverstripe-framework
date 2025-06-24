@@ -170,10 +170,8 @@ class TransactionTest extends SapphireTest
             DB::get_conn()->transactionRollback();
         }
 
-        DataObject::flush_and_destroy_cache();
-
-        $success = DataObject::get_one(TestObject::class, "\"Title\"='Read only success'");
-        $fail = DataObject::get_one(TestObject::class, "\"Title\"='Read only page failed'");
+        $success = TestObject::get()->find('Title', 'Read only success');
+        $fail = TestObject::get()->find('Title', 'Read only page failed');
 
         //This page should be in the system
         $this->assertIsObject($success);

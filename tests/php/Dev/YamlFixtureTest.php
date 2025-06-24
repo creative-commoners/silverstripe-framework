@@ -60,8 +60,7 @@ class YamlFixtureTest extends SapphireTest
         $fixture->writeInto($factory);
 
         $this->assertGreaterThan(0, $factory->getId(TestDataObject::class, "testobject1"));
-        $object1 = DataObject::get_by_id(
-            TestDataObject::class,
+        $object1 = TestDataObject::get()->setUseCache(true)->byID(
             $factory->getId(TestDataObject::class, "testobject1")
         );
         $this->assertTrue(
@@ -69,8 +68,7 @@ class YamlFixtureTest extends SapphireTest
             "Should be two items in this relationship"
         );
         $this->assertGreaterThan(0, $factory->getId(TestDataObject::class, "testobject2"));
-        $object2 = DataObject::get_by_id(
-            TestDataObject::class,
+        $object2 = TestDataObject::get()->setUseCache(true)->byID(
             $factory->getId(TestDataObject::class, "testobject2")
         );
         $this->assertTrue(

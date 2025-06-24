@@ -176,7 +176,7 @@ class BulkLoader_Result implements \Countable
     {
         $set = new ArrayList();
         foreach ($arr as $arrItem) {
-            $obj = DataObject::get_by_id($arrItem['ClassName'], $arrItem['ID']);
+            $obj = DataObject::get($arrItem['ClassName'])->setUseCache(true)->byID($arrItem['ID']);
             $obj->_BulkLoaderMessage = $arrItem['Message'];
             if ($obj) {
                 $set->push($obj);

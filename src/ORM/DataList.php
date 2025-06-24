@@ -1770,8 +1770,6 @@ class DataList extends ModelData implements SS_List, Resettable
 
     /**
      * Returns the first item in this DataList
-     *
-     * The object returned is not cached, unlike {@link DataObject::get_one()}
      * @return T|null
      */
     public function first(): ?DataObject
@@ -1789,8 +1787,6 @@ class DataList extends ModelData implements SS_List, Resettable
 
     /**
      * Returns the last item in this DataList
-     *
-     * The object returned is not cached, unlike {@link DataObject::get_one()}
      * @return T|null
      */
     public function last(): ?DataObject
@@ -1817,8 +1813,6 @@ class DataList extends ModelData implements SS_List, Resettable
 
     /**
      * Find the first DataObject of this DataList where the given key = value
-     *
-     * The object returned is not cached, unlike {@link DataObject::get_one()}
      *
      * @return T|null
      */
@@ -1847,8 +1841,6 @@ class DataList extends ModelData implements SS_List, Resettable
 
     /**
      * Return the first DataObject with the given ID
-     *
-     * The object returned is not cached, unlike {@link DataObject::get_by_id()}
      *
      * @return T|null
      */
@@ -2095,8 +2087,6 @@ class DataList extends ModelData implements SS_List, Resettable
 
     /**
      * Returns item stored in list with index $key
-     *
-     * The object returned is not cached, unlike {@link DataObject::get_one()}
      *
      * @return T|null
      */

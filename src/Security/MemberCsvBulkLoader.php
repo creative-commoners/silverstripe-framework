@@ -44,7 +44,7 @@ class MemberCsvBulkLoader extends CsvBulkLoader
 
         // Add to predefined groups
         /** @var Member $member */
-        $member = DataObject::get_by_id($this->objectClass, $objID);
+        $member = DataObject::get($this->objectClass)->setUseCache(true)->byID($objID);
         foreach ($this->groups as $group) {
             $member->Groups()->add($group);
         }

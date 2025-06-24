@@ -43,7 +43,7 @@ class SQLUpdateTest extends SapphireTest
         $this->assertEquals(1, DB::affected_rows());
 
         // Check item updated
-        $item = DataObject::get_one(SQLUpdateTest\TestBase::class, ['"Title"' => 'Object 1']);
+        $item = SQLUpdateTest\TestBase::get()->find('Title', 'Object 1');
         $this->assertEquals('Description 1a', $item->Description);
     }
 
@@ -64,7 +64,7 @@ class SQLUpdateTest extends SapphireTest
         $this->assertEquals(1, DB::affected_rows());
 
         // Check item updated
-        $item = DataObject::get_one(SQLUpdateTest\TestBase::class, ['"Title"' => 'Object 2']);
+        $item = SQLUpdateTest\TestBase::get()->find('Title', 'Object 2');
         $this->assertEquals('Description 2a', $item->Description);
     }
 }

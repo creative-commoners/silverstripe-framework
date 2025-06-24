@@ -273,6 +273,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
      * Static caches used by relevant functions.
      *
      * @var array
+     * @deprecated 6.1.0 Use a cached `DataList` instead.
      */
     protected static $_cache_get_one;
 
@@ -1817,9 +1818,11 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
      *
      * @param string $className The class name of the record to be deleted
      * @param int $id ID of record to be deleted
+     * @deprecated 6.1.0 Get the record through a `DataList` and call `delete()` on it instead.
      */
     public static function delete_by_id($className, $id)
     {
+        Deprecation::notice('6.1.0', 'Use `DataObject::get($className)->setUseCache(true)->byID($id)->delete()` instead.');
         $obj = DataObject::get_by_id($className, $id);
         if ($obj) {
             $obj->delete();
@@ -3521,9 +3524,11 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
      * @param string|array|null $sort Passed to DataList::sort() so that DataList::first() returns the desired item
      *
      * @return static|null The first item matching the query
+     * @deprecated 6.1.0 Use a regular `DataList` query with `setUseCache(true)` instead.
      */
     public static function get_one($callerClass = null, $filter = "", $cache = true, $sort = "")
     {
+        Deprecation::notice('6.1.0', 'Use `DataObject::get($className)->setUseCache(true)` instead.');
         if ($callerClass === null) {
             $callerClass = static::class;
         }
@@ -3630,7 +3635,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
     /**
      * Return the given element, searching by ID.
      *
-     * This can be called either via `DataObject::get_by_id(MyClass::class, $id)`
+     * This can be called either via `MyClass::get()->setUseCache(true)->byID($id)`
      * or `MyClass::get_by_id($id)`
      *
      * The object returned is cached, unlike DataObject::get()->byID() {@link DataList::byID()}
@@ -3640,9 +3645,11 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
      * @param boolean $cache See {@link get_one()}
      *
      * @return static|null The element
+     * @deprecated 6.1.0 Use a regular `DataList` query with `setUseCache(true)` instead.
      */
     public static function get_by_id($classOrID, $idOrCache = null, $cache = true)
     {
+        Deprecation::notice('6.1.0', 'Use `DataObject::get($className)->setUseCache(true)->byID($id)` instead.');
         // Shift arguments if passing id in first or second argument
         list ($class, $id, $cached) = is_numeric($classOrID)
             ? [get_called_class(), (int) $classOrID, isset($idOrCache) ? $idOrCache : $cache]
@@ -3831,7 +3838,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
         $defaultRecords = $this->config()->uninherited('default_records');
 
         if (!empty($defaultRecords)) {
-            $hasData = DataObject::get_one(static::class);
+            $hasData = DataObject::get(static::class)->setUseCache(true)->count() > 0;
             if (!$hasData) {
                 $className = static::class;
                 foreach ($defaultRecords as $record) {
