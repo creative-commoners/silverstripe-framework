@@ -1673,7 +1673,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
             $this->writeComponents($recursive, $skip);
         }
 
-        // Clears the cache for this object so get_one returns the correct object.
+        // Clears the cache for this class so cached queries return the correct object.
         $this->flushCache();
 
         return $this->record['ID'];
@@ -3577,6 +3577,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
     {
         if (static::class == DataObject::class) {
             DataObject::$_cache_get_one = [];
+            DataList::reset();
             return $this;
         }
 
@@ -3586,6 +3587,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
                 unset(DataObject::$_cache_get_one[$class]);
             }
         }
+        DataList::reset(static::class);
 
         $this->components = [];
         $this->eagerLoadedData = [];
@@ -3609,6 +3611,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
             }
         }
         DataObject::$_cache_get_one = [];
+        DataList::resetAndDestroyCache();
     }
 
     /**
@@ -3619,6 +3622,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
         DBEnum::reset();
         ClassInfo::reset_db_cache();
         static::getSchema()->reset();
+        DataList::reset();
         DataObject::$_cache_get_one = [];
         DataObject::$_cache_field_labels = [];
     }

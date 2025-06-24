@@ -27,6 +27,7 @@ use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Model\ModelData;
 use ReflectionMethod;
+use SilverStripe\Dev\CliDebugView;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\Forms\DatalessField;
@@ -3135,5 +3136,51 @@ class DataObjectTest extends SapphireTest
         } else {
             $this->assertFalse(array_key_exists('CLASS_DESCRIPTION', $entities));
         }
+    }
+
+    public function testFlushCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $cachedTeam1 = DataObjectTest\Team::get_one();
+        $cachedTeam2 = DataObjectTest\Team::get()->setUseCache(true)->first();
+        $cachedSubTeam1 = DataObjectTest\SubTeam::get_one();
+        $cachedSubTeam2 = DataObjectTest\SubTeam::get()->setUseCache(true)->first();
+        $cachedTeamComment1 = DataObjectTest\TeamComment::get_one();
+        $cachedTeamComment2 = DataObjectTest\TeamComment::get()->setUseCache(true)->first();
+
+        // Flush Team (doesn't affect subclasses or unrelated classes)
+        (new DataObjectTest\Team())->flushCache();
+        // Should have only affected Team cache
+        $queryCounter->startCounting();
+        $this->assertNotSame($cachedTeam1, DataObjectTest\Team::get_one());
+        $this->assertNotSame($cachedTeam2, DataObjectTest\Team::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+        // Should not have affected TeamComment or SubTeam cache
+        $queryCounter->startCounting();
+        $this->assertSame($cachedTeamComment1, DataObjectTest\TeamComment::get_one());
+        $this->assertSame($cachedTeamComment2, DataObjectTest\TeamComment::get()->setUseCache(true)->first());
+        $this->assertSame($cachedSubTeam1, DataObjectTest\SubTeam::get_one());
+        $this->assertSame($cachedSubTeam2, DataObjectTest\SubTeam::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Flush SubTeam (flushes superclasses, doesn't affect unrelated classes)
+        (new DataObjectTest\SubTeam())->flushCache();
+        // Should have only affected Team and SubTeam cache
+        $queryCounter->startCounting();
+        $this->assertNotSame($cachedSubTeam1, DataObjectTest\SubTeam::get_one());
+        $this->assertNotSame($cachedSubTeam2, DataObjectTest\SubTeam::get()->setUseCache(true)->first());
+        $this->assertNotSame($cachedTeam1, DataObjectTest\Team::get_one());
+        $this->assertNotSame($cachedTeam2, DataObjectTest\Team::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(4, $queryCounter->getCount());
+        // Should not have affected TeamComment cache
+        $queryCounter->startCounting();
+        $this->assertSame($cachedTeamComment1, DataObjectTest\TeamComment::get_one());
+        $this->assertSame($cachedTeamComment2, DataObjectTest\TeamComment::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 }

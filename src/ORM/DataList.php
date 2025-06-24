@@ -10,7 +10,8 @@ use Exception;
 use InvalidArgumentException;
 use LogicException;
 use BadMethodCallException;
-use Dflydev\DotAccessData\Data;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\Core\Resettable;
 use SilverStripe\ORM\Connect\Query;
 use Traversable;
 use SilverStripe\ORM\DataQuery;
@@ -43,7 +44,7 @@ use SilverStripe\ORM\Filters\SearchFilterable;
  * @template T of DataObject
  * @implements SS_List<T>
  */
-class DataList extends ModelData implements SS_List
+class DataList extends ModelData implements SS_List, Resettable
 {
     use SearchFilterable;
 
@@ -91,6 +92,47 @@ class DataList extends ModelData implements SS_List
      * Eagerly loaded relational data
      */
     private array $eagerLoadedData = [];
+
+    /**
+     * Whether the query result should be cached or not
+     */
+    private bool $useCache = false;
+
+    /**
+     * @internal
+     */
+    private static array $cachedQueries = [];
+
+    public static function reset(string $class = ''): void
+    {
+        if ($class) {
+            // Reset for all superclasses as well, since superclass queries
+            // include records from subclasses
+            $classHierarchy = ClassInfo::ancestry($class);
+            foreach ($classHierarchy as $currentClass) {
+                unset(DataList::$cachedQueries[$currentClass]);
+            }
+        } else {
+            DataList::$cachedQueries = [];
+        }
+        // DataQuery::reset will go through the ancestry too
+        DataQuery::reset($class);
+    }
+
+    /**
+     * Reset the query cache and destroy associated objects.
+     */
+    public static function resetAndDestroyCache(): void
+    {
+        foreach (DataList::$cachedQueries as $cache) {
+            foreach ($cache as $data) {
+                foreach ($data['records'] as $record) {
+                    $record->destroy();
+                }
+            }
+        }
+        static::reset();
+    }
 
     /**
      * Create a new DataList.
@@ -168,6 +210,7 @@ class DataList extends ModelData implements SS_List
             $res = call_user_func($callback, $list->dataQuery, $list);
             if ($res) {
                 $list->dataQuery = $res;
+                $list->dataQuery->setUseCache($list->useCache);
             }
 
             return $list;
@@ -180,6 +223,7 @@ class DataList extends ModelData implements SS_List
             $res = $callback($list->dataQuery, $list);
             if ($res) {
                 $list->dataQuery = $res;
+                $list->dataQuery->setUseCache($list->useCache);
             }
         } catch (Exception $e) {
             $list->inAlterDataQueryCall = false;
@@ -200,6 +244,8 @@ class DataList extends ModelData implements SS_List
     {
         $clone = clone $this;
         $clone->dataQuery = $dataQuery;
+        $clone->dataClass = $dataQuery->dataClass();
+        $dataQuery->setUseCache($clone->useCache);
         return $clone;
     }
 
@@ -234,6 +280,21 @@ class DataList extends ModelData implements SS_List
     public function sql(&$parameters = [])
     {
         return $this->dataQuery->sql($parameters);
+    }
+
+    /**
+     * Set whether to cache the result of this query or not.
+     * Query uniqueness is based on the query itself (tables, joins, sort, filter, etc) and eagerloading relations.
+     * That means a query with eagerloaded relations won't match an otherwise identical query with no eagerloading,
+     * though that implementation detail is subject to change.
+     *
+     * @return static<T>
+     */
+    public function setUseCache(bool $useCache): static
+    {
+        $this->useCache = $useCache;
+        $this->dataQuery->setUseCache($useCache);
+        return $this;
     }
 
     /**
@@ -936,8 +997,27 @@ class DataList extends ModelData implements SS_List
      */
     public function getIterator(): Traversable
     {
+        $dataClass = $this->dataClass();
+        $key = null;
         foreach ($this->getFinalisedQuery() as $row) {
-            yield $this->createDataObject($row);
+            $record = null;
+
+            // Cache the instantiated record if we're caching the query and there's an ID key
+            if ($this->useCache && isset($row['ID'])) {
+                if ($key === null) {
+                    $key = $this->getCacheKey();
+                }
+                if (isset(DataList::$cachedQueries[$dataClass][$key]['records'][$row['ID']])) {
+                    $record = DataList::$cachedQueries[$dataClass][$key]['records'][$row['ID']];
+                } else {
+                    $record = $this->createDataObject($row);
+                    DataList::$cachedQueries[$dataClass][$key]['records'][$row['ID']] = $record;
+                }
+            } else {
+                $record = $this->createDataObject($row);
+            }
+
+            yield $record;
         }
 
         // Re-set the finaliseQuery so that it can be re-executed
@@ -1018,6 +1098,14 @@ class DataList extends ModelData implements SS_List
         throw new InvalidArgumentException("Invalid relation passed to eagerLoad() - $relationChain");
     }
 
+    /**
+     * Get the key that will be used to identify this query for caching purposes.
+     */
+    protected function getCacheKey(): string
+    {
+        return $this->dataQuery->getCacheKey() . '_' . sha1(serialize($this->eagerLoadRelationChains));
+    }
+
     private function executeQuery(): Query
     {
         $query = $this->dataQuery->execute();
@@ -1030,11 +1118,21 @@ class DataList extends ModelData implements SS_List
         if (empty($this->eagerLoadRelationChains)) {
             return;
         }
-        $topLevelIDs = $query->column('ID');
-        if (empty($topLevelIDs)) {
+        if ($query->numRecords() < 1) {
             return;
         }
 
+        // Used cached data if we have it
+        if ($this->useCache) {
+            $dataClass = $this->dataClass();
+            $cacheKey = $this->getCacheKey();
+            if (isset(DataList::$cachedQueries[$dataClass][$cacheKey])) {
+                $this->eagerLoadedData = DataList::$cachedQueries[$dataClass][$cacheKey]['eagerloadedData'];
+                return;
+            }
+        }
+
+        $topLevelIDs = $query->column('ID');
         foreach ($this->eagerLoadRelationChains as $relationChain) {
             $parentDataClass = $this->dataClass();
             $parentIDs = $topLevelIDs;
@@ -1109,6 +1207,11 @@ class DataList extends ModelData implements SS_List
                 }
                 $parentDataClass = $relationDataClass;
             }
+        }
+
+        // Cached data if we need it
+        if ($this->useCache) {
+            DataList::$cachedQueries[$this->dataClass()][$cacheKey]['eagerloadedData'] = $this->eagerLoadedData;
         }
     }
 
@@ -1926,7 +2029,7 @@ class DataList extends ModelData implements SS_List
     public function add(mixed $item): void
     {
         // Nothing needs to happen by default
-        // TO DO: If a filter is given to this data list then
+        // Some subclasses (e.g. relation lists) may implement this method.
     }
 
     /**

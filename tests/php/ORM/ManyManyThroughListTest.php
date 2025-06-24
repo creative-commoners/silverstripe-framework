@@ -7,8 +7,6 @@ use SilverStripe\Core\Config\Config;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\ManyManyThroughList;
-use SilverStripe\ORM\Tests\DataObjectTest\Player;
-use SilverStripe\ORM\Tests\DataObjectTest\Team;
 use SilverStripe\ORM\Tests\ManyManyThroughListTest\Item;
 use SilverStripe\ORM\Tests\ManyManyThroughListTest\PolyItem;
 use SilverStripe\ORM\Tests\ManyManyThroughListTest\PolyJoinObject;
@@ -17,6 +15,8 @@ use SilverStripe\ORM\Tests\ManyManyThroughListTest\FallbackLocale;
 use SilverStripe\ORM\Tests\ManyManyThroughListTest\TestObject;
 use SilverStripe\ORM\DataList;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Dev\CliDebugView;
 
 class ManyManyThroughListTest extends SapphireTest
 {
@@ -92,6 +92,46 @@ class ManyManyThroughListTest extends SapphireTest
         $expectedJoinObject = ManyManyThroughListTest\JoinObject::get()->filter(['ParentID' => $parent->ID, 'ChildID' => $item3->ID ])->first();
         $this->assertEquals($expectedJoinObject->ID, $item3->getJoin()->ID);
         $this->assertEquals(get_class($expectedJoinObject), get_class($item3->getJoin()));
+    }
+
+    public function testSetUseCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $testObject1 = $this->objFromFixture(TestObject::class, 'parent1');
+        $itemsList1 = $testObject1->Items()->setUseCache(true);
+        $testObject2 = $this->objFromFixture(TestObject::class, 'parent2');
+        $itemsList2 = $testObject2->Items()->setUseCache(true);
+
+        // First query is uncached
+        $queryCounter->startCounting();
+        $items1 = $itemsList1->toArray();
+        $items2 = $itemsList2->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+
+        // Second query uses the cache
+        $queryCounter->startCounting();
+        $items1Cached = $itemsList1->toArray();
+        $items2Cached = $itemsList2->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Check the lists are correct
+        $this->assertSame($items1, $items1Cached);
+        $this->assertSame($items2, $items2Cached);
+        // Check there was no accidental bleed-through
+        // Using NotEquals instead of NotSame here checks the data, not just the specific object instances.
+        $this->assertNotEquals($items1Cached, $items2Cached);
+
+        // Check join records
+        $queryCounter->startCounting();
+        foreach ($items2Cached as $item) {
+            $this->assertStringStartsWith('join ', $item->getJoin()->Title);
+        }
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 
     /**
@@ -239,6 +279,44 @@ class ManyManyThroughListTest extends SapphireTest
         );
     }
 
+    public function testRemoveInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = ManyManyThroughListTest\TestObject::get()->setUseCache(true);
+        $control->count();
+        $parent = $this->objFromFixture(ManyManyThroughListTest\TestObject::class, 'parent1');
+        $joinObj = $this->objFromFixture(ManyManyThroughListTest\JoinObject::class, 'join1');
+        $relationObj = $this->objFromFixture(ManyManyThroughListTest\Item::class, 'child1');
+        $list = $parent->Items()->setUseCache(true);
+
+        $origObjCount = $list->count();
+        $origJoinCount = ManyManyThroughListTest\JoinObject::get()->setUseCache(true)->count();
+        $this->assertNotNull($list->byID($relationObj->ID));
+        $list->remove($relationObj);
+
+        // Make sure join class cache is invalidated correctly
+        $queryCounter->startCounting();
+        ManyManyThroughListTest\JoinObject::get()->byID($joinObj->ID);
+        $this->assertSame($origJoinCount - 1, ManyManyThroughListTest\JoinObject::get()->setUseCache(true)->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+
+        // Make sure relation class cache is invalidated correctly
+        $queryCounter->startCounting();
+        $this->assertNull($list->byID($relationObj->ID));
+        $this->assertSame($origObjCount - 1, $list->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
     public function testRemoveAll()
     {
         $first = $this->objFromFixture(ManyManyThroughListTest\TestObject::class, 'parent1');
@@ -263,6 +341,42 @@ class ManyManyThroughListTest extends SapphireTest
 
         // Confirm Item objects were not removed from the database
         $this->assertEquals($initialItems, ManyManyThroughListTest\Item::get()->count());
+    }
+
+    public function testRemoveAllInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = ManyManyThroughListTest\TestObject::get()->setUseCache(true);
+        $control->count();
+        $parent = $this->objFromFixture(ManyManyThroughListTest\TestObject::class, 'parent1');
+        $list = $parent->Items()->setUseCache(true);
+        $joinList = ManyManyThroughListTest\JoinObject::get()->setUseCache(true)->filter(['ParentID' => $parent->ID]);
+
+        $origObjCount = $list->count();
+        $origJoinCount = $joinList->count();
+        $this->assertGreaterThan(0, $origObjCount);
+        $this->assertGreaterThan(0, $origJoinCount);
+        $list->removeAll();
+
+        // Make sure join class cache is invalidated correctly
+        $queryCounter->startCounting();
+        $this->assertSame(0, $joinList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure relation class cache is invalidated correctly
+        $queryCounter->startCounting();
+        $this->assertSame(0, $list->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 
     public function testRemoveAllIgnoresLimit()
@@ -295,6 +409,115 @@ class ManyManyThroughListTest extends SapphireTest
 
         // Validate the list only contains the correct remaining item
         $this->assertEquals(['not filtered'], $items->column('Title'));
+    }
+
+    public function testAddInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = ManyManyThroughListTest\TestObject::get()->setUseCache(true);
+        $control->count();
+        $newItem = new ManyManyThroughListTest\Item(['Title' => 'cache tester']);
+        $newItem->write();
+
+        $parent = $this->objFromFixture(ManyManyThroughListTest\TestObject::class, 'parent1');
+        $itemList = $parent->Items()->setUseCache(true);
+        $joinList = ManyManyThroughListTest\JoinObject::get()->setUseCache(true)->filter(['ParentID' => $parent->ID]);
+        $origCount = $itemList->count();
+        $origJoinCount = $joinList->count();
+        $itemList->add($newItem);
+
+        // Make sure join class cache is invalidated correctly
+        $queryCounter->startCounting();
+        $this->assertSame($origJoinCount + 1, $joinList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure TestObject cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame($origCount + 1, $itemList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testAddManyInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = ManyManyThroughListTest\TestObject::get()->setUseCache(true);
+        $control->count();
+        $newItem1 = new ManyManyThroughListTest\Item(['Title' => 'cache tester']);
+        $newItem1->write();
+        $newItem2 = new ManyManyThroughListTest\Item(['Title' => 'cache tester']);
+        $newItem2->write();
+
+        $parent = $this->objFromFixture(ManyManyThroughListTest\TestObject::class, 'parent1');
+        $itemList = $parent->Items()->setUseCache(true);
+        $joinList = ManyManyThroughListTest\JoinObject::get()->setUseCache(true)->filter(['ParentID' => $parent->ID]);
+        $origCount = $itemList->count();
+        $origJoinCount = $joinList->count();
+        $itemList->addMany([$newItem1, $newItem2]);
+
+        // Make sure join class cache is invalidated correctly
+        $queryCounter->startCounting();
+        $this->assertSame($origJoinCount + 2, $joinList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure TestObject cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame($origCount + 2, $itemList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testSetByIDListInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = ManyManyThroughListTest\TestObject::get()->setUseCache(true);
+        $control->count();
+        $newItem1 = new ManyManyThroughListTest\Item(['Title' => 'cache tester']);
+        $newItem1->write();
+        $newItem2 = new ManyManyThroughListTest\Item(['Title' => 'cache tester']);
+        $newItem2->write();
+
+        $parent = $this->objFromFixture(ManyManyThroughListTest\TestObject::class, 'parent1');
+        $itemList = $parent->Items()->setUseCache(true);
+        $joinList = ManyManyThroughListTest\JoinObject::get()->setUseCache(true)->filter(['ParentID' => $parent->ID]);
+        $itemList->count();
+        $joinList->count();
+        $itemList->setByIDList([$newItem1->ID, $newItem2->ID]);
+
+        // Make sure join class cache is invalidated correctly
+        $queryCounter->startCounting();
+        $this->assertSame(2, $joinList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure TestObject cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame(2, $itemList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 
     /**
