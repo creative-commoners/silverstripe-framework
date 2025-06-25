@@ -13,6 +13,13 @@ use Closure;
 use SilverStripe\Core\Validation\ConstraintValidator;
 use Symfony\Component\Validator\Constraints\PasswordStrength;
 use SilverStripe\Core\Validation\ValidationResult;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Security\Validation\PasswordValidator;
+use SilverStripe\Security\Member;
+use SilverStripe\Security\Validation\EntropyPasswordValidator;
+use Symfony\Component\Validator\Constraints\PasswordStrengthValidator;
 
 /**
  * Two masked input fields, checks for matching passwords.
@@ -25,6 +32,9 @@ use SilverStripe\Core\Validation\ValidationResult;
  */
 class ConfirmedPasswordField extends FormField
 {
+    private static $allowed_actions = [
+        'strength',
+    ];
 
     /**
      * Minimum character length of the password.
@@ -36,6 +46,11 @@ class ConfirmedPasswordField extends FormField
      * 0 means no maximum length.
      */
     public int $maxLength = 0;
+
+    /**
+     * Whether the field is on a member form
+     */
+    private bool $isOnMemberForm = false;
 
     /**
      * Enforces password strength validation based on entropy.
@@ -107,6 +122,8 @@ class ConfirmedPasswordField extends FormField
 
     protected ?PasswordField $passwordField;
 
+    protected ?LiteralField $passwordStrengthField;
+
     protected ?PasswordField $confirmPasswordfield;
 
     protected ?HiddenField $hiddenField = null;
@@ -133,6 +150,10 @@ class ConfirmedPasswordField extends FormField
                 "{$name}[_Password]",
                 $title
             ),
+            $this->passwordStrengthField = LiteralField::create(
+                "{$name}[_PasswordStrength]",
+                '<div class="passwordstrength"></div>'
+            ),
             $this->confirmPasswordfield = PasswordField::create(
                 "{$name}[_ConfirmPassword]",
                 (isset($titleConfirmField)) ? $titleConfirmField : _t('SilverStripe\\Security\\Member.CONFIRMPASSWORD', 'Confirm Password')
@@ -153,6 +174,42 @@ class ConfirmedPasswordField extends FormField
 
         parent::__construct($name, $title);
         $this->setValue($value);
+    }
+
+    /**
+     * Endpoint to provide feedback for the current and required level of password strength
+     */
+    public function strength(HTTPRequest $request): HTTPResponse
+    {
+        $response = HTTPResponse::create();
+        $json = json_decode($request->getBody() ?? '', true);
+        if (!$json || !array_key_exists('password', $json) || !$request->isPOST()) {
+            $response->setStatusCode(400);
+            return $response;
+        }
+        $password = $json['password'];
+        $strength = PasswordStrengthValidator::estimateStrength($password);
+        $strengthLabel = ConfirmedPasswordField::getStrengthLabel($strength);
+        // All translations are defined in PHP, rather than having a mixture
+        // of PHP and Javascript translations.
+        $message = _t(
+            __CLASS__ . '.STRENGTH',
+            'Password strength: {strengthLabel}',
+            [
+                'strengthLabel' => $strengthLabel,
+            ]
+        );
+        // This is the same message used in validate()
+        $tooLow = _t(
+            __CLASS__ . '.VALIDATIONSTRONGPASSWORD',
+            'The password strength is too low. Please use a stronger password.'
+        );
+        $response->setBody(json_encode((object) [
+            'strength' => $strength,
+            'message' => $message,
+            'tooLow' => $tooLow,
+        ]));
+        return $response;
     }
 
     public function Title()
@@ -185,7 +242,13 @@ class ConfirmedPasswordField extends FormField
                     $field->setAttribute($name, $value);
                 }
             }
-
+            if (str_ends_with($field->getName(), '[_Password]')) {
+                $minStrength = $this->getMinPasswordStrengthForEvaluation();
+                if ($minStrength !== -1) {
+                    $field->setAttribute('data-min-strength', $minStrength);
+                    $field->setAttribute('data-strength-url', $this->Link('strength'));
+                }
+            }
             $fieldContent .= $field->FieldHolder(['AttributesHTML' => $this->getAttributesHTMLForChild($field)]);
         }
 
@@ -709,6 +772,16 @@ class ConfirmedPasswordField extends FormField
     }
 
     /**
+     * Set whether the field is on a Member form.
+     * This is used to determine whether and how to evaluate password strength for this form field.
+     */
+    public function setIsOnMemberForm(bool $bool): static
+    {
+        $this->isOnMemberForm = $bool;
+        return $this;
+    }
+
+    /**
      * Set minimum password strength. Only applies if requireStrongPassword is true
      * See https://symfony.com/doc/current/reference/constraints/PasswordStrength.html#minscore
      */
@@ -721,6 +794,26 @@ class ConfirmedPasswordField extends FormField
     public function getMinPasswordStrength(): int
     {
         return $this->minPasswordStrength;
+    }
+
+    /**
+     * Get the minimum password strength used for client-side evaluation.
+     * If we're on a member form, the strength may come from the member password validator.
+     * @return int The min reequired password strength, or -1 if not applicable
+     */
+    private function getMinPasswordStrengthForEvaluation(): int
+    {
+        $values = [-1];
+        if ($this->requireStrongPassword) {
+            $values[] = $this->getMinPasswordStrength();
+        }
+        if ($this->isOnMemberForm) {
+            $validator = Member::password_validator();
+            if (is_a($validator, EntropyPasswordValidator::class)) {
+                $values[] = $validator->getRequiredStrength();
+            }
+        }
+        return max($values);
     }
 
     /**
@@ -752,5 +845,35 @@ class ConfirmedPasswordField extends FormField
             $attributes .= ' required="required" aria-required="true"';
         }
         return DBField::create_field('HTMLFragment', $attributes);
+    }
+
+    /**
+     * Textual representation of an evaluated password strength
+     */
+    private function getStrengthLabel(int $strength): string
+    {
+        return match ($strength) {
+            PasswordStrength::STRENGTH_VERY_WEAK => _t(
+                ConfirmedPasswordField::class . '.VERYWEAK',
+                'Very weak'
+            ),
+            PasswordStrength::STRENGTH_WEAK => _t(
+                ConfirmedPasswordField::class . '.WEAK',
+                'Weak'
+            ),
+            PasswordStrength::STRENGTH_MEDIUM => _t(
+                ConfirmedPasswordField::class . '.MEDIUM',
+                'Medium'
+            ),
+            PasswordStrength::STRENGTH_STRONG => _t(
+                ConfirmedPasswordField::class . '.STRONG',
+                'Strong'
+            ),
+            PasswordStrength::STRENGTH_VERY_STRONG => _t(
+                ConfirmedPasswordField::class . '.VERYSTRONG',
+                'Very strong'
+            ),
+            default => '',
+        };
     }
 }

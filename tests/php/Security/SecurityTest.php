@@ -883,9 +883,9 @@ class SecurityTest extends FunctionalTest
             "ChangePasswordForm_ChangePasswordForm",
             null,
             [
-                'OldPassword' => $oldPassword,
-                'NewPassword1' => $newPassword,
-                'NewPassword2' => $newPassword,
+                'Password[_CurrentPassword]' => $oldPassword,
+                'Password[_Password]' => $newPassword,
+                'Password[_ConfirmPassword]' => $newPassword,
                 'action_doChangePassword' => 1,
             ]
         );

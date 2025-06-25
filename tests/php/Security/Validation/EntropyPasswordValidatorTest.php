@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Validation\EntropyPasswordValidator;
+use Symfony\Component\Validator\Constraints\PasswordStrength;
 
 /**
  * EntropyPasswordValidator uses a third-party for its validation so we don't need rigorous testing here.

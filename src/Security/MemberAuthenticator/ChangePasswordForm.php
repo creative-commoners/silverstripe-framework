@@ -4,6 +4,7 @@ namespace SilverStripe\Security\MemberAuthenticator;
 
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Control\Session;
+use SilverStripe\Forms\ConfirmedPasswordField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\FormAction;
@@ -11,6 +12,8 @@ use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\Forms\PasswordField;
 use SilverStripe\Security\Security;
+use SilverStripe\Security\Member;
+use SilverStripe\Security\Validation\EntropyPasswordValidator;
 
 /**
  * Standard Change Password Form
@@ -50,19 +53,22 @@ class ChangePasswordForm extends Form
      */
     protected function getFormFields()
     {
-        $fields = FieldList::create();
-
+        $field = ConfirmedPasswordField::create(
+            'Password',
+            _t(Member::class . '.NEWPASSWORD', 'New Password'),
+            '',
+            null,
+            false,
+            _t(Member::class . '.CONFIRMNEWPASSWORD', 'Confirm New Password')
+        );
         // Security/changepassword?h=XXX redirects to Security/changepassword
         // without GET parameter to avoid potential HTTP referer leakage.
         // In this case, a user is not logged in, and no 'old password' should be necessary.
         if (Security::getCurrentUser()) {
-            $fields->push(PasswordField::create('OldPassword', _t('SilverStripe\\Security\\Member.YOUROLDPASSWORD', 'Your old password')));
+            $field->setRequireExistingPassword(true);
         }
-
-        $fields->push(PasswordField::create('NewPassword1', _t('SilverStripe\\Security\\Member.NEWPASSWORD', 'New Password')));
-        $fields->push(PasswordField::create('NewPassword2', _t('SilverStripe\\Security\\Member.CONFIRMNEWPASSWORD', 'Confirm New Password')));
-
-        return $fields;
+        $field->setIsOnMemberForm(true);
+        return FieldList::create([$field]);
     }
 
     /**
