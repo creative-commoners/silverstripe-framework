@@ -2,6 +2,9 @@
 
 namespace SilverStripe\Forms\Tests;
 
+use DOMDocument;
+use DOMXPath;
+use DOMElement;
 use SilverStripe\Admin\LeftAndMain;
 use SilverStripe\Control\Controller;
 use SilverStripe\Dev\SapphireTest;
@@ -14,16 +17,32 @@ use SilverStripe\Security\Member;
 use SilverStripe\View\SSViewer;
 use Closure;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionMethod;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Security\Validation\EntropyPasswordValidator;
+use SilverStripe\Security\Validation\PasswordValidator;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Security\Validation\RulesPasswordValidator;
+use Symfony\Component\Validator\Constraints\PasswordStrength;
 
 class ConfirmedPasswordFieldTest extends SapphireTest
 {
     protected $usesDatabase = true;
 
+    private ?PasswordValidator $origPasswordValidator;
+
     protected function setUp(): void
     {
         parent::setUp();
-
+        $this->origPasswordValidator = Member::password_validator();
         Member::set_password_validator(null);
+    }
+
+    protected function tearDown(): void
+    {
+        Member::set_password_validator($this->origPasswordValidator);
+        parent::tearDown();
     }
 
     public function testSetValue()
@@ -295,7 +314,7 @@ class ConfirmedPasswordFieldTest extends SapphireTest
     {
         $field = new ConfirmedPasswordField('Test');
 
-        $this->assertCount(2, $field->getChildren());
+        $this->assertCount(3, $field->getChildren());
         foreach ($field->getChildren() as $child) {
             $this->assertEmpty($child->RightTitle());
         }
@@ -343,16 +362,16 @@ class ConfirmedPasswordFieldTest extends SapphireTest
     {
         $field = new ConfirmedPasswordField('Test', 'Change it');
 
-        $this->assertCount(2, $field->getChildren());
+        $this->assertCount(3, $field->getChildren());
 
         $field->setRequireExistingPassword(true);
-        $this->assertCount(3, $field->getChildren(), 'Current password field was not pushed');
+        $this->assertCount(4, $field->getChildren(), 'Current password field was not pushed');
 
         $field->setRequireExistingPassword(true);
-        $this->assertCount(3, $field->getChildren(), 'Current password field should not be pushed again');
+        $this->assertCount(4, $field->getChildren(), 'Current password field should not be pushed again');
 
         $field->setRequireExistingPassword(false);
-        $this->assertCount(2, $field->getChildren(), 'Current password field should not be removed');
+        $this->assertCount(3, $field->getChildren(), 'Current password field should not be removed');
     }
 
     #[DataProvider('provideSetCanBeEmptySaveInto')]
@@ -481,5 +500,352 @@ class ConfirmedPasswordFieldTest extends SapphireTest
         } finally {
             SSViewer::set_themes($originalThemes);
         }
+    }
+
+    public static function provideStrength(): array
+    {
+        $tooLow = 'The password strength is too low. Please use a stronger password.';
+        return [
+            'very strong' => [
+                'requestBody' => json_encode((object) [
+                    'password' => 'the-quick-brown-fox-jumps-over-the-lazy-dog'
+                ]),
+                'httpMethod' => 'POST',
+                'expectedStatusCode' => 200,
+                'expectedBody' => json_encode((object) [
+                    'strength' => 4,
+                    'message' => 'Password strength: Very strong',
+                    'tooLow' => $tooLow,
+                ]),
+            ],
+            'strong' => [
+                'requestBody' => json_encode((object) [
+                    'password' => 'the-quick-brown-fox'
+                ]),
+                'httpMethod' => 'POST',
+                'expectedStatusCode' => 200,
+                'expectedBody' => json_encode((object) [
+                    'strength' => 3,
+                    'message' => 'Password strength: Strong',
+                    'tooLow' => $tooLow,
+                ]),
+            ],
+            'medium' => [
+                'requestBody' => json_encode((object) [
+                    'password' => 'the-quick-brown'
+                ]),
+                'httpMethod' => 'POST',
+                'expectedStatusCode' => 200,
+                'expectedBody' => json_encode((object) [
+                    'strength' => 2,
+                    'message' => 'Password strength: Medium',
+                    'tooLow' => $tooLow,
+                ]),
+            ],
+            'weak' => [
+                'requestBody' => json_encode((object) [
+                    'password' => 'the-quick-br'
+                ]),
+                'httpMethod' => 'POST',
+                'expectedStatusCode' => 200,
+                'expectedBody' => json_encode((object) [
+                    'strength' => 1,
+                    'message' => 'Password strength: Weak',
+                    'tooLow' => $tooLow,
+                ]),
+            ],
+            'very-weak' => [
+                'requestBody' => json_encode((object) [
+                    'password' => 'the'
+                ]),
+                'httpMethod' => 'POST',
+                'expectedStatusCode' => 200,
+                'expectedBody' => json_encode((object) [
+                    'strength' => 0,
+                    'message' => 'Password strength: Very weak',
+                    'tooLow' => $tooLow,
+                ]),
+            ],
+            'http-get' => [
+                'requestBody' => json_encode((object) [
+                    'password' => 'the-quick-brown'
+                ]),
+                'httpMethod' => 'GET',
+                'expectedStatusCode' => 400,
+                'expectedBody' => null,
+            ],
+            'invalid-request-json' => [
+                'requestBody' => json_encode((object) [
+                    'wordpass' => 'the-quick-brown'
+                ]),
+                'httpMethod' => 'POST',
+                'expectedStatusCode' => 400,
+                'expectedBody' => null,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideStrength')]
+    public function testStrength(
+        string $requestBody,
+        string $httpMethod,
+        int $expectedStatusCode,
+        ?string $expectedBody,
+    ): void {
+        $field = new ConfirmedPasswordField('Test');
+        $passwordValidator = new EntropyPasswordValidator();
+        Member::set_password_validator($passwordValidator);
+        $request = new HTTPRequest($httpMethod, 'url', [], [], $requestBody);
+        $response = $field->strength($request);
+        $this->assertSame($expectedStatusCode, $response->getStatusCode());
+        $this->assertSame($expectedBody, $response->getBody());
+    }
+    
+    public static function provideDataAttributes(): array
+    {
+        return [
+            'default' => [
+                'isOnMemberForm' => false,
+                'requireStrongPassowrd' => false,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => null,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_MEDIUM,
+                'expectedDataStrengthUrl' => '',
+                'expectedMinStrength' => '',
+            ],
+            'on-member-form-entropy' => [
+                'isOnMemberForm' => true,
+                'requireStrongPassowrd' => false,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => null,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_MEDIUM,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '2',
+            ],
+            'on-member-form-rules' => [
+                'isOnMemberForm' => true,
+                'requireStrongPassowrd' => false,
+                'validatorClass' => RulesPasswordValidator::class,
+                'passwordStrengthCall' => null,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_MEDIUM,
+                'expectedDataStrengthUrl' => '',
+                'expectedMinStrength' => '',
+            ],
+            'require-strong-password-entropy' => [
+                'isOnMemberForm' => false,
+                'requireStrongPassowrd' => true,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => null,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_MEDIUM,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '2',
+            ],
+            'require-strong-password-rules' => [
+                'isOnMemberForm' => false,
+                'requireStrongPassowrd' => true,
+                'validatorClass' => RulesPasswordValidator::class,
+                'passwordStrengthCall' => null,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_MEDIUM,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '2',
+            ],
+            'min-strength-strong' => [
+                'isOnMemberForm' => true,
+                'requireStrongPassowrd' => false,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => null,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_STRONG,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '3',
+            ],
+            'min-strength-weak' => [
+                'isOnMemberForm' => true,
+                'requireStrongPassowrd' => false,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => null,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_WEAK,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '1',
+            ],
+            'min-strength-weak-explicit-very-strong' => [
+                'isOnMemberForm' => false,
+                'requireStrongPassowrd' => true,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => PasswordStrength::STRENGTH_VERY_STRONG,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_WEAK,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '4',
+            ],
+            'member-form-ignores-call' => [
+                'isOnMemberForm' => true,
+                'requireStrongPassowrd' => false,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => PasswordStrength::STRENGTH_VERY_STRONG,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_WEAK,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '1',
+            ],
+            'member-form-and-require-strong' => [
+                'isOnMemberForm' => true,
+                'requireStrongPassowrd' => true,
+                'validatorClass' => EntropyPasswordValidator::class,
+                'passwordStrengthCall' => PasswordStrength::STRENGTH_VERY_STRONG,
+                'passwordStrengthConfig' => PasswordStrength::STRENGTH_MEDIUM,
+                'expectedDataStrengthUrl' => 'field/Test/strength',
+                'expectedMinStrength' => '4',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideDataAttributes')]
+    public function testDataAttributes(
+        bool $isOnMemberForm,
+        bool $requireStrongPassowrd,
+        string $validatorClass,
+        ?int $passwordStrengthCall,
+        int $passwordStrengthConfig,
+        string $expectedDataStrengthUrl,
+        string $expectedMinStrength,
+    ): void {
+        // Create field
+        $form = new Form();
+        $field = new ConfirmedPasswordField('Test');
+        $field->setForm($form);
+        $field->setIsOnMemberForm($isOnMemberForm);
+        $field->setRequireStrongPassword($requireStrongPassowrd);
+        if ($passwordStrengthCall !== null) {
+            $field->setMinPasswordStrength($passwordStrengthCall);
+        }
+        // PasswordValidator
+        $validator = $validatorClass ? Injector::inst()->create($validatorClass) : null;
+        Member::set_password_validator($validator);
+        Config::modify()->set(EntropyPasswordValidator::class, 'password_strength', $passwordStrengthConfig);
+        // Render HTML
+        $html = $field->Field();
+        $dom = new DOMDocument();
+        $dom->loadHTML($html);
+        $xpath = new DOMXPath($dom);
+        $input = $xpath->query('//input[@name="Test[_Password]"]')->item(0);
+        /** @var DOMElement $input */
+        // Assert
+        $this->assertSame($expectedDataStrengthUrl, $input->getAttribute('data-strength-url'));
+        $this->assertSame($expectedMinStrength, $input->getAttribute('data-min-strength'));
+    }
+
+    public static function provideGetMinPasswordStrengthForEvaluation(): array
+    {
+        return [
+            'entropy-none' => [
+                'entropyValidator' => true,
+                'requireStrong' => false,
+                'onMemberForm' => false,
+                'expected' => -1,
+            ],
+            'entropy-require-strong' => [
+                'entropyValidator' => true,
+                'requireStrong' => true,
+                'onMemberForm' => false,
+                'expected' => 4,
+            ],
+            'entropy-on-member-form' => [
+                'entropyValidator' => true,
+                'requireStrong' => false,
+                'onMemberForm' => true,
+                'expected' => 1,
+            ],
+            'entropy-both' => [
+                'entropyValidator' => true,
+                'requireStrong' => true,
+                'onMemberForm' => true,
+                'expected' => 4,
+            ],
+            'rules-none' => [
+                'entropyValidator' => false,
+                'requireStrong' => false,
+                'onMemberForm' => false,
+                'expected' => -1,
+            ],
+            'rules-require-strong' => [
+                'entropyValidator' => false,
+                'requireStrong' => true,
+                'onMemberForm' => false,
+                'expected' => 4,
+            ],
+            'rules-on-member-form' => [
+                'entropyValidator' => false,
+                'requireStrong' => false,
+                'onMemberForm' => true,
+                'expected' => -1,
+            ],
+            'rules-both' => [
+                'entropyValidator' => false,
+                'requireStrong' => true,
+                'onMemberForm' => true,
+                'expected' => 4,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideGetMinPasswordStrengthForEvaluation')]
+    public function testGetMinPasswordStrengthForEvaluation(
+        bool $entropyValidator,
+        bool $requireStrong,
+        bool $onMemberForm,
+        int $expected,
+    ): void {
+        $class = $entropyValidator ? EntropyPasswordValidator::class : RulesPasswordValidator::class;
+        $validator = Injector::inst()->create($class);
+        Injector::inst()->registerService($validator, PasswordValidator::class);
+        $field = new ConfirmedPasswordField('Test');
+        // used by requireStrongPassword = true
+        $field->setMinPasswordStrength(PasswordStrength::STRENGTH_VERY_STRONG);
+        // used by onMemberForm = true
+        Config::modify()->set(EntropyPasswordValidator::class, 'password_strength', PasswordStrength::STRENGTH_WEAK);
+        $field->setRequireStrongPassword($requireStrong);
+        $field->setIsOnMemberForm($onMemberForm);
+        $refl = new ReflectionMethod($field, 'getMinPasswordStrengthForEvaluation');
+        $refl->setAccessible(true);
+        $actual = $refl->invoke($field);
+        $this->assertSame($expected, $actual);
+    }
+
+    public static function provideGetStrengthLabel(): array
+    {
+        return [
+            'very-weak' => [
+                'strength' => PasswordStrength::STRENGTH_VERY_WEAK,
+                'expected' => 'Very weak',
+            ],
+            'weak' => [
+                'strength' => PasswordStrength::STRENGTH_WEAK,
+                'expected' => 'Weak',
+            ],
+            'medium' => [
+                'strength' => PasswordStrength::STRENGTH_MEDIUM,
+                'expected' => 'Medium',
+            ],
+            'strong' => [
+                'strength' => PasswordStrength::STRENGTH_STRONG,
+                'expected' => 'Strong',
+            ],
+            'very-strong' => [
+                'strength' => PasswordStrength::STRENGTH_VERY_STRONG,
+                'expected' => 'Very strong',
+            ],
+            'unknown' => [
+                'strength' => 999,
+                'expected' => '',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideGetStrengthLabel')]
+    public function testGetStrengthLabel(int $strength, string $expected): void
+    {
+        $field = new ConfirmedPasswordField('Test');
+        $refl = new ReflectionMethod($field, 'getStrengthLabel');
+        $refl->setAccessible(true);
+        $actual = $refl->invoke($field, $strength);
+        $this->assertSame($expected, $actual);
     }
 }

@@ -267,8 +267,8 @@ class ChangePasswordHandler extends RequestHandler
     {
         $member = Security::getCurrentUser();
         // The user was logged in, check the current password
-        $oldPassword = isset($data['OldPassword']) ? $data['OldPassword'] : null;
-        if ($member && !$this->checkPassword($member, $oldPassword)) {
+        $currentPassword = $data['Password']['_CurrentPassword'] ?? null;
+        if ($member && !$this->checkPassword($member, $currentPassword)) {
             $form->sessionMessage(
                 _t(
                     'SilverStripe\\Security\\Member.ERRORPASSWORDNOTMATCH',
@@ -298,7 +298,7 @@ class ChangePasswordHandler extends RequestHandler
         }
 
         // Check the new password
-        if (empty($data['NewPassword1'])) {
+        if (empty($data['Password']['_Password'])) {
             $form->sessionMessage(
                 _t(
                     'SilverStripe\\Security\\Member.EMPTYNEWPASSWORD',
@@ -312,7 +312,7 @@ class ChangePasswordHandler extends RequestHandler
         }
 
         // Fail if passwords do not match
-        if ($data['NewPassword1'] !== $data['NewPassword2']) {
+        if ($data['Password']['_Password'] !== $data['Password']['_ConfirmPassword']) {
             $form->sessionMessage(
                 _t(
                     'SilverStripe\\Security\\Member.ERRORNEWPASSWORD',
@@ -326,7 +326,7 @@ class ChangePasswordHandler extends RequestHandler
         }
 
         // Check if the new password is accepted
-        $validationResult = $member->changePassword($data['NewPassword1']);
+        $validationResult = $member->changePassword($data['Password']['_Password']);
         if (!$validationResult->isValid()) {
             $form->setSessionValidationResult($validationResult);
 

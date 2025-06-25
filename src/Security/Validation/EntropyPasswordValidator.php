@@ -30,4 +30,9 @@ class EntropyPasswordValidator extends PasswordValidator
         $this->extend('updateValidatePassword', $password, $member, $result, $this);
         return $result;
     }
+
+    public function getRequiredStrength(): int
+    {
+        return static::config()->get('password_strength');
+    }
 }

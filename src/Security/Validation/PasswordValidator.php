@@ -11,6 +11,9 @@ use SilverStripe\Security\MemberPassword;
 
 /**
  * Abstract validator with functionality for checking for reusing old passwords.
+ *
+ * This is only intended to be used for validating Member password, and not
+ * for any other kind of use-case
  */
 abstract class PasswordValidator
 {

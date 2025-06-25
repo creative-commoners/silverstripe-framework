@@ -672,6 +672,7 @@ class Member extends DataObject
             null,
             $editingPassword
         );
+        $password->setIsOnMemberForm(true);
 
         // If editing own password, require confirmation of existing
         if ($editingPassword && $this->ID == Security::getCurrentUser()->ID) {
