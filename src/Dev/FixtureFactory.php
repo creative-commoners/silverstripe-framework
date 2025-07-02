@@ -184,7 +184,7 @@ class FixtureFactory
             $class = $potential;
         }
 
-        return DataObject::get_by_id($class, $id);
+        return DataObject::get($class)->setUseCache(true)->byID($id);
     }
 
     /**

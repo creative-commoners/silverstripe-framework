@@ -42,3 +42,26 @@ SilverStripe\ORM\Tests\SQLSelectTest\CteRecursiveObject:
   recursive6:
     Title: 'child of child2'
     Parent: =>SilverStripe\ORM\Tests\SQLSelectTest\CteRecursiveObject.recursive5
+
+SilverStripe\ORM\Tests\DataObjectTest\Sortable:
+  numeric1:
+    Sort: 0
+    Name: steven
+  numeric2:
+    Sort: -1
+    Name: bonny
+  numeric3:
+    Sort: 1
+    Name: sam
+  numeric4:
+    Sort: -2
+    Name: Bob
+  numeric5:
+    Sort: 2
+    Name: jane
+  numeric6:
+    Sort: -10
+    Name: Steve
+  numeric7:
+    Sort: 10
+    Name: John

@@ -67,7 +67,7 @@ class DBMoneyTest extends SapphireTest
         $obj->MyMoney = $m2;
         $obj->write();
 
-        $moneyTest = DataObject::get_by_id(DBMoneyTest\TestObject::class, $obj->ID);
+        $moneyTest = DBMoneyTest\TestObject::get()->byID($obj->ID);
         $this->assertTrue($moneyTest instanceof DBMoneyTest\TestObject);
         $this->assertEquals('', $moneyTest->MyMoneyCurrency);
         $this->assertEquals(0.0000, $moneyTest->MyMoneyAmount);
@@ -127,7 +127,7 @@ class DBMoneyTest extends SapphireTest
 
         $objID = $obj->write();
 
-        $moneyTest = DataObject::get_by_id(DBMoneyTest\TestObject::class, $objID);
+        $moneyTest = DBMoneyTest\TestObject::get()->byID($objID);
         $this->assertTrue($moneyTest instanceof DBMoneyTest\TestObject);
         $this->assertEquals('USD', $moneyTest->MyMoneyCurrency);
         $this->assertEquals(987.65, $moneyTest->MyMoneyAmount);

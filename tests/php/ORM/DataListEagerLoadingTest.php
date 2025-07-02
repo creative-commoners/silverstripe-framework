@@ -185,186 +185,216 @@ class DataListEagerLoadingTest extends SapphireTest
         $this->assertSame($expected, $selectCount);
     }
 
+    public function testEagerLoadRelationsCached(): void
+    {
+        // This test only works with "all" because the others lazy-load some of the data
+        // which is done in separate uncached lists
+        $scenario = $this->provideEagerLoadRelations()['all'];
+        $eagerLoad = $scenario['eagerLoad'];
+        $expected = $scenario['expected'];
+        $this->createEagerLoadData();
+
+        // First time will be executed in the db
+        $dataList = EagerLoadObject::get()->setUseCache(true)->eagerLoad(...$eagerLoad);
+        list($results, $selectCount) = $this->iterateEagerLoadData($dataList);
+        $expectedResults = $this->expectedEagerLoadRelations();
+        // Sort because the order of the results doesn't really matter - and has proven to be different in postgres
+        sort($expectedResults);
+        sort($results);
+        $this->assertSame($expectedResults, $results);
+        $this->assertSame($expected, $selectCount);
+
+        // Second time will use cached results - should be 0 queries with the same results
+        $dataList = EagerLoadObject::get()->setUseCache(true)->eagerLoad(...$eagerLoad);
+        list($results, $selectCount) = $this->iterateEagerLoadData($dataList);
+        $expectedResults = $this->expectedEagerLoadRelations();
+        // Sort because the order of the results doesn't really matter - and has proven to be different in postgres
+        sort($expectedResults);
+        sort($results);
+        $this->assertSame($expectedResults, $results);
+        $this->assertSame(0, $selectCount);
+    }
+
     public static function provideEagerLoadRelations(): array
     {
         return [
             // Include the lazy-loaded expectation here, since if the number
             // of queries changes for this we should expect the number
             // to change for eager-loading as well.
-            [
+            'lazy-load' => [
                 'iden' => 'lazy-load',
                 'eagerLoad' => [],
                 'expected' => 91
             ],
-            [
+            'has-one-a' => [
                 'iden' => 'has-one-a',
                 'eagerLoad' => [
                     'HasOneEagerLoadObject',
                 ],
                 'expected' => 90
             ],
-            [
+            'has-one-b' => [
                 'iden' => 'has-one-b',
                 'eagerLoad' => [
                     'HasOneEagerLoadObject.HasOneSubEagerLoadObject',
                 ],
                 'expected' => 89
             ],
-            [
+            'has-one-c' => [
                 'iden' => 'has-one-c',
                 'eagerLoad' => [
                     'HasOneEagerLoadObject.HasOneSubEagerLoadObject.HasOneSubSubEagerLoadObject',
                 ],
                 'expected' => 88
             ],
-            [
+            'belongs-to-a' => [
                 'iden' => 'belongs-to-a',
                 'eagerLoad' => [
                     'BelongsToEagerLoadObject',
                 ],
                 'expected' => 90
             ],
-            [
+            'belongs-to-b' => [
                 'iden' => 'belongs-to-b',
                 'eagerLoad' => [
                     'BelongsToEagerLoadObject.BelongsToSubEagerLoadObject',
                 ],
                 'expected' => 89
             ],
-            [
+            'belongs-to-c' => [
                 'iden' => 'belongs-to-c',
                 'eagerLoad' => [
                     'BelongsToEagerLoadObject.BelongsToSubEagerLoadObject.BelongsToSubSubEagerLoadObject',
                 ],
                 'expected' => 88
             ],
-            [
+            'has-many-a' => [
                 'iden' => 'has-many-a',
                 'eagerLoad' => [
                     'HasManyEagerLoadObjects',
                 ],
                 'expected' => 90
             ],
-            [
+            'has-many-b' => [
                 'iden' => 'has-many-b',
                 'eagerLoad' => [
                     'HasManyEagerLoadObjects.HasManySubEagerLoadObjects',
                 ],
                 'expected' => 87
             ],
-            [
+            'has-many-c' => [
                 'iden' => 'has-many-c',
                 'eagerLoad' => [
                     'HasManyEagerLoadObjects.HasManySubEagerLoadObjects.HasManySubSubEagerLoadObjects',
                 ],
                 'expected' => 80
             ],
-            [
+            'many-many-a' => [
                 'iden' => 'many-many-a',
                 'eagerLoad' => [
                     'ManyManyEagerLoadObjects',
                 ],
                 'expected' => 91 // same number as lazy-load, though without an INNER JOIN
             ],
-            [
+            'many-many-b' => [
                 'iden' => 'many-many-b',
                 'eagerLoad' => [
                     'ManyManyEagerLoadObjects.ManyManySubEagerLoadObjects',
                 ],
                 'expected' => 89
             ],
-            [
+            'many-many-c' => [
                 'iden' => 'many-many-c',
                 'eagerLoad' => [
                     'ManyManyEagerLoadObjects.ManyManySubEagerLoadObjects.ManyManySubSubEagerLoadObjects',
                 ],
                 'expected' => 83
             ],
-            [
+            'many-many-through-a' => [
                 'iden' => 'many-many-through-a',
                 'eagerLoad' => [
                     'ManyManyThroughEagerLoadObjects',
                 ],
                 'expected' => 91
             ],
-            [
+            'many-many-through-b' => [
                 'iden' => 'many-many-through-b',
                 'eagerLoad' => [
                     'ManyManyThroughEagerLoadObjects.ManyManyThroughSubEagerLoadObjects',
                 ],
                 'expected' => 89
             ],
-            [
+            'many-many-through-c' => [
                 'iden' => 'many-many-through-c',
                 'eagerLoad' => [
                     'ManyManyThroughEagerLoadObjects.ManyManyThroughSubEagerLoadObjects.ManyManyThroughSubSubEagerLoadObjects',
                 ],
                 'expected' => 83
             ],
-            [
+            'belongs-many-many-a' => [
                 'iden' => 'belongs-many-many-a',
                 'eagerLoad' => [
                     'BelongsManyManyEagerLoadObjects',
                 ],
                 'expected' => 91
             ],
-            [
+            'belongs-many-many-b' => [
                 'iden' => 'belongs-many-many-b',
                 'eagerLoad' => [
                     'BelongsManyManyEagerLoadObjects.BelongsManyManySubEagerLoadObjects',
                 ],
                 'expected' => 89
             ],
-            [
+            'belongs-many-many-c' => [
                 'iden' => 'belongs-many-many-c',
                 'eagerLoad' => [
                     'BelongsManyManyEagerLoadObjects.BelongsManyManySubEagerLoadObjects.BelongsManyManySubSubEagerLoadObjects',
                 ],
                 'expected' => 83
             ],
-            [
+            'mixed-a' => [
                 'iden' => 'mixed-a',
                 'eagerLoad' => [
                     'MixedManyManyEagerLoadObjects',
                 ],
                 'expected' => 91
             ],
-            [
+            'mixed-b' => [
                 'iden' => 'mixed-b',
                 'eagerLoad' => [
                     'MixedManyManyEagerLoadObjects.MixedHasManyEagerLoadObjects',
                 ],
                 'expected' => 88
             ],
-            [
+            'mixed-c' => [
                 'iden' => 'mixed-c',
                 'eagerLoad' => [
                     'MixedManyManyEagerLoadObjects.MixedHasManyEagerLoadObjects.MixedHasOneEagerLoadObject',
                 ],
                 'expected' => 81
             ],
-            [
+            'mixed-back-a' => [
                 'iden' => 'mixed-back-a',
                 'eagerLoad' => [
                     'MixedBackwardsHasOneEagerLoadObject',
                 ],
                 'expected' => 90
             ],
-            [
+            'mixed-back-b' => [
                 'iden' => 'mixed-back-b',
                 'eagerLoad' => [
                     'MixedBackwardsHasOneEagerLoadObject.MixedBackwardsHasManyEagerLoadObjects',
                 ],
                 'expected' => 89
             ],
-            [
+            'mixed-back-c' => [
                 'iden' => 'mixed-back-c',
                 'eagerLoad' => [
                     'MixedBackwardsHasOneEagerLoadObject.MixedBackwardsHasManyEagerLoadObjects.MixedBackwardsManyManyEagerLoadObjects',
                 ],
                 'expected' => 87
             ],
-            [
+            'duplicates' => [
                 'iden' => 'duplicates',
                 'eagerLoad' => [
                     'MixedManyManyEagerLoadObjects',
@@ -377,7 +407,7 @@ class DataListEagerLoadingTest extends SapphireTest
                 ],
                 'expected' => 81
             ],
-            [
+            'all' => [
                 'iden' => 'all',
                 'eagerLoad' => [
                     'HasOneEagerLoadObject.HasOneSubEagerLoadObject.HasOneSubSubEagerLoadObject',

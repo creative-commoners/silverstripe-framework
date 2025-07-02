@@ -140,7 +140,7 @@ class UnsavedRelationList extends ArrayList implements Relation
         $items = [];
         foreach ($this->items as $key => $item) {
             if (is_numeric($item)) {
-                $item = DataObject::get_by_id($this->dataClass, $item);
+                $item = DataObject::get($this->dataClass)->setUseCache(true)->byID($item);
             }
             if (!empty($this->extraFields[$key])) {
                 $item->update($this->extraFields[$key]);
@@ -234,7 +234,7 @@ class UnsavedRelationList extends ArrayList implements Relation
     {
         $item = reset($this->items) ?: null;
         if (is_numeric($item)) {
-            $item = DataObject::get_by_id($this->dataClass, $item);
+            $item = DataObject::get($this->dataClass)->setUseCache(true)->byID($item);
         }
         if ($item && !empty($this->extraFields[key($this->items)])) {
             $item->update($this->extraFields[key($this->items)]);
@@ -246,7 +246,7 @@ class UnsavedRelationList extends ArrayList implements Relation
     {
         $item = end($this->items) ?: null;
         if (is_numeric($item)) {
-            $item = DataObject::get_by_id($this->dataClass, $item);
+            $item = DataObject::get($this->dataClass)->setUseCache(true)->byID($item);
         }
         if ($item && !empty($this->extraFields[key($this->items)])) {
             $item->update($this->extraFields[key($this->items)]);
@@ -309,7 +309,7 @@ class UnsavedRelationList extends ArrayList implements Relation
     protected function extractValue($item, $key)
     {
         if (is_numeric($item)) {
-            $item = DataObject::get_by_id($this->dataClass, $item);
+            $item = DataObject::get($this->dataClass)->setUseCache(true)->byID($item);
         }
         return parent::extractValue($item, $key);
     }

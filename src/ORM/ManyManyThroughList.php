@@ -140,6 +140,11 @@ class ManyManyThroughList extends RelationList
         if ($this->removeCallbacks && $itemID) {
             $this->removeCallbacks->call($this, [$itemID]);
         }
+
+        // Even though the underlying related record isn't deleted, we still need to
+        // reset the query cache for this class, so that any cached relation lists
+        // will have the correct data.
+        static::reset($this->dataClass());
     }
 
     /**
@@ -167,6 +172,11 @@ class ManyManyThroughList extends RelationList
         if ($this->removeCallbacks && $affectedIds) {
             $this->removeCallbacks->call($this, $affectedIds);
         }
+
+        // Even though the underlying related records aren't deleted, we still need to
+        // reset the query cache for this class, so that any cached relation lists
+        // will have the correct data.
+        static::reset($this->dataClass());
     }
 
     public function add(mixed $item, array $extraFields = []): void
@@ -239,6 +249,9 @@ class ManyManyThroughList extends RelationList
         if ($this->addCallbacks) {
             $this->addCallbacks->call($this, $item, $extraFields);
         }
+
+        // We must invalidate cache to ensure cached relation lists get up-to-date data
+        static::reset($this->dataClass());
     }
 
     /**

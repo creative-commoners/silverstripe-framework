@@ -2,6 +2,8 @@
 
 namespace SilverStripe\ORM\Tests;
 
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Dev\CliDebugView;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\Tests\DataObjectTest\Fan;
 use SilverStripe\ORM\Tests\DataObjectTest\Team;
@@ -41,7 +43,7 @@ class PolymorphicHasManyListTest extends SapphireTest
      */
     public function testMultiRelationalRelations(): void
     {
-        $team = $this->objFromFixture(Team::class, 'multiRelationalTeam');
+        $team = $this->objFromFixture(Team::class, 'multiRelationalTeam1');
         $playersList1 = $team->ManyPlayers1();
         $playersList2 = $team->ManyPlayers2();
 
@@ -59,6 +61,44 @@ class PolymorphicHasManyListTest extends SapphireTest
         $this->assertSame('ManyPlayers2', $playersList2->first()->MultiRelationalRelation);
     }
 
+    public function testSetUseCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $team1 = $this->objFromFixture(Team::class, 'multiRelationalTeam1');
+        $playersList1 = $team1->ManyPlayers1()->setUseCache(true);
+        $playersList2 = $team1->ManyPlayers2()->setUseCache(true);
+        $team2 = $this->objFromFixture(Team::class, 'multiRelationalTeam2');
+        $playersList3 = $team2->ManyPlayers1()->setUseCache(true);
+
+        // First query is uncached for all of them
+        $queryCounter->startCounting();
+        $players1 = $playersList1->toArray();
+        $players2 = $playersList2->toArray();
+        $players3 = $playersList3->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(3, $queryCounter->getCount());
+
+        // Second query uses the cache
+        $queryCounter->startCounting();
+        $players1Cached = $playersList1->toArray();
+        $players2Cached = $playersList2->toArray();
+        $players3Cached = $playersList3->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Check the lists are all correct
+        $this->assertSame($players1, $players1Cached);
+        $this->assertSame($players2, $players2Cached);
+        $this->assertSame($players3, $players3Cached);
+        // Check there was no accidental bleed-through
+        // Using NotEquals instead of NotSame here checks the data, not just the specific object instances.
+        $this->assertNotEquals($players1Cached, $players2Cached);
+        $this->assertNotEquals($players1Cached, $players3Cached);
+        $this->assertNotEquals($players2Cached, $players3Cached);
+    }
+
     /**
      * Test that DataList::relation works with PolymorphicHasManyList
      */
@@ -67,7 +107,7 @@ class PolymorphicHasManyListTest extends SapphireTest
         // Check that expected teams exist
         $list = Team::get();
         $this->assertEquals(
-            ['MultiRelational team', 'Subteam 1', 'Subteam 2', 'Subteam 3', 'Team 1', 'Team 2', 'Team 3'],
+            ['MultiRelational team', 'MultiRelational team 2', 'Subteam 1', 'Subteam 2', 'Subteam 3', 'Team 1', 'Team 2', 'Team 3'],
             $list->sort('Title')->column('Title')
         );
 
@@ -103,7 +143,14 @@ class PolymorphicHasManyListTest extends SapphireTest
         $players2 = $list->relation('ManyPlayers2')->sort('FirstName')->column('FirstName');
         // Test that each relation has the expected players
         $this->assertSame(
-            ['MultiRelational Player 1', 'MultiRelational Player 2', 'MultiRelational Player 6'],
+            [
+                'MultiRelational Player 1',
+                'MultiRelational Player 2',
+                'MultiRelational Player 6',
+                'MultiRelational Player 7',
+                'MultiRelational Player 8',
+                'MultiRelational Player 9',
+            ],
             $players1
         );
         $this->assertSame(
@@ -112,7 +159,7 @@ class PolymorphicHasManyListTest extends SapphireTest
         );
 
         // Modify list of fans
-        $team = $this->objFromFixture(DataObjectTest\Team::class, 'multiRelationalTeam');
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'multiRelationalTeam1');
         $newPlayer1 = new DataObjectTest\Player(['FirstName' => 'New player 1']);
         $team->ManyPlayers1()->add($newPlayer1);
         $this->assertSame('ManyPlayers1', $newPlayer1->MultiRelationalRelation);
@@ -128,7 +175,15 @@ class PolymorphicHasManyListTest extends SapphireTest
         $players1 = $list->relation('ManyPlayers1')->sort('FirstName')->column('FirstName');
         $players2 = $list->relation('ManyPlayers2')->sort('FirstName')->column('FirstName');
         $this->assertSame(
-            ['MultiRelational Player 1', 'MultiRelational Player 2', 'MultiRelational Player 6', 'New player 1'],
+            [
+                'MultiRelational Player 1',
+                'MultiRelational Player 2',
+                'MultiRelational Player 6',
+                'MultiRelational Player 7',
+                'MultiRelational Player 8',
+                'MultiRelational Player 9',
+                'New player 1',
+            ],
             $players1
         );
         $this->assertSame(
@@ -145,7 +200,7 @@ class PolymorphicHasManyListTest extends SapphireTest
         // Check that expected teams exist
         $list = Team::get();
         $this->assertEquals(
-            ['MultiRelational team', 'Subteam 1', 'Subteam 2', 'Subteam 3', 'Team 1', 'Team 2', 'Team 3'],
+            ['MultiRelational team', 'MultiRelational team 2', 'Subteam 1', 'Subteam 2', 'Subteam 3', 'Team 1', 'Team 2', 'Team 3'],
             $list->sort('Title')->column('Title')
         );
 
@@ -180,12 +235,40 @@ class PolymorphicHasManyListTest extends SapphireTest
         $this->assertEmpty($subteam1fan->FavouriteClass);
     }
 
+    public function testRemoveRelationInvalidatesCache()
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = DataObjectTest\Team::get()->setUseCache(true);
+        $control->count();
+
+        // Test that the team has the correct fans
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'team1');
+        $fans = $team->Fans()->setUseCache(true);
+        $this->assertEquals(['Damian', 'Richard'], $fans->sort('Name')->column('Name'));
+
+        // Test that removing items clears cache for the relation class
+        $team1comment = $this->objFromFixture(DataObjectTest\Fan::class, 'fan1');
+        $fans->remove($team1comment);
+        $queryCounter->startCounting();
+        $this->assertEquals(['Richard'], $fans->sort('Name')->column('Name'));
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
     /**
      * The same as testRemoveRelation but for multi-relational relationships
      */
     public function testRemoveMultiRelationalRelation(): void
     {
-        $team = $this->objFromFixture(DataObjectTest\Team::class, 'multiRelationalTeam');
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'multiRelationalTeam1');
         $originalPlayers1 = $team->ManyPlayers1()->sort('FirstName')->column('FirstName');
         $originalPlayers2 = $team->ManyPlayers2()->sort('FirstName')->column('FirstName');
 
@@ -218,6 +301,91 @@ class PolymorphicHasManyListTest extends SapphireTest
         $this->assertEmpty($playerFromGroup1->MultiRelationalRelation);
         $this->assertEmpty($playerFromGroup1->MultiRelationalClass);
         $this->assertEmpty($playerFromGroup1->MultiRelationalID);
+    }
+
+    public function testAddInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = Team::get()->setUseCache(true);
+        $control->count();
+        $newPlayer = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer->write();
+
+        $team = $this->objFromFixture(Team::class, 'multiRelationalTeam1');
+        $playersList = $team->ManyPlayers1()->setUseCache(true);
+        $origCount = $playersList->count();
+        $playersList->add($newPlayer);
+
+        // Make sure Player cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame($origCount + 1, $playersList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testAddManyInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = Team::get()->setUseCache(true);
+        $control->count();
+        $newPlayer1 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer1->write();
+        $newPlayer2 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer2->write();
+
+        $team = $this->objFromFixture(Team::class, 'multiRelationalTeam1');
+        $playersList = $team->ManyPlayers1()->setUseCache(true);
+        $origCount = $playersList->count();
+        $playersList->addMany([$newPlayer1, $newPlayer2]);
+
+        // Make sure Player cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame($origCount + 2, $playersList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testSetByIDListInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = Team::get()->setUseCache(true);
+        $control->count();
+        $newPlayer1 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer1->write();
+        $newPlayer2 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer2->write();
+
+        $team = $this->objFromFixture(Team::class, 'multiRelationalTeam1');
+        $playersList = $team->ManyPlayers1()->setUseCache(true);
+        $playersList->count();
+        $playersList->setByIDList([$newPlayer1->ID, $newPlayer2->ID]);
+
+        // Make sure Player cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame(2, $playersList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 
     public function testGetForeignClassKey(): void

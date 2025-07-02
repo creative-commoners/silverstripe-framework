@@ -105,7 +105,7 @@ class PolymorphicHasManyList extends HasManyList
     public function add(mixed $item): void
     {
         if (is_numeric($item)) {
-            $item = DataObject::get_by_id($this->dataClass, $item);
+            $item = DataObject::get($this->dataClass)->setUseCache(true)->byID($item);
         } elseif (!($item instanceof $this->dataClass)) {
             throw new InvalidArgumentException(
                 "PolymorphicHasManyList::add() expecting a $this->dataClass object, or ID value"

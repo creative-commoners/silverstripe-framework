@@ -15,6 +15,10 @@ use SilverStripe\ORM\Connect\DatabaseException;
 use SilverStripe\ORM\Tests\SQLSelectTest\CteDatesObject;
 use SilverStripe\ORM\Tests\SQLSelectTest\CteRecursiveObject;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Dev\CliDebugView;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\Tests\DataObjectTest\Sortable;
 
 class SQLSelectTest extends SapphireTest
 {
@@ -27,11 +31,11 @@ class SQLSelectTest extends SapphireTest
         SQLSelectTest\TestChild::class,
         SQLSelectTest\CteDatesObject::class,
         SQLSelectTest\CteRecursiveObject::class,
+        Sortable::class,
     ];
 
     public function testCount()
     {
-
         //basic counting
         $qry = SQLSelectTest\TestObject::get()->dataQuery()->getFinalisedQuery();
         $ids = $this->allFixtureIDs(SQLSelectTest\TestObject::class);
@@ -51,6 +55,7 @@ class SQLSelectTest extends SapphireTest
             $this->assertIsInt($count);
         }
     }
+
     public function testUnlimitedRowCount()
     {
         //basic counting
@@ -1450,5 +1455,312 @@ class SQLSelectTest extends SapphireTest
             $query->getFrom(),
             'MyTable entry got merge over, MyOtherTable was retained, ThirdTable was added'
         );
+    }
+
+    public static function provideSetUseCache(): array
+    {
+        return [
+            'basic query' => [
+                'queries' => [
+                    // Same query 3 times - only the first time actually executes the query
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                ],
+            ],
+            'any change to query is different cache set' => [
+                'queries' => [
+                    // Queries with a bunch of different changes, all execute the queries
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'limit' => [3],
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 3,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'where' => '"DataObjectTest_Sortable"."Name" in (\'Bob\', \'jane\')',
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 2,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'orderby' => '"DataObjectTest_Sortable"."Sort" ASC, "DataObjectTest_Sortable"."Name" DESC',
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    // Same queries as above - now all use the cached results
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'limit' => [3],
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 3,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'where' => '"DataObjectTest_Sortable"."Name" in (\'Bob\', \'jane\')',
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 2,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'orderby' => '"DataObjectTest_Sortable"."Sort" ASC, "DataObjectTest_Sortable"."Name" DESC',
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                ],
+            ],
+            'Cached result doesnt bleed across namespaces' => [
+                'queries' => [
+                    [
+                        'namespace' => 'space1',
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'namespace' => 'space2',
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                ],
+            ],
+            'Cached result doesnt bleed into uncached query' => [
+                'queries' => [
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => false,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideSetUseCache')]
+    public function testSetUseCache(array $queries): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        foreach ($queries as $i => $schema) {
+            $select = (new SQLSelect())->setUseCache($schema['cached'], $schema['namespace'] ?? 'default');
+            $select->addFrom(DataObject::getSchema()->baseDataTable($schema['class']));
+            if (!empty($schema['limit'])) {
+                $select = $select->setLimit(...$schema['limit']);
+            }
+            if (!empty($schema['where'])) {
+                $select = $select->addWhere($schema['where']);
+            }
+            if (!empty($schema['orderby'])) {
+                $select = $select->addOrderBy($schema['orderby']);
+            }
+
+            $queryCounter->startCounting();
+            $results = iterator_to_array($select->execute()->getIterator());
+            $queryCounter->stopCounting();
+
+            $this->assertSame($schema['expectedNumQueries'], $queryCounter->getCount(), "Checking {$i}th query");
+            $this->assertCount($schema['expectedNumRecords'], $results, "Checking {$i}th query");
+        }
+    }
+
+    public static function provideSetUseCacheExtraMethods(): array
+    {
+        $scenarios = [
+            [
+                'method' => 'aggregate',
+                'args' => ['MIN("Sort")'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'aggregate',
+                'args' => ['MAX("Sort")'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'aggregate',
+                'args' => ['AVG("Sort")'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'aggregate',
+                'args' => ['SUM("Sort")'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'firstRow',
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'lastRow',
+                'prewarmed' => false,
+                // lastRow() calls count() first to get the offset for the last record
+                'expectedNumQueries' => 2,
+            ],
+        ];
+
+        foreach ($scenarios as $key => $scenario) {
+            $scenario['prewarmed'] = true;
+            $scenarios[$key . '_prewarmed'] = $scenario;
+        }
+        return $scenarios;
+    }
+
+    #[DataProvider('provideSetUseCacheExtraMethods')]
+    public function testSetUseCacheExtraMethods(string $method, bool $prewarmed, int $expectedNumQueries, array $args = []): void
+    {
+        $table = DataObject::getSchema()->baseDataTable(Sortable::class);
+        // Check what we're expecting. Note this is not cached.
+        $expectedResult = iterator_to_array((new SQLSelect(from: $table))->$method(...$args)->execute()->getIterator());
+
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $select = (new SQLSelect(from: $table))->setUseCache(true);
+        if ($prewarmed) {
+            // Execute query once to cache results - the method queries won't match so shouldn't affect query count.
+            iterator_to_array($select->execute()->getIterator());
+        }
+
+        // The first try won't have a pre-cached result
+        $queryCounter->startCounting();
+        $result1 = iterator_to_array($select->$method(...$args)->execute()->getIterator());
+        $queryCounter->stopCounting();
+        $this->assertSame($expectedNumQueries, $queryCounter->getCount());
+        $this->assertSame($expectedResult, $result1);
+
+        // Second time should explicitly be using the cache result
+        $queryCounter->startCounting();
+        $result2 = iterator_to_array((new SQLSelect(from: $table))->setUseCache(true)->$method(...$args)->execute()->getIterator());
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+        $this->assertSame($expectedResult, $result2);
+    }
+
+    public static function provideSetUseCacheCount(): array
+    {
+        return [
+            [true],
+            [false],
+        ];
+    }
+
+    /**
+     * We can't call `count()` in `testSetUseCacheExtraMethods` because it returns the direct result instead of a clone of itself.
+     */
+    #[DataProvider('provideSetUseCacheCount')]
+    public function testSetUseCacheCount(bool $prewarmed): void
+    {
+        $table = DataObject::getSchema()->baseDataTable(Sortable::class);
+        // Check what we're expecting. Note this is not cached.
+        $expectedResult = (new SQLSelect(from: $table))->count();
+
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $select = (new SQLSelect(from: $table))->setUseCache(true);
+        if ($prewarmed) {
+            // Execute query once to cache results - the `SELECT COUNT` query won't match so shouldn't affect query count.
+            iterator_to_array($select->execute()->getIterator());
+        }
+
+        // The first try won't have a pre-cached result
+        $queryCounter->startCounting();
+        $result1 = $select->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+        $this->assertSame($expectedResult, $result1);
+
+        // Second time should explicitly be using the cache result
+        $queryCounter->startCounting();
+        $result2 = (new SQLSelect(from: $table))->setUseCache(true)->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+        $this->assertSame($expectedResult, $result2);
+    }
+
+    public function testReset(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $select1 = (new SQLSelect('1'))->setUseCache(true, 'space1');
+        $select2 = (new SQLSelect('2'))->setUseCache(true, 'space2');
+
+        // Warm the cache
+        $select1->execute();
+        $select2->execute();
+
+        // Ensure cache is being used
+        $queryCounter->startCounting();
+        $select1->execute();
+        $select2->execute();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Reset the cache for only space1 and check if it worked
+        SQLSelect::reset('space1');
+        $queryCounter->startCounting();
+        $select1->execute();
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+        $queryCounter->startCounting();
+        $select2->execute();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Reset the cache for everything and check if it worked
+        SQLSelect::reset();
+        $queryCounter->startCounting();
+        $select1->execute();
+        $select2->execute();
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
     }
 }

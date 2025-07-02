@@ -72,12 +72,7 @@ class MemberCsvBulkLoaderTest extends SapphireTest
         $loader = new MemberCsvBulkLoader();
         $results = $loader->load(__DIR__ . '/MemberCsvBulkLoaderTest/MemberCsvBulkLoaderTest_withGroups.csv');
 
-        $newgroup = DataObject::get_one(
-            Group::class,
-            [
-            '"Group"."Code"' => 'newgroup'
-            ]
-        );
+        $newgroup = Group::get()->find('Code', 'newgroup');
         $this->assertEquals($newgroup->Title, 'newgroup');
 
         $created = $results->Created()->toArray();
@@ -95,10 +90,7 @@ class MemberCsvBulkLoaderTest extends SapphireTest
 
         $results = $loader->load(__DIR__ . '/MemberCsvBulkLoaderTest/MemberCsvBulkLoaderTest_cleartextpws.csv');
 
-        $member = $results->Created()->First();
-        $memberID = $member->ID;
-        DataObject::flush_and_destroy_cache();
-        $member = DataObject::get_by_id(Member::class, $memberID);
+        $member = Member::get()->byID($results->Created()->First()->ID);
 
         $this->assertEquals(Security::config()->password_encryption_algorithm, $member->getField('PasswordEncryption'));
         $auth = new MemberAuthenticator();

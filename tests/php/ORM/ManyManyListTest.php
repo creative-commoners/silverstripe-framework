@@ -15,6 +15,8 @@ use SilverStripe\ORM\Tests\ManyManyListTest\ExtraFieldsObject;
 use SilverStripe\ORM\Tests\ManyManyListTest\Product;
 use SilverStripe\ORM\DataList;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Dev\CliDebugView;
 
 class ManyManyListTest extends SapphireTest
 {
@@ -169,6 +171,74 @@ class ManyManyListTest extends SapphireTest
         $this->assertEquals([], $newPlayer->Teams()->column('ID'));
     }
 
+    public function testSetUseCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $team1 = $this->objFromFixture(Team::class, 'team1');
+        $playersList1 = $team1->Players()->setUseCache(true);
+        $team2 = $this->objFromFixture(Team::class, 'team2');
+        $playersList2 = $team2->Players()->setUseCache(true);
+
+        // First query is uncached
+        $queryCounter->startCounting();
+        $players1 = $playersList1->toArray();
+        $players2 = $playersList2->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+
+        // Second query uses the cache
+        $queryCounter->startCounting();
+        $players1Cached = $playersList1->toArray();
+        $players2Cached = $playersList2->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Check the lists are correct
+        $this->assertSame($players1, $players1Cached);
+        $this->assertSame($players2, $players2Cached);
+        // Check there was no accidental bleed-through
+        // Using NotEquals instead of NotSame here checks the data, not just the specific object instances.
+        $this->assertNotEquals($players1Cached, $players2Cached);
+    }
+
+    public function testSetUseCacheExtraData(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $team1 = $this->objFromFixture(Team::class, 'team1');
+        $playerID = $this->idFromFixture(Player::class, 'player2');
+        $team1->Players()->setExtraData($playerID, ['Position' => 'cache tester']);
+        $playersList = $team1->Players()->setUseCache(true);
+
+        // First query is uncached
+        $queryCounter->startCounting();
+        $players = $playersList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Second query uses the cache
+        $queryCounter->startCounting();
+        $playersCached = $playersList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Check the list is correct and has the extra data
+        $this->assertSame($players, $playersCached);
+        $queryCounter->startCounting();
+        foreach ($playersCached as $player) {
+            if ($player->ID === $playerID) {
+                $this->assertSame('cache tester', $player->Position);
+            } else {
+                $this->assertNull($player->Position);
+            }
+        }
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
     public function testAddingSingleDataObjectByReference()
     {
         $player1 = $this->objFromFixture(Player::class, 'player1');
@@ -210,6 +280,34 @@ class ManyManyListTest extends SapphireTest
         );
     }
 
+    public function testRemoveInvalidatesCache()
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = DataObjectTest\Team::get()->setUseCache(true);
+        $control->count();
+
+        // Test that the team has the correct players
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'team1');
+        $players = $team->Players()->setUseCache(true);
+        $this->assertEquals(['Captain', 'Player 2'], $players->sort('FirstName')->column('FirstName'));
+
+        // Test that removing items clears cache for the relation class
+        $player = $this->objFromFixture(DataObjectTest\Player::class, 'captain1');
+        $players->remove($player);
+        $queryCounter->startCounting();
+        $this->assertEquals(['Player 2'], $players->sort('FirstName')->column('FirstName'));
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
     public function testAddingSingleDataObjectByID()
     {
         $player1 = $this->objFromFixture(Player::class, 'player1');
@@ -248,6 +346,34 @@ class ManyManyListTest extends SapphireTest
             $compareTeams->column('ID'),
             "Removing single record as ID from many_many"
         );
+    }
+
+    public function testRemoveByIDInvalidatesCache()
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = DataObjectTest\Team::get()->setUseCache(true);
+        $control->count();
+
+        // Test that the team has the correct players
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'team1');
+        $players = $team->Players()->setUseCache(true);
+        $this->assertEquals(['Captain', 'Player 2'], $players->sort('FirstName')->column('FirstName'));
+
+        // Test that removing items clears cache for the relation class
+        $playerID = $this->idFromFixture(DataObjectTest\Player::class, 'captain1');
+        $players->removeByID($playerID);
+        $queryCounter->startCounting();
+        $this->assertEquals(['Player 2'], $players->sort('FirstName')->column('FirstName'));
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 
     public function testSetByIdList()
@@ -410,6 +536,117 @@ class ManyManyListTest extends SapphireTest
 
         $this->assertNotNull(Player::get()->byID($a->ID));
         $this->assertNotNull(Player::get()->byID($b->ID));
+    }
+
+    public function testRemoveAllInvalidatesCache()
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = DataObjectTest\Team::get()->setUseCache(true);
+        $control->count();
+
+        // Test that the team has the correct players
+        $team = $this->objFromFixture(DataObjectTest\Team::class, 'team1');
+        $players = $team->Players()->setUseCache(true);
+        $this->assertGreaterThan(0, $players->count());
+        $players->removeAll();
+
+        $queryCounter->startCounting();
+        $this->assertCount(0, $players);
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testAddInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = Team::get()->setUseCache(true);
+        $control->count();
+        $newPlayer = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer->write();
+
+        $team = $this->objFromFixture(Team::class, 'team1');
+        $playersList = $team->Players()->setUseCache(true);
+        $origCount = $playersList->count();
+        $playersList->add($newPlayer);
+
+        // Make sure Player cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame($origCount + 1, $playersList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testAddManyInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = Team::get()->setUseCache(true);
+        $control->count();
+        $newPlayer1 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer1->write();
+        $newPlayer2 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer2->write();
+
+        $team = $this->objFromFixture(Team::class, 'team1');
+        $playersList = $team->Players()->setUseCache(true);
+        $origCount = $playersList->count();
+        $playersList->addMany([$newPlayer1, $newPlayer2]);
+
+        // Make sure Player cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame($origCount + 2, $playersList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testSetByIDListInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $control = Team::get()->setUseCache(true);
+        $control->count();
+        $newPlayer1 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer1->write();
+        $newPlayer2 = new DataObjectTest\Player(['Position' => 'cache tester']);
+        $newPlayer2->write();
+
+        $team = $this->objFromFixture(Team::class, 'team1');
+        $playersList = $team->Players()->setUseCache(true);
+        $playersList->count();
+        $playersList->setByIDList([$newPlayer1->ID, $newPlayer2->ID]);
+
+        // Make sure Player cache was invalidated
+        $queryCounter->startCounting();
+        $this->assertSame(2, $playersList->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 
     public function testAppendExtraFieldsToQuery()

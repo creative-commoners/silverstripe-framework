@@ -27,6 +27,7 @@ use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Model\ModelData;
 use ReflectionMethod;
+use SilverStripe\Dev\CliDebugView;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\Forms\DatalessField;
@@ -302,7 +303,7 @@ class DataObjectTest extends SapphireTest
 
         // Re-fetch from the database and confirm that the data is sourced from
         // OtherSubclassWithSameField.SubclassDatabaseField
-        $obj = DataObject::get_by_id(DataObjectTest\Team::class, $obj->ID);
+        $obj = DataObjectTest\Team::get()->setUseCache(true)->byID($obj->ID);
         $this->assertNull($obj->SubclassDatabaseField);
 
         // Confirm that save the object in the other direction.
@@ -316,7 +317,7 @@ class DataObjectTest extends SapphireTest
         // If we restore the class, the old value has been lying dormant and will be available again.
         // NOTE: This behaviour is volatile; we may change this in the future to clear fields that
         // are no longer relevant when changing ClassName
-        $obj = DataObject::get_by_id(DataObjectTest\Team::class, $obj->ID);
+        $obj = DataObjectTest\Team::get()->setUseCache(true)->byID($obj->ID);
         $this->assertEquals('obj-SubTeam', $obj->SubclassDatabaseField);
     }
 
@@ -335,10 +336,12 @@ class DataObjectTest extends SapphireTest
         $this->assertTrue(is_object($obj) && $obj->exists());
         // Delete the page
         $obj->delete();
-        // Check that page does not exist after deleting
+        // Check that page does not exist after deleting even with cached query
+        $obj = DataObjectTest\Player::get()->setUseCache(true)->byID($objID);
+        $this->assertTrue(!$obj || !$obj->exists());
+        // Check page does not exist with legacy cache logic
         $obj = DataObject::get_by_id(DataObjectTest\Player::class, $objID);
         $this->assertTrue(!$obj || !$obj->exists());
-
 
         // Test deleting using DataObject::delete_by_id()
         // Get the second page
@@ -348,8 +351,10 @@ class DataObjectTest extends SapphireTest
         $this->assertTrue(is_object($obj) && $obj->exists());
         // Delete the page
         DataObject::delete_by_id(DataObjectTest\Player::class, $obj->ID);
-        // Check that page does not exist after deleting
+        // Check that page does not exist after deleting - check both legacy and new logic
         $obj = DataObject::get_by_id(DataObjectTest\Player::class, $objID);
+        $this->assertTrue(!$obj || !$obj->exists());
+        $obj = DataObjectTest\Player::get()->setUseCache(true)->byID($objID);
         $this->assertTrue(!$obj || !$obj->exists());
     }
 
@@ -362,6 +367,7 @@ class DataObjectTest extends SapphireTest
      *       - Joins
      *       - Limit
      *       - Container class
+     *       - Cached queries
      *   - DataObject::get_by_id()
      *   - DataObject::get_one()
      *        - With and without caching
@@ -393,6 +399,11 @@ class DataObjectTest extends SapphireTest
         $this->assertEquals(2, $comments->count());
         $this->assertEquals('Joe', $comments->first()->Name);
         $this->assertEquals('Phil', $comments->last()->Name);
+
+        // Test cached query
+        $captain1ID = $this->idFromFixture(DataObjectTest\Player::class, 'captain1');
+        $captain1 = DataObjectTest\Player::get()->setUseCache(true)->byID($captain1ID);
+        $this->assertEquals('Captain', $captain1->FirstName);
 
         // Test get_by_id()
         $captain1ID = $this->idFromFixture(DataObjectTest\Player::class, 'captain1');
@@ -473,20 +484,14 @@ class DataObjectTest extends SapphireTest
 
     public function testGetCaseInsensitive()
     {
-        // Test get_one() with bad case on the classname
+        // Test get() with bad case on the classname
         // Note: This will succeed only if the underlying DB server supports case-insensitive
         // table names (e.g. such as MySQL, but not SQLite3)
         if (!(DB::get_conn() instanceof MySQLDatabase)) {
             $this->markTestSkipped('MySQL only');
         }
 
-        $subteam1 = DataObject::get_one(
-            strtolower(DataObjectTest\SubTeam::class),
-            [
-                '"DataObjectTest_Team"."Title"' => 'Subteam 1'
-            ],
-            true
-        );
+        $subteam1 = DataObject::get(strtolower(DataObjectTest\SubTeam::class))->find('Title', 'Subteam 1');
         $this->assertNotEmpty($subteam1);
         $this->assertEquals($subteam1->Title, "Subteam 1");
     }
@@ -630,7 +635,7 @@ class DataObjectTest extends SapphireTest
         $obj->write();
 
         // reload the page from the database
-        $savedObj = DataObject::get_by_id(DataObjectTest\Player::class, $obj->ID);
+        $savedObj = DataObjectTest\Player::get()->byID($obj->ID);
         $this->assertTrue($savedObj->FavouriteTeamID == 99);
 
         // Test with porymorphic relation
@@ -639,7 +644,7 @@ class DataObjectTest extends SapphireTest
         $obj2->FavouriteClass = DataObjectTest\Player::class;
         $obj2->write();
 
-        $savedObj2 = DataObject::get_by_id(DataObjectTest\Fan::class, $obj2->ID);
+        $savedObj2 = DataObjectTest\Fan::get()->byID($obj2->ID);
         $this->assertTrue($savedObj2->FavouriteID == 99);
         $this->assertTrue($savedObj2->FavouriteClass == DataObjectTest\Player::class);
     }
@@ -2138,7 +2143,7 @@ class DataObjectTest extends SapphireTest
 
         // Requery and uncache everything
         $newTeam->flushCache();
-        $newTeam = DataObject::get_by_id(DataObjectTest\Team::class, $newTeamID);
+        $newTeam = DataObjectTest\Team::get()->setUseCache(true)->byID($newTeamID);
 
         // Check that the Position many_many_extraField is extracted.
         $player = $newTeam->Players()->first();
@@ -2318,7 +2323,7 @@ class DataObjectTest extends SapphireTest
         $obj->write();
         $obj->flushCache();
 
-        $obj = DataObject::get_by_id(DataObjectTest\Fixture::class, $obj->ID);
+        $obj = DataObjectTest\Fixture::get()->setUseCache(true)->byID($obj->ID);
         $this->assertEquals('1988-01-02', $obj->DateField);
         $this->assertEquals('1988-03-04 06:30:00', $obj->DatetimeField);
     }
@@ -2557,7 +2562,7 @@ class DataObjectTest extends SapphireTest
             'write() does not write belongs_to components to the database that do not already exist.'
         );
 
-        $newCEO = DataObject::get_by_id(DataObjectTest\CEO::class, $ceo->ID);
+        $newCEO = DataObjectTest\CEO::get()->byID($ceo->ID);
         $this->assertEquals(
             $ceo->Company()->ID,
             $newCEO->Company()->ID,
@@ -2603,7 +2608,7 @@ class DataObjectTest extends SapphireTest
             'write() does not write belongs_to components to the database that do not already exist.'
         );
 
-        $newCEO = DataObject::get_by_id(DataObjectTest\CEO::class, $ceo->ID);
+        $newCEO = DataObjectTest\CEO::get()->byID($ceo->ID);
         $this->assertEquals(
             $ceo->CompanyOwned()->ID,
             $newCEO->CompanyOwned()->ID,
@@ -2766,7 +2771,6 @@ class DataObjectTest extends SapphireTest
 
     public function testGetOneMissingValueReturnsNull()
     {
-
         // Test that missing values return null
         $this->assertEquals(null, DataObject::get_one(
             DataObjectTest\TeamComment::class,
@@ -3135,5 +3139,51 @@ class DataObjectTest extends SapphireTest
         } else {
             $this->assertFalse(array_key_exists('CLASS_DESCRIPTION', $entities));
         }
+    }
+
+    public function testFlushCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $cachedTeam1 = DataObjectTest\Team::get_one();
+        $cachedTeam2 = DataObjectTest\Team::get()->setUseCache(true)->first();
+        $cachedSubTeam1 = DataObjectTest\SubTeam::get_one();
+        $cachedSubTeam2 = DataObjectTest\SubTeam::get()->setUseCache(true)->first();
+        $cachedTeamComment1 = DataObjectTest\TeamComment::get_one();
+        $cachedTeamComment2 = DataObjectTest\TeamComment::get()->setUseCache(true)->first();
+
+        // Flush Team (doesn't affect subclasses or unrelated classes)
+        (new DataObjectTest\Team())->flushCache();
+        // Should have only affected Team cache
+        $queryCounter->startCounting();
+        $this->assertNotSame($cachedTeam1, DataObjectTest\Team::get_one());
+        $this->assertNotSame($cachedTeam2, DataObjectTest\Team::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+        // Should not have affected TeamComment or SubTeam cache
+        $queryCounter->startCounting();
+        $this->assertSame($cachedTeamComment1, DataObjectTest\TeamComment::get_one());
+        $this->assertSame($cachedTeamComment2, DataObjectTest\TeamComment::get()->setUseCache(true)->first());
+        $this->assertSame($cachedSubTeam1, DataObjectTest\SubTeam::get_one());
+        $this->assertSame($cachedSubTeam2, DataObjectTest\SubTeam::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Flush SubTeam (flushes superclasses, doesn't affect unrelated classes)
+        (new DataObjectTest\SubTeam())->flushCache();
+        // Should have only affected Team and SubTeam cache
+        $queryCounter->startCounting();
+        $this->assertNotSame($cachedSubTeam1, DataObjectTest\SubTeam::get_one());
+        $this->assertNotSame($cachedSubTeam2, DataObjectTest\SubTeam::get()->setUseCache(true)->first());
+        $this->assertNotSame($cachedTeam1, DataObjectTest\Team::get_one());
+        $this->assertNotSame($cachedTeam2, DataObjectTest\Team::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(4, $queryCounter->getCount());
+        // Should not have affected TeamComment cache
+        $queryCounter->startCounting();
+        $this->assertSame($cachedTeamComment1, DataObjectTest\TeamComment::get_one());
+        $this->assertSame($cachedTeamComment2, DataObjectTest\TeamComment::get()->setUseCache(true)->first());
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 }

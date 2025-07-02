@@ -56,8 +56,7 @@ class GridFieldReadonlyTest extends SapphireTest
     public function testReadOnlyTransformation(?string $viewButtonClass)
     {
         // Build a hasMany Relation via getComponents like ModelAdmin does.
-        $components = Team::get_one(Team::class)
-            ->getComponents('Cheerleaders');
+        $components = Team::get()->first()->getComponents('Cheerleaders');
 
         $gridConfig = GridFieldConfig_RelationEditor::create();
 

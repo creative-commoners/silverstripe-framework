@@ -138,7 +138,7 @@ class DataObjectLazyLoadingTest extends SapphireTest
 
         // Reload from database
         DataObject::flush_and_destroy_cache();
-        $subteam1Reloaded = DataObject::get_by_id(SubTeam::class, $subteam1ID);
+        $subteam1Reloaded = SubTeam::get()->setUseCache(true)->byID($subteam1ID);
 
         $this->assertEquals(
             'Changed',
@@ -159,7 +159,7 @@ class DataObjectLazyLoadingTest extends SapphireTest
 
         // Reload from database
         DataObject::flush_and_destroy_cache();
-        $subteam1Reloaded = DataObject::get_by_id(SubTeam::class, $subteam1ID);
+        $subteam1Reloaded = SubTeam::get()->setUseCache(true)->byID($subteam1ID);
 
         $this->assertEquals(
             'Subclassed 1',
@@ -180,7 +180,7 @@ class DataObjectLazyLoadingTest extends SapphireTest
 
         // Reload from database
         DataObject::flush_and_destroy_cache();
-        $subteam1Reloaded = DataObject::get_by_id(SubTeam::class, $subteam1ID);
+        $subteam1Reloaded = SubTeam::get()->setUseCache(true)->byID($subteam1ID);
 
         $this->assertEquals(
             null,

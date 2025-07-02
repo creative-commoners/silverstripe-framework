@@ -956,6 +956,7 @@ abstract class SapphireTest extends TestCase implements TestOnly
 
                 // Invalidate classname spec since the test manifest will now pull out new subclasses for each internal class
                 // (e.g. Member will now have various subclasses of DataObjects that implement TestOnly)
+                // Also resets caches (e.g. cached DataList queries)
                 DataObject::reset();
 
                 // Set dummy controller;
@@ -1099,7 +1100,7 @@ abstract class SapphireTest extends TestCase implements TestOnly
     public function logInAs($member)
     {
         if (is_numeric($member)) {
-            $member = DataObject::get_by_id(Member::class, $member);
+            $member = Member::get()->setUseCache(true)->byID($member);
         } elseif (!is_object($member)) {
             $member = $this->objFromFixture(Member::class, $member);
         }

@@ -14,7 +14,6 @@ use SilverStripe\ORM\DataQuery;
 use SilverStripe\ORM\DB;
 use SilverStripe\Model\List\SS_List;
 use SilverStripe\ORM\Filters\ExactMatchFilter;
-use SilverStripe\ORM\Tests\DataObjectTest\DataListQueryCounter;
 use SilverStripe\ORM\Tests\DataObjectTest\Fixture;
 use SilverStripe\ORM\Tests\DataObjectTest\Bracket;
 use SilverStripe\ORM\Tests\DataObjectTest\EquipmentCompany;
@@ -35,6 +34,8 @@ use SilverStripe\ORM\Filters\SearchFilter;
 use SilverStripe\ORM\Tests\DataObjectTest\RelationChildFirst;
 use SilverStripe\ORM\Tests\DataObjectTest\RelationChildSecond;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Dev\CliDebugView;
 
 class DataListTest extends SapphireTest
 {
@@ -177,6 +178,45 @@ class DataListTest extends SapphireTest
         $teamsComments = TeamComment::get();
         $teams = Team::get();
         $teamsComments->subtract($teams);
+    }
+
+    public function testSubtractWithCachedQuery(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $comment1 = $this->objFromFixture(DataObjectTest\TeamComment::class, 'comment1');
+        $subtractList = TeamComment::get()->filter('ID', $comment1->ID);
+        $fullList = TeamComment::get();
+        $newList = $fullList->setUseCache(true)->subtract($subtractList);
+        $queryCounter->startCounting();
+        $this->assertEquals(2, $newList->Count(), 'List should only contain two objects after subtraction');
+        $queryCounter->stopCounting();
+        // First time through isn't cached
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Second time uses the cached result
+        $queryCounter->startCounting();
+        $this->assertEquals(2, $newList->Count(), 'List should only contain two objects after subtraction');
+        $queryCounter->stopCounting();
+        // First time through isn't cached
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public function testSetDataQuery(): void
+    {
+        $list = Team::get();
+        $numTeams = $list->count();
+        $numTeamComments = TeamComment::get()->count();
+        $this->assertNotSame($numTeams, $numTeamComments, 'If these are the same, we need to update the test');
+
+        $newList = $list->setDataQuery(new DataQuery(TeamComment::class));
+        // Original list unaffected
+        $this->assertNotSame($list, $newList);
+        $this->assertSame(Team::class, $list->dataClass());
+        // New list is using the new data query
+        $this->assertSame(TeamComment::class, $newList->dataClass());
+        $this->assertSame($numTeamComments, $newList->count());
     }
 
     public function testListCreationSortAndLimit()
@@ -521,6 +561,33 @@ class DataListTest extends SapphireTest
         $this->assertNull($list->byID($obj->ID));
     }
 
+    public function testRemoveInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = TeamComment::get()->setUseCache(true);
+        $control->count();
+        $list = Team::get()->setUseCache(true);
+        $obj = $this->objFromFixture(DataObjectTest\Team::class, 'team2');
+
+        $origCount = $list->count();
+        $this->assertNotNull($list->byID($obj->ID));
+        $list->remove($obj);
+
+        $queryCounter->startCounting();
+        $this->assertNull($list->byID($obj->ID));
+        $this->assertSame($origCount - 1, $list->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
     public function testRemoveWrongDataClass()
     {
         $this->expectException(InvalidArgumentException::class);
@@ -541,6 +608,33 @@ class DataListTest extends SapphireTest
         $this->assertNull($list->byID($id));
     }
 
+    public function testRemoveByIDInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = TeamComment::get()->setUseCache(true);
+        $control->count();
+        $list = Team::get()->setUseCache(true);
+        $id = $this->idFromFixture(DataObjectTest\Team::class, 'team2');
+
+        $origCount = $list->count();
+        $this->assertNotNull($list->byID($id));
+        $list->removeByID($id);
+
+        $queryCounter->startCounting();
+        $this->assertNull($list->byID($id));
+        $this->assertSame($origCount - 1, $list->count());
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+    }
+
     /**
      * Test DataList->removeAll()
      */
@@ -550,6 +644,29 @@ class DataListTest extends SapphireTest
         $this->assertGreaterThan(0, $list->count());
         $list->removeAll();
         $this->assertCount(0, $list);
+    }
+
+    public function testRemoveAllInvalidatesCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $control = TeamComment::get()->setUseCache(true);
+        $control->count();
+        $list = Team::get()->setUseCache(true);
+        $this->assertGreaterThan(0, $list->count());
+        $list->removeAll();
+
+        $queryCounter->startCounting();
+        $this->assertCount(0, $list);
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        // Make sure other class's caches aren't affected
+        $queryCounter->startCounting();
+        $control->count();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
     }
 
     /**
@@ -2372,81 +2489,583 @@ class DataListTest extends SapphireTest
         $this->assertStringEndsWith('</ul>', $result);
     }
 
+    public static function provideSetUseCache(): array
+    {
+        return [
+            'basic query' => [
+                'queries' => [
+                    // Same query 3 times - only the first time actually executes the query
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                ],
+            ],
+            'any change to query is different cache set' => [
+                'queries' => [
+                    // Queries with a bunch of different changes, all execute the queries
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'filter' => ['Sort:LessThan' => 5],
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 6,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'filter' => ['Sort:LessThan' => 0],
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 3,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'sort' => ['Name' => 'DESC'],
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'limit' => [3],
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 3,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'where' => '"DataObjectTest_Sortable"."Name" in (\'Bob\', \'jane\')',
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 2,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'orderby' => '"DataObjectTest_Sortable"."Sort" ASC, "DataObjectTest_Sortable"."Name" DESC',
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    // Same queries as above - now all use the cached results
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'filter' => ['Sort:LessThan' => 5],
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 6,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'filter' => ['Sort:LessThan' => 0],
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 3,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'sort' => ['Name' => 'DESC'],
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'limit' => [3],
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 3,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'where' => '"DataObjectTest_Sortable"."Name" in (\'Bob\', \'jane\')',
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 2,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'orderby' => '"DataObjectTest_Sortable"."Sort" ASC, "DataObjectTest_Sortable"."Name" DESC',
+                        'expectedNumQueries' => 0,
+                        'expectedNumRecords' => 7,
+                    ],
+                ],
+            ],
+            'Cached result doesnt bleed across classes' => [
+                'queries' => [
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Team::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 6,
+                    ],
+                ],
+            ],
+            'Cached result doesnt bleed into uncached query' => [
+                'queries' => [
+                    [
+                        'class' => Sortable::class,
+                        'cached' => true,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                    [
+                        'class' => Sortable::class,
+                        'cached' => false,
+                        'expectedNumQueries' => 1,
+                        'expectedNumRecords' => 7,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideSetUseCache')]
+    public function testSetUseCache(array $queries): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        foreach ($queries as $i => $schema) {
+            $list = (new DataList($schema['class']))->setUseCache($schema['cached']);
+            if (!empty($schema['filter'])) {
+                $list = $list->filter($schema['filter']);
+            }
+            if (!empty($schema['sort'])) {
+                $list = $list->sort($schema['sort']);
+            }
+            if (!empty($schema['limit'])) {
+                $list = $list->limit(...$schema['limit']);
+            }
+            if (!empty($schema['where'])) {
+                $list = $list->where($schema['where']);
+            }
+            if (!empty($schema['orderby'])) {
+                $list = $list->orderby($schema['orderby']);
+            }
+
+            $queryCounter->startCounting();
+            $results = $list->toArray();
+            $queryCounter->stopCounting();
+
+            $this->assertSame($schema['expectedNumQueries'], $queryCounter->getCount(), "Checking {$i}th query");
+            $this->assertCount($schema['expectedNumRecords'], $results, "Checking {$i}th query");
+        }
+    }
+
+    public static function provideSetUseCacheExtraMethods(): array
+    {
+        $scenarios = [
+            [
+                'method' => 'count',
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'exists',
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'column',
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'min',
+                'args' => ['NumericField'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'max',
+                'args' => ['NumericField'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'avg',
+                'args' => ['NumericField'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'sum',
+                'args' => ['NumericField'],
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'first',
+                'prewarmed' => false,
+                'expectedNumQueries' => 1,
+            ],
+            [
+                'method' => 'last',
+                'prewarmed' => false,
+                // last() calls count() first to get the offset for the last record
+                'expectedNumQueries' => 2,
+            ],
+        ];
+
+        foreach ($scenarios as $key => $scenario) {
+            $scenario['prewarmed'] = true;
+            $scenarios[$key . '_prewarmed'] = $scenario;
+        }
+        return $scenarios;
+    }
+
+    #[DataProvider('provideSetUseCacheExtraMethods')]
+    public function testSetUseCacheExtraMethods(string $method, bool $prewarmed, int $expectedNumQueries, array $args = []): void
+    {
+        // Check what we're expecting. Note this is not cached.
+        $expectedResult = Team::get()->$method(...$args);
+
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $list = (new DataList(Team::class))->setUseCache(true);
+        if ($prewarmed) {
+            // Execute query once to cache results - the method queries won't match so shouldn't affect query count.
+            $list->toArray();
+        }
+
+        // The first try won't have a pre-cached result
+        $queryCounter->startCounting();
+        $result1 = $list->$method(...$args);
+        $queryCounter->stopCounting();
+        $this->assertSame($expectedNumQueries, $queryCounter->getCount());
+        $this->assertEquals($expectedResult, $result1);
+
+        // Second time should explicitly be using the cache result
+        $queryCounter->startCounting();
+        $result2 = $list->$method(...$args);
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+        $this->assertEquals($expectedResult, $result2);
+
+        // The two results should be exactly identical, i.e. first() and last() should return the same instance
+        $this->assertSame($result1, $result2);
+    }
+
+    public function testGetIteratorCached(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        $list = (new DataList(Team::class))->setUseCache(true);
+
+        $queryCounter->startCounting();
+        $result1 = $list->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+
+        $queryCounter->startCounting();
+        $result2 = $list->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // These should be the exact same DataObject records - i.e. literally the same instantiated objects.
+        // Assert same checks that, while assertEquals would just check their data.
+        $this->assertSame($result1, $result2);
+        $result1[0]->Title = 'Updated the title';
+        $this->assertSame('Updated the title', $result2[0]->Title);
+    }
+
+    public function testReset(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $teamList = (new DataList(Team::class))->setUseCache(true);
+        $subTeamList = (new DataList(SubTeam::class))->setUseCache(true);
+        $teamCommentList = (new DataList(TeamComment::class))->setUseCache(true);
+
+        // Warm the cache
+        $teams = $teamList->toArray();
+        $subTeamList->toArray();
+        $teamCommentList->toArray();
+
+        // Set some data - we'll check later that this wasn't cleared
+        $teams[0]->setEagerLoadedData('BoogieWoogie', new Team(['Title' => 'Wonderland']));
+
+        // Ensure cache is being used
+        $queryCounter->startCounting();
+        $teamList->toArray();
+        $subTeamList->toArray();
+        $teamCommentList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Reset the cache for only one class and check if it worked
+        DataList::reset(Team::class);
+        $queryCounter->startCounting();
+        $teamList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(1, $queryCounter->getCount());
+        // These two caches should not have reset
+        $queryCounter->startCounting();
+        $teamCommentList->toArray();
+        $subTeamList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Reset the cache for a subclass and check if it worked
+        DataList::reset(SubTeam::class);
+        $queryCounter->startCounting();
+        $subTeamList->toArray();
+        // super classes get reset
+        $teamList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+        // This cache should not have reset
+        $queryCounter->startCounting();
+        $teamCommentList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Reset the cache for everything and check if it worked
+        DataList::reset();
+        $queryCounter->startCounting();
+        $teamList->toArray();
+        $subTeamList->toArray();
+        $teamCommentList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(3, $queryCounter->getCount());
+
+        // Make sure destroy() wasn't called on the records
+        $wonderland = $teams[0]->getComponent('BoogieWoogie');
+        $this->assertNotNull($wonderland);
+        $this->assertSame('Wonderland', $wonderland->Title);
+    }
+
+    public function testResetAndDestroyCache(): void
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+        $teamList = (new DataList(Team::class))->setUseCache(true);
+        $teamCommentList = (new DataList(TeamComment::class))->setUseCache(true);
+
+        // Warm the cache
+        $teams = $teamList->toArray();
+        $teamCommentList->toArray();
+
+        // Set some data - we'll check later that this gets cleared
+        $teams[0]->setEagerLoadedData('BoogieWoogie', new Team(['Title' => 'Wonderland']));
+
+        // Ensure cache is being used
+        $queryCounter->startCounting();
+        $teamList->toArray();
+        $teamCommentList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(0, $queryCounter->getCount());
+
+        // Reset the cache for everything and check if it worked
+        DataList::resetAndDestroyCache();
+        $queryCounter->startCounting();
+        $teamList->toArray();
+        $teamCommentList->toArray();
+        $queryCounter->stopCounting();
+        $this->assertSame(2, $queryCounter->getCount());
+
+        // Make sure destroy() was called on the records
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Could not find component 'BoogieWoogie'");
+        $teams[0]->getComponent('BoogieWoogie');
+    }
+
     public function testChunkedFetch()
     {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
         $expectedIDs = Team::get()->map('ID', 'ID')->toArray();
         $expectedSize = sizeof($expectedIDs ?? []);
 
-        $dataQuery = new DataListQueryCounter(Team::class);
         $this->chunkTester(
             $expectedIDs,
-            Team::get()->setDataQuery($dataQuery)->chunkedFetch(),
-            $dataQuery,
+            Team::get()->chunkedFetch(),
+            $queryCounter,
             1
         );
 
-        $dataQuery = new DataListQueryCounter(Team::class);
         $this->chunkTester(
             $expectedIDs,
-            Team::get()->setDataQuery($dataQuery)->chunkedFetch(1),
-            $dataQuery,
+            Team::get()->chunkedFetch(1),
+            $queryCounter,
             $expectedSize+1
         );
 
-        $dataQuery = new DataListQueryCounter(Team::class);
         $this->chunkTester(
             $expectedIDs,
-            Team::get()->setDataQuery($dataQuery)->chunkedFetch($expectedSize),
-            $dataQuery,
+            Team::get()->chunkedFetch($expectedSize),
+            $queryCounter,
             2
         );
 
-        $dataQuery = new DataListQueryCounter(Team::class);
         $this->chunkTester(
             $expectedIDs,
-            Team::get()->setDataQuery($dataQuery)->chunkedFetch($expectedSize-1),
-            $dataQuery,
+            Team::get()->chunkedFetch($expectedSize-1),
+            $queryCounter,
             2
         );
 
-        $dataQuery = new DataListQueryCounter(Team::class);
         $this->chunkTester(
             $expectedIDs,
-            Team::get()->setDataQuery($dataQuery)->chunkedFetch($expectedSize+1),
-            $dataQuery,
+            Team::get()->chunkedFetch($expectedSize+1),
+            $queryCounter,
             1
+        );
+    }
+
+    public function testChunkedFetchWithCaching()
+    {
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
+
+        // Note that each chunkedFetch has a slightly different query than this one
+        // and than each other, so even though we have told it to use caching, we
+        // expect different (uncached) results
+        $expectedIDs = Team::get()->setUseCache(true)->map('ID', 'ID')->toArray();
+        $expectedSize = sizeof($expectedIDs ?? []);
+
+        // First query is actually executed
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch(),
+            $queryCounter,
+            1
+        );
+        // This one should just use the cached results.
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch(),
+            $queryCounter,
+            0
+        );
+
+        // First query is actually executed
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch(1),
+            $queryCounter,
+            $expectedSize+1
+        );
+        // This one should just use the cached results.
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch(1),
+            $queryCounter,
+            0
+        );
+
+        // First query is actually executed
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch($expectedSize),
+            $queryCounter,
+            2
+        );
+        // This one should just use the cached results.
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch($expectedSize),
+            $queryCounter,
+            0
+        );
+
+        // First query is actually executed
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch($expectedSize-1),
+            $queryCounter,
+            2
+        );
+        // This one should just use the cached results.
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch($expectedSize-1),
+            $queryCounter,
+            0
+        );
+
+        // First query is actually executed
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch($expectedSize+1),
+            $queryCounter,
+            1
+        );
+        // This one should just use the cached results.
+        $this->chunkTester(
+            $expectedIDs,
+            Team::get()->setUseCache(true)->chunkedFetch($expectedSize+1),
+            $queryCounter,
+            0
         );
     }
 
     public function testFilteredChunk()
     {
-        $dataQuery = new DataListQueryCounter(Team::class);
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
         $this->chunkTester(
             Team::get()->filter('ClassName', Team::class)->map('ID', 'ID')->toArray(),
-            Team::get()->setDataQuery($dataQuery)->filter('ClassName', Team::class)->chunkedFetch(),
-            $dataQuery,
+            Team::get()->filter('ClassName', Team::class)->chunkedFetch(),
+            $queryCounter,
             1
         );
     }
 
     public function testSortedChunk()
     {
-        $dataQuery = new DataListQueryCounter(Team::class);
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
         $this->chunkTester(
             Team::get()->sort('ID', 'Desc')->map('ID', 'ID')->toArray(),
-            Team::get()->setDataQuery($dataQuery)->sort('ID', 'Desc')->chunkedFetch(),
-            $dataQuery,
+            Team::get()->sort('ID', 'Desc')->chunkedFetch(),
+            $queryCounter,
             1
         );
     }
 
     public function testEmptyChunk()
     {
-        $dataQuery = new DataListQueryCounter(Team::class);
+        $queryCounter = new DBQueryCounterDebugView();
+        Injector::inst()->registerService($queryCounter, CliDebugView::class);
         $this->chunkTester(
             [],
-            Team::get()->setDataQuery($dataQuery)->filter('ClassName', 'non-sense')->chunkedFetch(),
-            $dataQuery,
+            Team::get()->filter('ClassName', 'non-sense')->chunkedFetch(),
+            $queryCounter,
             1
         );
     }
@@ -2467,9 +3086,11 @@ class DataListTest extends SapphireTest
     private function chunkTester(
         array $expectedIDs,
         iterable $chunkList,
-        DataListQueryCounter $dataQuery,
+        DBQueryCounterDebugView $queryCounter,
         int $expectedQueryCount
     ) {
+        $queryCounter->startCounting();
+
         foreach ($chunkList as $chunkedTeam) {
             $this->assertInstanceOf(
                 Team::class,
@@ -2485,8 +3106,9 @@ class DataListTest extends SapphireTest
                 'chunk returns the same results in the same order as the regular iterator'
             );
         }
+        $queryCounter->stopCounting();
 
         $this->assertEmpty($expectedIDs, 'chunk returns all the results that the regular iterator does');
-        $this->assertEquals($expectedQueryCount, $dataQuery->getCount());
+        $this->assertEquals($expectedQueryCount, $queryCounter->getCount());
     }
 }

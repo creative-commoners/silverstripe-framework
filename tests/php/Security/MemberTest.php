@@ -628,22 +628,17 @@ class MemberTest extends FunctionalTest
 
         $grouplessMember->addToGroupByCode('memberless');
 
-        $this->assertEquals($memberlessGroup->Members()->count(), 1);
-        $this->assertEquals($grouplessMember->Groups()->count(), 1);
+        $this->assertEquals(1, $memberlessGroup->Members()->count());
+        $this->assertEquals(1, $grouplessMember->Groups()->count());
 
         $grouplessMember->addToGroupByCode('somegroupthatwouldneverexist', 'New Group');
-        $this->assertEquals($grouplessMember->Groups()->count(), 2);
+        $this->assertEquals(2, $grouplessMember->Groups()->count());
 
         /** @var Group $group */
-        $group = DataObject::get_one(
-            Group::class,
-            [
-            '"Group"."Code"' => 'somegroupthatwouldneverexist'
-            ]
-        );
+        $group = Group::get()->find('Code', 'somegroupthatwouldneverexist');
         $this->assertNotNull($group);
-        $this->assertEquals($group->Code, 'somegroupthatwouldneverexist');
-        $this->assertEquals($group->Title, 'New Group');
+        $this->assertEquals('somegroupthatwouldneverexist', $group->Code);
+        $this->assertEquals('New Group', $group->Title);
     }
 
     public function testRemoveFromGroupByCode()
@@ -658,24 +653,24 @@ class MemberTest extends FunctionalTest
 
         $grouplessMember->addToGroupByCode('memberless');
 
-        $this->assertEquals($memberlessGroup->Members()->count(), 1);
-        $this->assertEquals($grouplessMember->Groups()->count(), 1);
+        $this->assertEquals(1, $memberlessGroup->Members()->count());
+        $this->assertEquals(1, $grouplessMember->Groups()->count());
 
         $grouplessMember->addToGroupByCode('somegroupthatwouldneverexist', 'New Group');
-        $this->assertEquals($grouplessMember->Groups()->count(), 2);
+        $this->assertEquals(2, $grouplessMember->Groups()->count());
 
         /** @var Group $group */
-        $group = DataObject::get_one(Group::class, "\"Code\" = 'somegroupthatwouldneverexist'");
+        $group = Group::get()->find('Code', 'somegroupthatwouldneverexist');
         $this->assertNotNull($group);
-        $this->assertEquals($group->Code, 'somegroupthatwouldneverexist');
-        $this->assertEquals($group->Title, 'New Group');
+        $this->assertEquals('somegroupthatwouldneverexist', $group->Code);
+        $this->assertEquals('New Group', $group->Title);
 
         $grouplessMember->removeFromGroupByCode('memberless');
-        $this->assertEquals($memberlessGroup->Members()->count(), 0);
-        $this->assertEquals($grouplessMember->Groups()->count(), 1);
+        $this->assertEquals(0, $memberlessGroup->Members()->count());
+        $this->assertEquals(1, $grouplessMember->Groups()->count());
 
         $grouplessMember->removeFromGroupByCode('somegroupthatwouldneverexist');
-        $this->assertEquals($grouplessMember->Groups()->count(), 0);
+        $this->assertEquals(0, $grouplessMember->Groups()->count());
     }
 
     public function testInGroup()

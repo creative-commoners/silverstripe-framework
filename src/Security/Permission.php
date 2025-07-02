@@ -346,7 +346,7 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
                 return $_SESSION['Permission_groupList'][$member->ID];
             }
         } else {
-            $member = DataObject::get_by_id("SilverStripe\\Security\\Member", $memberID);
+            $member = Member::get()->setUseCache(true)->byID($memberID);
         }
 
         if ($member) {

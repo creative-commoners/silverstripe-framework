@@ -212,7 +212,7 @@ class GridFieldAddExistingAutocompleter extends AbstractGridFieldComponent imple
             return $dataList;
         }
         $gridField->State->GridFieldAddRelation = null;
-        $object = DataObject::get_by_id($dataClass, $objectID);
+        $object = DataObject::get($dataClass)->setUseCache(true)->byID($objectID);
         if ($object) {
             if (!$object->canView()) {
                 throw new HTTPResponse_Exception(null, 403);

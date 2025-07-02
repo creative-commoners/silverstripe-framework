@@ -11,6 +11,7 @@ use SilverStripe\ORM\Queries\SQLConditionGroup;
 use SilverStripe\ORM\Queries\SQLSelect;
 use InvalidArgumentException;
 use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Resettable;
 
 /**
  * An object representing a query of data from the DataObject's supporting database.
@@ -20,7 +21,7 @@ use SilverStripe\Core\Config\Config;
  * Unlike DataList, modifiers on DataQuery modify the object rather than returning a clone.
  * DataList is immutable, DataQuery is mutable.
  */
-class DataQuery
+class DataQuery implements Resettable
 {
 
     use Extensible;
@@ -72,6 +73,30 @@ class DataQuery
     protected $querySubclasses = true;
 
     protected $filterByClassName = true;
+
+    /**
+     * Whether the query result should be cached or not
+     */
+    private bool $useCache = false;
+
+    /**
+     * @inheritDoc
+     * For most purposes, do not call this method directly. Call reset on DataList instead.
+     */
+    public static function reset(string $class = ''): void
+    {
+        if (!$class) {
+            SQLSelect::reset();
+            return;
+        }
+
+        // Reset for all superclasses as well, since superclass queries
+        // include records from subclasses
+        $classHierarchy = ClassInfo::ancestry($class);
+        foreach ($classHierarchy as $currentClass) {
+            SQLSelect::reset($currentClass);
+        }
+    }
 
     /**
      * Create a new DataQuery.
@@ -505,15 +530,20 @@ class DataQuery
         }
 
         // Wrap the whole thing in an "EXISTS"
-        $sql = 'SELECT CASE WHEN EXISTS(' . $statement->sql($params) . ') THEN 1 ELSE 0 END';
-        $result = $this->withCorrectDatabase(
-            fn() => DB::prepared_query($sql, $params)
-        );
-        $row = $result->record();
-        $result = reset($row);
+        $subQuerySql = $statement->sql($params);
+        $selectExists = SQLSelect::create('1')->setUseCache($this->useCache, $this->dataClass())->addWhere(['EXISTS (' . $subQuerySql . ')' => $params]);
 
-        // Checking for 't' supports PostgreSQL before silverstripe/postgresql@2.2
-        return $result === true || $result === 1 || $result === '1' || $result === 't';
+        $queryResult = $this->withCorrectDatabase(
+            fn() => $selectExists->execute()
+        );
+        $row = $queryResult->record();
+        if ($row) {
+            $result = reset($row);
+        } else {
+            $result = false;
+        }
+
+        return $result === true || $result === 1 || $result === '1';
     }
 
     /**
@@ -1374,6 +1404,29 @@ class DataQuery
     public function selectField($fieldExpression, $alias = null)
     {
         $this->query->selectField($fieldExpression, $alias);
+    }
+
+    /**
+     * Set whether to cache the result of this query or not.
+     * Query uniqueness is based on the query itself (tables, joins, sort, filter, etc) and eagerloading relations.
+     * That means a query with eagerloaded relations won't match an otherwise identical query with no eagerloading,
+     * though that implementation detail is subject to change.
+     *
+     * @return $this
+     */
+    public function setUseCache(bool $useCache): static
+    {
+        $this->useCache = $useCache;
+        $this->query->setUseCache($useCache, $this->dataClass());
+        return $this;
+    }
+
+    /**
+     * Get the key that will be used to identify this query for caching purposes.
+     */
+    public function getCacheKey(): string
+    {
+        return $this->getFinalisedQuery()->getCacheKey();
     }
 
     //// QUERY PARAMS

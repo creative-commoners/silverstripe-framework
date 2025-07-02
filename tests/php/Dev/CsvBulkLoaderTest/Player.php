@@ -24,12 +24,7 @@ class Player extends DataObject implements TestOnly
 
     public function getTeamByTitle($title)
     {
-        return DataObject::get_one(
-            Team::class,
-            [
-            '"CsvBulkLoaderTest_Team"."Title"' => $title
-            ]
-        );
+        return Team::get()->setUseCache(true)->find('Title', $title);
     }
 
     /**

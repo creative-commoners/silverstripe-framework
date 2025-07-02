@@ -6,12 +6,13 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DB;
 use InvalidArgumentException;
 use LogicException;
+use SilverStripe\Core\Resettable;
 
 /**
  * Object representing a SQL SELECT query.
  * The various parts of the SQL query can be manipulated individually.
  */
-class SQLSelect extends SQLConditionalExpression
+class SQLSelect extends SQLConditionalExpression implements Resettable
 {
     public const UNION_ALL = 'ALL';
 
@@ -82,6 +83,30 @@ class SQLSelect extends SQLConditionalExpression
      * @var array
      */
     protected $limit = [];
+
+    /**
+     * Whether the query result should be cached or not
+     */
+    private bool $useCache = false;
+
+    /**
+     * A namespace for cached queries. Useful to reset a subset of cached queries.
+     */
+    private string $cacheNamespace = 'default';
+
+    /**
+     * @internal
+     */
+    private static array $cachedQueries = [];
+
+    public static function reset(string $namespace = ''): void
+    {
+        if ($namespace) {
+            unset(SQLSelect::$cachedQueries[$namespace]);
+        } else {
+            SQLSelect::$cachedQueries = [];
+        }
+    }
 
     /**
      * Construct a new SQLSelect.
@@ -683,7 +708,6 @@ class SQLSelect extends SQLConditionalExpression
         return isset($this->select[$fieldName]);
     }
 
-
     /**
      * Return the number of rows in this query, respecting limit and offset.
      *
@@ -795,5 +819,50 @@ class SQLSelect extends SQLConditionalExpression
     {
         // Empty if there's no select, or we're trying to select '*' but there's no FROM clause
         return empty($this->select) || (empty($this->from) && array_key_exists('*', $this->select));
+    }
+
+    public function setUseCache(bool $useCache, string $namespace = 'default'): static
+    {
+        $this->useCache = $useCache;
+        $this->cacheNamespace = $namespace;
+        return $this;
+    }
+
+    public function execute()
+    {
+        $sql = $this->sql($parameters);
+        // If using cache and we've cached this query already, return that.
+        $cacheKey = $this->getCacheKey($sql, $parameters);
+        if ($this->useCache && isset(SQLSelect::$cachedQueries[$this->cacheNamespace][$cacheKey])) {
+            $queryResult = SQLSelect::$cachedQueries[$this->cacheNamespace][$cacheKey];
+            // Reset the query if we can - but if not, we have to iterate over the whole result set so that
+            // we will be starting from the beginning again as though we executed the query from scratch
+            if (method_exists($queryResult, 'rewind')) {
+                $queryResult->rewind();
+            } else {
+                foreach ($queryResult as $data) {
+                    // no-op
+                }
+            }
+            return $queryResult;
+        }
+
+        // Execute the query, and cache it if appropriate
+        $queryResult = DB::prepared_query($sql, $parameters);
+        if ($this->useCache) {
+            SQLSelect::$cachedQueries[$this->cacheNamespace][$cacheKey] = $queryResult;
+        }
+        return $queryResult;
+    }
+
+    /**
+     * Get the key that will be used to identify this query for caching purposes.
+     */
+    public function getCacheKey(?string $sql = null, array $parameters = []): string
+    {
+        if (!$sql) {
+            $sql = $this->sql($parameters);
+        }
+        return sha1($sql . '_' . serialize($parameters));
     }
 }
