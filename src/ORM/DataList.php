@@ -200,6 +200,7 @@ class DataList extends ModelData implements SS_List
     {
         $clone = clone $this;
         $clone->dataQuery = $dataQuery;
+        $clone->dataClass = $dataQuery->dataClass();
         return $clone;
     }
 
