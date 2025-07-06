@@ -275,10 +275,11 @@ class DataObjectSchemaGenerationTest extends SapphireTest
         $item2->delete();
     }
 
-    public static function provideSortFieldBecomeIndexes(): array
+    public static function provideSortFieldBecomesIndexes(): array
     {
         return [
-            'single field' => [
+            // string sort
+            'string, single column no dir' => [
                 'defaultSort' => 'Sort',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -287,7 +288,7 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'single field with direction' => [
+            'string, single field with direction' => [
                 'defaultSort' => 'Sort ASC',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -296,7 +297,7 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'single field opposite direction' => [
+            'string, single field opposite direction' => [
                 'defaultSort' => 'Sort DESC',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -305,7 +306,7 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'single field quoted' => [
+            'string, single field quoted' => [
                 'defaultSort' => '"Sort" DESC',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -314,7 +315,7 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'single field with table name' => [
+            'string, single field with table name' => [
                 'defaultSort' => '"DataObjectSchemaGenerationTest_SortedObject"."Sort" ASC',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -323,7 +324,7 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'multiple fields' => [
+            'string, multiple fields' => [
                 'defaultSort' => 'Sort, Title',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -340,7 +341,7 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'multiple fields with directions' => [
+            'string, multiple fields with directions' => [
                 'defaultSort' => '"Sort" DESC, "Title" ASC',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -357,7 +358,7 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'multiple fields, ID in middle' => [
+            'string, multiple fields, ID in middle' => [
                 'defaultSort' => '"Sort" DESC, ID, "Title" ASC',
                 'expectedIndexes' => [
                     'Sort' => [
@@ -374,8 +375,232 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
-            'multiple fields, ID at end' => [
+            'string, multiple fields, ID at end' => [
                 'defaultSort' => '"Sort" DESC, "Title" ASC, ID',
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                    'Title' => [
+                        'type' => 'index',
+                        'columns' => ['Title'],
+                    ],
+                    'default_sort_composite' => [
+                        'type' => 'index',
+                        'columns' => ['Sort DESC', 'Title ASC'],
+                    ],
+                ],
+            ],
+            // indexed array sort
+            'indexed array, single column no dir' => [
+                'defaultSort' => ['Sort'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'indexed array, single field with direction' => [
+                'defaultSort' => ['Sort ASC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'indexed array, single field opposite direction' => [
+                'defaultSort' => ['Sort DESC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'indexed array, single field quoted' => [
+                'defaultSort' => ['"Sort" DESC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'indexed array, single field with table name' => [
+                'defaultSort' => ['"DataObjectSchemaGenerationTest_SortedObject"."Sort" ASC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'indexed array, multiple fields' => [
+                'defaultSort' => ['Sort', 'Title'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                    'Title' => [
+                        'type' => 'index',
+                        'columns' => ['Title'],
+                    ],
+                    'default_sort_composite' => [
+                        'type' => 'index',
+                        'columns' => ['Sort ASC', 'Title ASC'],
+                    ],
+                ],
+            ],
+            'indexed array, multiple fields with directions' => [
+                'defaultSort' => [
+                    '"Sort" DESC',
+                    '"Title" ASC'
+                ],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                    'Title' => [
+                        'type' => 'index',
+                        'columns' => ['Title'],
+                    ],
+                    'default_sort_composite' => [
+                        'type' => 'index',
+                        'columns' => ['Sort DESC', 'Title ASC'],
+                    ],
+                ],
+            ],
+            'indexed array, multiple fields, ID in middle' => [
+                'defaultSort' => [
+                    '"Sort" DESC',
+                    'ID',
+                    '"Title" ASC'
+                ],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                    'Title' => [
+                        'type' => 'index',
+                        'columns' => ['Title'],
+                    ],
+                    'default_sort_composite' => [
+                        'type' => 'index',
+                        'columns' => ['Sort DESC', 'ID ASC', 'Title ASC'],
+                    ],
+                ],
+            ],
+            'indexed array, multiple fields, ID at end' => [
+                'defaultSort' => [
+                    '"Sort" DESC',
+                    '"Title" ASC',
+                    'ID'
+                ],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                    'Title' => [
+                        'type' => 'index',
+                        'columns' => ['Title'],
+                    ],
+                    'default_sort_composite' => [
+                        'type' => 'index',
+                        'columns' => ['Sort DESC', 'Title ASC'],
+                    ],
+                ],
+            ],
+            // associative array sort
+            'associative array, single field with direction' => [
+                'defaultSort' => ['Sort' => 'ASC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'associative array, single field opposite direction' => [
+                'defaultSort' => ['Sort' => 'DESC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'associative array, single field quoted' => [
+                'defaultSort' => ['"Sort"' => 'DESC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'associative array, single field with table name' => [
+                'defaultSort' => ['"DataObjectSchemaGenerationTest_SortedObject"."Sort"' => 'ASC'],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                ],
+            ],
+            'associative array, multiple fields with directions' => [
+                'defaultSort' => [
+                    '"Sort"' => 'DESC',
+                    '"Title"' => 'ASC'
+                ],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                    'Title' => [
+                        'type' => 'index',
+                        'columns' => ['Title'],
+                    ],
+                    'default_sort_composite' => [
+                        'type' => 'index',
+                        'columns' => ['Sort DESC', 'Title ASC'],
+                    ],
+                ],
+            ],
+            'associative array, multiple fields, ID in middle' => [
+                'defaultSort' => [
+                    '"Sort"' => 'DESC',
+                    'ID',
+                    '"Title"' => 'ASC',
+                ],
+                'expectedIndexes' => [
+                    'Sort' => [
+                        'type' => 'index',
+                        'columns' => ['Sort'],
+                    ],
+                    'Title' => [
+                        'type' => 'index',
+                        'columns' => ['Title'],
+                    ],
+                    'default_sort_composite' => [
+                        'type' => 'index',
+                        'columns' => ['Sort DESC', 'ID ASC', 'Title ASC'],
+                    ],
+                ],
+            ],
+            'associative array, multiple fields, ID at end' => [
+                'defaultSort' => [
+                    '"Sort"' => 'DESC',
+                    '"Title"' => 'ASC',
+                    'ID',
+                ],
                 'expectedIndexes' => [
                     'Sort' => [
                         'type' => 'index',
@@ -394,14 +619,18 @@ class DataObjectSchemaGenerationTest extends SapphireTest
         ];
     }
 
-    #[DataProvider('provideSortFieldBecomeIndexes')]
-    public function testSortFieldBecomeIndexes(string $defaultSort, array $expectedIndexes): void
+    #[DataProvider('provideSortFieldBecomesIndexes')]
+    public function testSortFieldBecomeIndexes(string|array $defaultSort, array $expectedIndexes): void
     {
         // Check the default index is what we expect and then reset to prep the test
         $indexes = DataObject::getSchema()->databaseIndexes(SortedObject::class);
         $this->assertContains([
             'type' => 'index',
             'columns' => ['Sort'],
+        ], $indexes);
+        $this->assertNotContains([
+            'type' => 'index',
+            'columns' => ['Title'],
         ], $indexes);
         DataObject::getSchema()->reset();
 
