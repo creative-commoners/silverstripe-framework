@@ -24,3 +24,16 @@ SilverStripe\Core\Injector\Injector:
       # is technically valid so we have to disable containers to avoid
       # weird behaviour with versioned, etc.
       disable-container: true
+
+SilverStripe\Dev\Command\DbBuild:
+  extensions:
+    DbBuildSessionExtension: 'SilverStripe\Control\SessionHandler\DbBuildSessionExtension'
+
+---
+Name: 'session-handlers-test-session'
+Only:
+  moduleexists: 'silverstripe/testsession'
+---
+SilverStripe\TestSession\TestSessionEnvironment:
+  extensions:
+    DbBuildSessionExtension: 'SilverStripe\Control\SessionHandler\DbBuildSessionExtension'
