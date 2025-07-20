@@ -163,7 +163,7 @@ class ChangePasswordHandler extends RequestHandler
         $session = $this->getRequest()->getSession();
         $hash = $session->get('AutoLoginHash');
         if ($hash) {
-            if (!Member::get()->filter(['AutoLoginHash' => $hash])) {
+            if (!Member::get()->filter(['AutoLoginHash' => $hash])->exists()) {
                 return $this->getInvalidTokenResponse();
             }
             $message = DBField::create_field(
