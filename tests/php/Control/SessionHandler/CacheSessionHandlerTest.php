@@ -30,17 +30,17 @@ class CacheSessionHandlerTest extends SapphireTest
     #[DataProvider('provideRead')]
     public function testRead(string $sessionID, string $expected): void
     {
-        $cacheAdapter = new Psr16Cache(new ArrayAdapter());
-        $handler = new CacheSessionHandler($cacheAdapter);
-        $cacheAdapter->set('existing-session', 'some-data');
+        $cache = new Psr16Cache(new ArrayAdapter());
+        $handler = new CacheSessionHandler($cache);
+        $cache->set('existing-session', 'some-data');
         $this->assertSame($expected, $handler->read($sessionID));
     }
 
     public function testReadExpired(): void
     {
-        $cacheAdapter = new Psr16Cache(new ArrayAdapter());
-        $handler = new CacheSessionHandler($cacheAdapter);
-        $cacheAdapter->set('existing-session', 'some-data', -1);
+        $cache = new Psr16Cache(new ArrayAdapter());
+        $handler = new CacheSessionHandler($cache);
+        $cache->set('existing-session', 'some-data', -1);
         $this->assertSame('', $handler->read('existing-session'));
     }
 
@@ -59,11 +59,11 @@ class CacheSessionHandlerTest extends SapphireTest
     #[DataProvider('provideWrite')]
     public function testWrite(string $sessionID): void
     {
-        $cacheAdapter = new Psr16Cache(new ArrayAdapter());
-        $handler = new CacheSessionHandler($cacheAdapter);
-        $cacheAdapter->set('existing-session', 'some-data');
+        $cache = new Psr16Cache(new ArrayAdapter());
+        $handler = new CacheSessionHandler($cache);
+        $cache->set('existing-session', 'some-data');
         $handler->write($sessionID, 'updated-data');
-        $this->assertSame('updated-data', $cacheAdapter->get($sessionID));
+        $this->assertSame('updated-data', $cache->get($sessionID));
     }
 
     public static function provideDestroy(): array
@@ -81,11 +81,11 @@ class CacheSessionHandlerTest extends SapphireTest
     #[DataProvider('provideDestroy')]
     public function testDestroy(string $sessionID): void
     {
-        $cacheAdapter = new Psr16Cache(new ArrayAdapter());
-        $handler = new CacheSessionHandler($cacheAdapter);
-        $cacheAdapter->set('existing-session', 'some-data');
+        $cache = new Psr16Cache(new ArrayAdapter());
+        $handler = new CacheSessionHandler($cache);
+        $cache->set('existing-session', 'some-data');
         $this->assertTrue($handler->destroy($sessionID));
-        $this->assertNull($cacheAdapter->get($sessionID));
+        $this->assertNull($cache->get($sessionID));
     }
 
     public static function provideValidateId(): array
@@ -112,21 +112,21 @@ class CacheSessionHandlerTest extends SapphireTest
     #[DataProvider('provideValidateId')]
     public function testValidateId(string $sessionID, bool $isExpired, bool $expected): void
     {
-        $cacheAdapter = new Psr16Cache(new ArrayAdapter());
-        $handler = new CacheSessionHandler($cacheAdapter);
-        $cacheAdapter->set('existing-session', 'some-data', $isExpired ? -1 : 60);
+        $cache = new Psr16Cache(new ArrayAdapter());
+        $handler = new CacheSessionHandler($cache);
+        $cache->set('existing-session', 'some-data', $isExpired ? -1 : 60);
         $this->assertSame($expected, $handler->validateId($sessionID));
     }
 
     public function testUpdateTimestamp(): void
     {
         $arrayAdapter = new ArrayAdapter();
-        $cacheAdapter = new Psr16Cache($arrayAdapter);
-        $handler = new CacheSessionHandler($cacheAdapter);
-        $cacheAdapter->set('existing-session', 'some-data', 999999999);
+        $cache = new Psr16Cache($arrayAdapter);
+        $handler = new CacheSessionHandler($cache);
+        $cache->set('existing-session', 'some-data', 999999999);
 
         $this->assertTrue($handler->updateTimestamp('existing-session', 'new content'));
-        $this->assertTrue($cacheAdapter->has('existing-session'));
+        $this->assertTrue($cache->has('existing-session'));
         $reflectionExpiries = new ReflectionProperty($arrayAdapter, 'expiries');
         $reflectionExpiries->setAccessible(true);
         $expiry = $reflectionExpiries->getValue($arrayAdapter)['existing-session'];
@@ -137,6 +137,6 @@ class CacheSessionHandlerTest extends SapphireTest
         // and Symfony's cache stuff doesn't use our internal DateTime so we can't set a mock now.
         $this->assertLessThan(microtime(true) + 999999, $expiry);
         $this->assertGreaterThan(microtime(true), $expiry);
-        $this->assertSame('new content', $cacheAdapter->get('existing-session'));
+        $this->assertSame('new content', $cache->get('existing-session'));
     }
 }

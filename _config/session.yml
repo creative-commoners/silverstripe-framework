@@ -4,7 +4,7 @@ Name: session-handlers
 SilverStripe\Core\Injector\Injector:
   SilverStripe\Control\SessionHandler\CacheSessionHandler:
     constructor:
-      cacheAdapter: '%$Psr\SimpleCache\CacheInterface.session-handler'
+      cache: '%$Psr\SimpleCache\CacheInterface.session-handler'
 
   SilverStripe\Core\Cache\RedisCacheFactory:
     constructor:

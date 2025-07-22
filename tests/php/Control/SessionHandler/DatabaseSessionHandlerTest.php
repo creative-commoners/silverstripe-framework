@@ -16,23 +16,34 @@ class DatabaseSessionHandlerTest extends SapphireTest
 
     protected static $fixture_file = 'DatabaseSessionHandlerTest.yml';
 
+    private string|false $gcLifeTime;
+
     public function onBeforeLoadFixtures(): void
     {
         // Add the sessions table
         $handler = new DatabaseSessionHandler();
-        DB::get_schema()->schemaUpdate(fn () => $handler->requireTable());
+        DB::get_schema()->schemaUpdate(fn() => $handler->requireTable());
     }
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->gcLifeTime = ini_get('session.gc_maxlifetime');
         $expiry = DBDatetime::now()->getTimestamp() + 1000;
-        DB::query('UPDATE "_sessions" SET "Expiry" = ' . $expiry . ' WHERE "ID" = \'valid\'');
+        $tableName = DatabaseSessionHandler::config()->get('table_name');
+        DB::query('UPDATE "' . $tableName . '" SET "Expiry" = ' . $expiry . ' WHERE "ID" = \'valid\'');
+    }
+
+    protected function tearDown(): void
+    {
+        ini_set('session.gc_maxlifetime', $this->gcLifeTime);
+        parent::tearDown();
     }
 
     public function testIdIsPrimaryKey(): void
     {
-        $result = DB::query('SHOW KEYS FROM "_sessions" WHERE "Key_name" = \'PRIMARY\'');
+        $tableName = DatabaseSessionHandler::config()->get('table_name');
+        $result = DB::query('SHOW KEYS FROM ' . $tableName . ' WHERE "Key_name" = \'PRIMARY\'');
         $this->assertSame('ID', $result->record()['Column_name']);
     }
 
@@ -63,7 +74,8 @@ class DatabaseSessionHandlerTest extends SapphireTest
 
         if ($sessionID === 'new-session') {
             // Make sure no new file is created for new sessions
-            $result = DB::query('SELECT "ID" FROM "_sessions" WHERE "ID" = \'new-session\'');
+            $tableName = DatabaseSessionHandler::config()->get('table_name');
+            $result = DB::query('SELECT "ID" FROM ' . $tableName . ' WHERE "ID" = \'new-session\'');
             $this->assertSame(0, $result->numRecords());
         }
     }
@@ -109,7 +121,8 @@ class DatabaseSessionHandlerTest extends SapphireTest
         $expiry = $now->getTimestamp() + $expectedLifetime;
 
         $this->assertTrue($handler->write($sessionID, 'New content now'));
-        $result = DB::query('SELECT * FROM "_sessions" WHERE "ID" = \'' . $sessionID . '\'');
+        $tableName = DatabaseSessionHandler::config()->get('table_name');
+        $result = DB::query('SELECT * FROM ' . $tableName . ' WHERE "ID" = \'' . $sessionID . '\'');
         $this->assertSame(1, $result->numRecords());
         $session = $result->record();
         $this->assertSame('New content now', $session['Data']);
@@ -137,7 +150,8 @@ class DatabaseSessionHandlerTest extends SapphireTest
         $handler = new DatabaseSessionHandler();
 
         $this->assertTrue($handler->destroy($sessionID));
-        $result = DB::query('SELECT "ID" FROM "_sessions" WHERE "ID" = \'' . $sessionID . '\'');
+        $tableName = DatabaseSessionHandler::config()->get('table_name');
+        $result = DB::query('SELECT "ID" FROM ' . $tableName . ' WHERE "ID" = \'' . $sessionID . '\'');
         $this->assertSame(0, $result->numRecords());
     }
 
@@ -181,6 +195,7 @@ class DatabaseSessionHandlerTest extends SapphireTest
     #[DataProvider('provideGc')]
     public function testGc(int $gcLifetime, int $configLifetime, array $sessionLifetimeMap, array $expectDeleted): void
     {
+        $tableName = DatabaseSessionHandler::config()->get('table_name');
         ini_set('session.gc_maxlifetime', $gcLifetime);
         Session::config()->set('timeout', $configLifetime);
         $lifetime = ($configLifetime > 0) ? $configLifetime : $gcLifetime;
@@ -195,7 +210,7 @@ class DatabaseSessionHandlerTest extends SapphireTest
         foreach ($sessionLifetimeMap as $sessionID => $lifeToDate) {
             $expiry = $now->getTimestamp() + ($lifetime - $lifeToDate);
             DB::query(sprintf(
-                'INSERT INTO "_sessions" ("ID", "Data", "Expiry") VALUES (\'%s\', \'%s\', \'%s\')',
+                'INSERT INTO ' . $tableName . ' ("ID", "Data", "Expiry") VALUES (\'%s\', \'%s\', \'%s\')',
                 $sessionID,
                 'original content',
                 $expiry
@@ -205,7 +220,7 @@ class DatabaseSessionHandlerTest extends SapphireTest
         $numDeleted = $handler->gc(1);
         // Check it deleted the right things
         foreach ($expectDeleted as $sessionID) {
-            $result = DB::query('SELECT "ID" FROM "_sessions" WHERE "ID" = \'' . $sessionID . '\'');
+            $result = DB::query('SELECT "ID" FROM ' . $tableName . ' WHERE "ID" = \'' . $sessionID . '\'');
             $this->assertSame(0, $result->numRecords());
         }
         $this->assertSame(count($expectDeleted), $numDeleted);
@@ -257,6 +272,7 @@ class DatabaseSessionHandlerTest extends SapphireTest
     #[DataProvider('provideUpdateTimestamp')]
     public function testUpdateTimestamp(string $sessionID, string $expectedContent): void
     {
+        $tableName = DatabaseSessionHandler::config()->get('table_name');
         $handler = new DatabaseSessionHandler();
         $now = DBDatetime::now();
         $reflectionGetLifetime = new ReflectionMethod($handler, 'getLifetime');
@@ -266,7 +282,7 @@ class DatabaseSessionHandlerTest extends SapphireTest
             $this->assertTrue($handler->updateTimestamp($sessionID, 'new content'));
         });
 
-        $result = DB::query('SELECT * FROM "_sessions" WHERE "ID" = \'' . $sessionID . '\'');
+        $result = DB::query('SELECT * FROM ' . $tableName . ' WHERE "ID" = \'' . $sessionID . '\'');
         $this->assertSame(1, $result->numRecords());
         $session = $result->record();
         $this->assertSame($now->getTimestamp() + $lifetime, $session['Expiry']);

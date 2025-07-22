@@ -3,8 +3,10 @@
 namespace SilverStripe\Control;
 
 use BadMethodCallException;
+use SessionHandlerInterface;
 use SilverStripe\Control\SessionHandler\FileSessionHandler;
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 
 /**
@@ -157,6 +159,7 @@ class Session
     /**
      * FQCN or injector service name for the session save handler.
      * If null, the save handler defined in `session.save_handler` ini configuration is used.
+     * Overridden if `SS_SESSION_SAVE_HANDLER_CLASS` is set.
      */
     private static ?string $save_handler = FileSessionHandler::class;
 
@@ -195,6 +198,18 @@ class Session
      * @var array
      */
     protected $changedData = [];
+
+    /**
+     * Get the session save handler if one has been configured.
+     */
+    public static function getSaveHandler(): ?SessionHandlerInterface
+    {
+        $serviceName = Environment::getEnv('SS_SESSION_SAVE_HANDLER_CLASS') ?: static::config()->get('save_handler');
+        if ($serviceName) {
+            return Injector::inst()->get($serviceName);
+        }
+        return null;
+    }
 
     /**
      * Get user agent for this request
@@ -310,9 +325,8 @@ class Session
                 }
 
                 // Set the session save handler if configured
-                $saveHandlerServiceName = static::config()->get('save_handler');
-                if ($saveHandlerServiceName !== null) {
-                    $saveHandler = Injector::inst()->get($saveHandlerServiceName);
+                $saveHandler = static::getSaveHandler();
+                if ($saveHandler) {
                     session_set_save_handler($saveHandler, true);
                 }
 

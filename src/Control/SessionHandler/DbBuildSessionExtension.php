@@ -16,9 +16,9 @@ class DbBuildSessionExtension extends Extension
     /**
      * This extension hook is on TestSessionEnvironment, which is used by behat but not by phpunit.
      * For whatever reason, behat doesn't build the db the normal way, so we can't rely on the below
-     * onAfterbuild being run in that scenario.
+     * onAfterBuild being run in that scenario.
      */
-    protected function onAfterStartTestSession()
+    protected function onAfterStartTestSession(): void
     {
         $sessionHandler = $this->getSessionHandler();
         if (!$sessionHandler) {
@@ -35,7 +35,7 @@ class DbBuildSessionExtension extends Extension
     }
 
     /**
-     * This extension hook is on DbBuild, after building the database.
+     * This extension hook is in DbBuild::doBuild(), after building the database.
      */
     protected function onAfterBuild(PolyOutput $output): void
     {
@@ -53,11 +53,10 @@ class DbBuildSessionExtension extends Extension
 
     private function getSessionHandler(): ?DatabaseSessionHandler
     {
-        $sessionHandlerServiceName = Session::config()->get('save_handler');
-        if ($sessionHandlerServiceName === null) {
+        $sessionHandler = Session::getSaveHandler();
+        if ($sessionHandler === null) {
             return null;
         }
-        $sessionHandler = Injector::inst()->get($sessionHandlerServiceName);
         if (!is_a($sessionHandler, DatabaseSessionHandler::class)) {
             return null;
         }

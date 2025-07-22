@@ -152,7 +152,7 @@ class DatabaseSessionHandler extends AbstractSessionHandler
      * 3. We don't want sessions to be used in any other ways that DataObjects are often
      * 4. We only want to build the table if this is the configured save handler
      */
-    public function requireTable()
+    public function requireTable(): void
     {
         $fields = [
             // ID will automatically be the primary key because of its name
@@ -215,9 +215,9 @@ class DatabaseSessionHandler extends AbstractSessionHandler
         return $result === true || $result === 1 || $result === '1';
     }
 
-    private function isDatabaseReady()
+    private function isDatabaseReady(): bool
     {
-        if (!DB::connection_attempted() || !DB::is_active()) {
+        if (!DB::is_active()) {
             return false;
         }
         return DB::get_schema()->hasTable(static::config()->get('table_name'));

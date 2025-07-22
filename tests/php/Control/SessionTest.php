@@ -16,7 +16,11 @@ use SilverStripe\Control\NullHTTPRequest;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use SilverStripe\Control\SessionHandler\DatabaseSessionHandler;
+use SilverStripe\Control\SessionHandler\FileSessionHandler;
+use SilverStripe\Core\Environment;
 
 /**
  * Tests to cover the {@link Session} class
@@ -494,5 +498,47 @@ class SessionTest extends SapphireTest
         $this->expectException(LogicException::class);
         Config::modify()->set(Session::class, 'cookie_samesite', 'invalid');
         $methodBuildCookieParams->invoke($session, new NullHTTPRequest());
+    }
+
+    public static function provideGetSaveHandler(): array
+    {
+        return [
+            'unset handler' => [
+                'config' => null,
+                'envVar' => null,
+                'expectedClass' => null,
+            ],
+            'set env var' => [
+                'config' => null,
+                'envVar' => DatabaseSessionHandler::class,
+                'expectedClass' => DatabaseSessionHandler::class,
+            ],
+            'set config' => [
+                'config' => DatabaseSessionHandler::class,
+                'envVar' => null,
+                'expectedClass' => DatabaseSessionHandler::class,
+            ],
+            'env var overrides config' => [
+                'config' => DatabaseSessionHandler::class,
+                'envVar' => FileSessionHandler::class,
+                'expectedClass' => FileSessionHandler::class,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideGetSaveHandler')]
+    public function testGetSaveHandler(?string $config, ?string $envVar, ?string $expectedClass): void
+    {
+        Session::config()->set('save_handler', $config);
+        if ($envVar !== null) {
+            Environment::setEnv('SS_SESSION_SAVE_HANDLER_CLASS', $envVar);
+        }
+
+        $handler = Session::getSaveHandler();
+        if ($expectedClass === null) {
+            $this->assertNull($handler);
+        } else {
+            $this->assertInstanceOf($expectedClass, $handler);
+        }
     }
 }

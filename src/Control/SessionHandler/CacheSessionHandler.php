@@ -6,15 +6,15 @@ use SensitiveParameter;
 use Psr\SimpleCache\CacheInterface;
 
 /**
- * Session save handler that stores session data in an in a PSR-16 cache adapter.
+ * Session save handler that stores session data in an in a PSR-16 cache.
  */
 class CacheSessionHandler extends AbstractSessionHandler
 {
-    private CacheInterface $cacheAdapter;
+    private CacheInterface $cache;
 
-    public function __construct(CacheInterface $cacheAdapter)
+    public function __construct(CacheInterface $cache)
     {
-        $this->cacheAdapter = $cacheAdapter;
+        $this->cache = $cache;
     }
 
     public function open(string $path, string $name): bool
@@ -35,7 +35,7 @@ class CacheSessionHandler extends AbstractSessionHandler
      */
     public function destroy(#[SensitiveParameter] string $id): bool
     {
-        return $this->cacheAdapter->delete($id);
+        return $this->cache->delete($id);
     }
 
     /**
@@ -44,7 +44,7 @@ class CacheSessionHandler extends AbstractSessionHandler
      */
     public function gc(int $max_lifetime): int|false
     {
-        // No action required - the cache adapter handles GC itself.
+        // No action required - the cache handles GC itself.
         return 0;
     }
 
@@ -54,7 +54,7 @@ class CacheSessionHandler extends AbstractSessionHandler
      */
     public function read(#[SensitiveParameter] string $id): string|false
     {
-        return $this->cacheAdapter->get($id, '');
+        return $this->cache->get($id, '');
     }
 
     /**
@@ -63,7 +63,7 @@ class CacheSessionHandler extends AbstractSessionHandler
      */
     public function write(#[SensitiveParameter] string $id, string $data): bool
     {
-        return $this->cacheAdapter->set($id, $data, $this->getLifetime());
+        return $this->cache->set($id, $data, $this->getLifetime());
     }
 
     /**
@@ -72,7 +72,7 @@ class CacheSessionHandler extends AbstractSessionHandler
      */
     public function validateId(#[SensitiveParameter] string $id): bool
     {
-        return $this->cacheAdapter->has($id);
+        return $this->cache->has($id);
     }
 
     /**
