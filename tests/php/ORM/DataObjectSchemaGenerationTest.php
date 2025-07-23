@@ -616,6 +616,17 @@ class DataObjectSchemaGenerationTest extends SapphireTest
                     ],
                 ],
             ],
+            // DBText cannot be used in indexes
+            'a few different field types in sort' => [
+                'defaultSort' => [
+                    '"Sort"' => 'DESC',
+                    '"SomeDBText"' => 'DESC',
+                    '"SomeDBHtmlText"' => 'ASC',
+                    'SomeDBHtmlVarchar' => 'ASC',
+                    'Title' => 'ASC'
+                ],
+                'expectedIndexes' => ['Sort', 'SomeDBHtmlVarchar', 'Title'],
+            ],
         ];
     }
 

@@ -66,7 +66,13 @@ class ArrayList extends ModelData implements SS_List
             return $this->dataClass;
         }
         if (count($this->items ?? []) > 0) {
-            return get_class($this->items[0]);
+            $item = $this->items[array_key_first($this->items)];
+            if (is_array($item)) {
+                return ArrayData::class;
+            }
+            if (is_object($item)) {
+                return get_class($item);
+            }
         }
         return null;
     }

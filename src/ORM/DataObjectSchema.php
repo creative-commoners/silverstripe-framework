@@ -17,6 +17,7 @@ use SilverStripe\ORM\Connect\DBSchemaManager;
 use SilverStripe\ORM\FieldType\DBComposite;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBGenerated;
+use SilverStripe\ORM\FieldType\DBText;
 
 /**
  * Provides dataobject and database schema mapping functionality
@@ -719,7 +720,7 @@ class DataObjectSchema
         }
         return $this->deriveIndexFromSort(
             DataObjectSchema::tableName($class) ?? '',
-            array_keys($this->databaseFields($class, false)),
+            $this->databaseFields($class, false),
             $sort,
             $this->getSortIndexMode($class)
         );
@@ -728,7 +729,7 @@ class DataObjectSchema
     /**
      * Derive the index spec for default_sort, e.g. for a DataObject table or for a many_many join table.
      */
-    public function deriveIndexFromSort(string $tableName, array $fieldNames, string|array $sort, string $indexMode): array
+    public function deriveIndexFromSort(string $tableName, array $fields, string|array $sort, string $indexMode): array
     {
         $indexModes = [
             DataObjectSchema::SORT_INDEX_MODE_NONE,
@@ -769,8 +770,14 @@ class DataObjectSchema
                     continue;
                 }
                 // Skip and stop grabbing composite columns if this isn't a column in the database.
-                if (!in_array($column, $fieldNames)) {
+                if (!array_key_exists($column, $fields)) {
                     $shouldAddToComposite = false;
+                    continue;
+                }
+                // Skip TEXT field types since not all SQL database servers can index them
+                $fieldSpec = $fields[$column];
+                $dbField = Injector::inst()->create($fieldSpec, $column);
+                if ($dbField instanceof DBText) {
                     continue;
                 }
                 // Add indexes as appropriate
