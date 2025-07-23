@@ -16,6 +16,7 @@ use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\Connect\DBSchemaManager;
 use SilverStripe\ORM\FieldType\DBComposite;
 use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\ORM\FieldType\DBText;
 
 /**
  * Provides dataobject and database schema mapping functionality
@@ -655,7 +656,12 @@ class DataObjectSchema
                     if ($table && strtolower($table ?? '') !== strtolower(DataObjectSchema::tableName($class) ?? '')) {
                         continue;
                     }
-                    if ($this->databaseField($class, $column, false)) {
+                    $fieldSpec = $this->databaseField($class, $column, false);
+                    if ($fieldSpec) {
+                        $dbField = Injector::inst()->create($fieldSpec, $column);
+                        if ($dbField instanceof DBText) {
+                            continue;
+                        }
                         $indexes[$column] = [
                             'type' => 'index',
                             'columns' => [$column],
