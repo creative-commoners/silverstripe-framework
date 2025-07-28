@@ -147,12 +147,8 @@ class Member_Validator extends RequiredFieldsValidator
             if (!isset($data['DirectGroups'])) {
                 $stillAdmin = false;
             } else {
-                $adminGroups = array_intersect(
-                    $data['DirectGroups'] ?? [],
-                    Permission::get_groups_by_permission('ADMIN')->column()
-                );
-
-                if (count($adminGroups ?? []) === 0) {
+                $adminGroups = Permission::get_groups_by_permission('ADMIN')->filter(['ID' => $data['DirectGroups']]);
+                if (!$adminGroups->exists()) {
                     $stillAdmin = false;
                 }
             }
@@ -166,6 +162,7 @@ class Member_Validator extends RequiredFieldsValidator
                     ),
                     'required'
                 );
+                $valid = false;
             }
         }
 

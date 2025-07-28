@@ -1428,80 +1428,172 @@ class MemberTest extends FunctionalTest
         $this->assertSame(0, $member->FailedLoginCount);
     }
 
-    public function testMemberValidator()
+    public static function provideMemberValidator(): array
+    {
+        return [
+            'New member uses existing member email address' => [
+                'data' => [
+                    'FirstName' => 'New',
+                    'Email' => 'admin@silverstripe.com',
+                ],
+                'expected' => false,
+            ],
+            'New member uses new email address' => [
+                'data' => [
+                    'FirstName' => 'New',
+                    'Email' => 'new-user@example.com',
+                ],
+                'expected' => true,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideMemberValidator')]
+    public function testMemberValidator(array $data, bool $expected): void
     {
         // clear custom requirements for this test
         Member_Validator::config()->set('customRequired', null);
-        /** @var Member $memberA */
-        $memberA = $this->objFromFixture(Member::class, 'admin');
-        /** @var Member $memberB */
-        $memberB = $this->objFromFixture(Member::class, 'test');
-
         // create a blank form
         $form = new MemberTest\ValidatorForm();
-
         $validator = new Member_Validator();
         $validator->setForm($form);
 
-        // Simulate creation of a new member via form, but use an existing member identifier
-        $fail = $validator->php(
-            [
-            'FirstName' => 'Test',
-            'Email' => $memberA->Email
-            ]
-        );
+        $this->assertSame($expected, $validator->php($data));
+    }
 
-        $this->assertFalse(
-            $fail,
-            'Member_Validator must fail when trying to create new Member with existing Email.'
-        );
+    public static function provideMemberValidatorExistingMembers(): array
+    {
+        return [
+            'Existing member uses alternate member email address' => [
+                'data' => [
+                    'FirstName' => 'Test',
+                    'Email' => 'admin@silverstripe.com',
+                ],
+                'expected' => false,
+            ],
+            'Existing member uses own email address' => [
+                'data' => [
+                    'FirstName' => 'Test',
+                    'Email' => 'testuser@example.com',
+                ],
+                'expected' => true,
+            ],
+            'Existing member changes email address' => [
+                'data' => [
+                    'FirstName' => 'Test',
+                    'Email' => 'new-email@example.com',
+                ],
+                'expected' => true,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideMemberValidatorExistingMembers')]
+    public function testMemberValidatorExistingMembers(array $data, bool $expected): void
+    {
+        // clear custom requirements for this test
+        Member_Validator::config()->set('customRequired', null);
+        $member = $this->objFromFixture(Member::class, 'test');
+        // create a blank form
+        $form = new MemberTest\ValidatorForm();
+        $validator = new Member_Validator();
+        $validator->setForm($form);
 
         // populate the form with values from another member
-        $form->loadDataFrom($memberB);
-
+        $form->loadDataFrom($member);
         // Assign the validator to an existing member
         // (this is basically the same as passing the member ID with the form data)
-        $validator->setForMember($memberB);
+        $validator->setForMember($member);
 
-        // Simulate update of a member via form and use an existing member Email
-        $fail = $validator->php(
-            [
-            'FirstName' => 'Test',
-            'Email' => $memberA->Email
-            ]
-        );
+        $this->assertSame($expected, $validator->php($data));
+    }
 
-        // Simulate update to a new Email address
-        $pass1 = $validator->php(
-            [
-            'FirstName' => 'Test',
-            'Email' => 'membervalidatortest@testing.com'
-            ]
-        );
+    public static function provideMemberValidatorRemoveAdmin(): array
+    {
+        return [
+            'No DirectGroups set - different admin performing action' => [
+                'data' => [
+                    'FirstName' => 'Admin',
+                    'Email' => 'admin@silverstripe.com',
+                ],
+                'loginAsMember' => false,
+                'expected' => true,
+            ],
+            'No DirectGroups set - logged in as user being changed' => [
+                'data' => [
+                    'FirstName' => 'Admin',
+                    'Email' => 'admin@silverstripe.com',
+                ],
+                'loginAsMember' => true,
+                'expected' => false,
+            ],
+            'DirectGroups set but not admin group - different admin performing action' => [
+                'data' => [
+                    'FirstName' => 'Admin',
+                    'Email' => 'admin@silverstripe.com',
+                    'DirectGroups' => 'staffgroup',
+                ],
+                'loginAsMember' => false,
+                'expected' => true,
+            ],
+            'DirectGroups set but not admin group - logged in as user being changed' => [
+                'data' => [
+                    'FirstName' => 'Admin',
+                    'Email' => 'admin@silverstripe.com',
+                    'DirectGroups' => 'staffgroup',
+                ],
+                'loginAsMember' => true,
+                'expected' => false,
+            ],
+            'DirectGroups set to admin group - different admin performing action' => [
+                'data' => [
+                    'FirstName' => 'Admin',
+                    'Email' => 'admin@silverstripe.com',
+                    'DirectGroups' => 'admingroup',
+                ],
+                'loginAsMember' => false,
+                'expected' => true,
+            ],
+            'DirectGroups set to admin group - logged in as user being changed' => [
+                'data' => [
+                    'FirstName' => 'Admin',
+                    'Email' => 'admin@silverstripe.com',
+                    'DirectGroups' => 'admingroup',
+                ],
+                'loginAsMember' => true,
+                'expected' => true,
+            ],
+        ];
+    }
 
-        // Pass in the same Email address that the member already has. Ensure that case is valid
-        $pass2 = $validator->php(
-            [
-            'FirstName' => 'Test',
-            'Surname' => 'User',
-            'Email' => $memberB->Email
-            ]
-        );
+    #[DataProvider('provideMemberValidatorRemoveAdmin')]
+    public function testMemberValidatorRemoveAdmin(array $data, bool $loginAsMember, bool $expected): void
+    {
+        // clear custom requirements for this test
+        Member_Validator::config()->set('customRequired', null);
+        $member = $this->objFromFixture(Member::class, 'admin');
+        // create a blank form
+        $form = new MemberTest\ValidatorForm();
+        $validator = new Member_Validator();
+        $validator->setForm($form);
 
-        $this->assertFalse(
-            $fail,
-            'Member_Validator must fail when trying to update existing member with existing Email.'
-        );
+        // populate the form with values from admin member
+        $form->loadDataFrom($member);
+        // Assign the validator to an existing member
+        // (this is basically the same as passing the member ID with the form data)
+        $validator->setForMember($member);
+        if ($loginAsMember) {
+            $this->logInAs($member);
+        } else {
+            $this->logInWithPermission('ADMIN');
+        }
 
-        $this->assertTrue(
-            $pass1,
-            'Member_Validator must pass when Email is updated to a value that\'s not in use.'
-        );
+        // Set DirectGroups to a valid ID if present
+        if (isset($data['DirectGroups'])) {
+            $data['DirectGroups'] = [$this->idFromFixture(Group::class, $data['DirectGroups'])];
+        }
 
-        $this->assertTrue(
-            $pass2,
-            'Member_Validator must pass when Member updates his own Email to the already existing value.'
-        );
+        $this->assertSame($expected, $validator->php($data));
     }
 
     public function testMemberValidatorWithExtensions()

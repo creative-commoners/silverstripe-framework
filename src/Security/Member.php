@@ -559,7 +559,7 @@ class Member extends DataObject
             $generator = new RandomGenerator();
             $token = $generator->randomToken();
             $hash = $this->encryptWithUserSettings($token);
-        } while (Member::get()->setUseCache(true)->find('AutoLoginHash', $hash));
+        } while (Member::get()->setUseCache(true)->filter('AutoLoginHash', $hash)->exists());
 
         $this->AutoLoginHash = $hash;
         $this->AutoLoginExpired = date('Y-m-d H:i:s', time() + $lifetime);

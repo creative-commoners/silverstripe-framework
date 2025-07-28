@@ -781,7 +781,7 @@ class GridFieldDetailForm_ItemRequest extends RequestHandler
         $controller = $this->getToplevelController();
         if ($isNewRecord) {
             return $controller->redirect($this->Link());
-        } elseif ($this->gridField->getList()->byID($this->record->ID)) {
+        } elseif ($this->gridField->getList()->filter('ID', $this->record->ID)->exists()) {
             // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
             // to the same URL (it assumes that its content is already current, and doesn't reload)
             $message = $controller->getResponse()->getHeader('X-Status') ?? rawurlencode(_t(__CLASS__ . '.SAVEDUP', 'Saved successfully') ?? '');

@@ -33,9 +33,9 @@ class GroupCsvBulkLoader extends CsvBulkLoader
         // are imported to avoid missing "early" references to parents
         // which are imported later on in the CSV file.
         if (isset($record['ParentCode']) && $record['ParentCode']) {
-            $parentGroup = Group::get()->setUseCache(true)->find('Code', $record['ParentCode']);
-            if ($parentGroup) {
-                $group->ParentID = $parentGroup->ID;
+            $parentGroupIDs = Group::get()->setUseCache(true)->filter('Code', $record['ParentCode'])->column();
+            if (!empty($parentGroupIDs)) {
+                $group->ParentID = $parentGroupIDs[0];
                 $group->write();
             }
         }

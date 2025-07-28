@@ -589,25 +589,21 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
             }
         }
 
-        $flatCodeArray = [];
+        // Include other permissions from the database which aren't included above
+        $flatCodeArray = [''];
         foreach ($allCodes as $category) {
             foreach ($category as $code => $permission) {
                 $flatCodeArray[] = $code;
             }
         }
-        $otherPerms = DB::withPrimary(
-            fn() => DB::query("SELECT DISTINCT \"Code\" From \"Permission\" WHERE \"Code\" != ''")->column()
-        );
-
+        $otherPerms = Permission::get()->exclude(['Code' => $flatCodeArray])->column('Code');
         if ($otherPerms) {
             foreach ($otherPerms as $otherPerm) {
-                if (!in_array($otherPerm, $flatCodeArray ?? [])) {
-                    $allCodes['Other'][$otherPerm] = [
+                $allCodes['Other'][$otherPerm] = [
                     'name' => $otherPerm,
                     'help' => null,
                     'sort' => 0
-                    ];
-                }
+                ];
             }
         }
 

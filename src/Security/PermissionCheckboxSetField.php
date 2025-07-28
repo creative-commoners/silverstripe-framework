@@ -100,7 +100,7 @@ class PermissionCheckboxSetField extends FormField
             $record = $this->form->getRecord();
             if ($record
                 && ($record instanceof Group || $record instanceof PermissionRole)
-                && !$records->find('ID', $record->ID)
+                && !$records->filter('ID', $record->ID)->exists()
             ) {
                 $records->push($record);
             }
