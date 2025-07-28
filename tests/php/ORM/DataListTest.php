@@ -36,18 +36,29 @@ use SilverStripe\ORM\Tests\DataObjectTest\RelationChildSecond;
 use PHPUnit\Framework\Attributes\DataProvider;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\CliDebugView;
+use SilverStripe\Model\List\ArrayList;
+use SilverStripe\ORM\Tests\DataListTest\ChildModel;
+use SilverStripe\ORM\Tests\DataListTest\ParentModel;
+use SilverStripe\ORM\Tests\DataListTest\SeparateModel;
 
 class DataListTest extends SapphireTest
 {
-
-    // Borrow the model from DataObjectTest
-    protected static $fixture_file = 'DataObjectTest.yml';
+    protected static $fixture_file = [
+        'DataListTest.yml',
+        // Borrow the model from DataObjectTest
+        'DataObjectTest.yml',
+    ];
 
     public static function getExtraDataObjects()
     {
         return array_merge(
             DataObjectTest::$extra_data_objects,
-            ManyManyListTest::$extra_data_objects
+            ManyManyListTest::$extra_data_objects,
+            [
+                ParentModel::class,
+                ChildModel::class,
+                SeparateModel::class,
+            ],
         );
     }
 
@@ -201,6 +212,330 @@ class DataListTest extends SapphireTest
         $queryCounter->stopCounting();
         // First time through isn't cached
         $this->assertSame(0, $queryCounter->getCount());
+    }
+
+    public static function provideExcludeByList(): array
+    {
+        return [
+            'exclude by the whole list' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => [],
+                ],
+                'fieldToFilterBy' => 'ID',
+                'fieldFromOtherList' => 'ID',
+                'expectedFixtures' => [],
+            ],
+            'exclude by reduced set' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ID',
+                'fieldFromOtherList' => 'ID',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent2', 'parent4', 'parent5'],
+                    ChildModel::class => ['child2', 'child4'],
+                ],
+            ],
+            'exclude by empty list' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => 'Not a valid title'],
+                ],
+                'fieldToFilterBy' => 'ID',
+                'fieldFromOtherList' => 'ID',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent1', 'parent2', 'parent3', 'parent4', 'parent5'],
+                    ChildModel::class => ['child1', 'child2', 'child3', 'child4'],
+                ],
+            ],
+            'exclude by non-ID field' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent4', 'parent5'],
+                    ChildModel::class => ['child4'],
+                ],
+            ],
+            'exclude by field with null value' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['Five']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent1', 'parent2', 'parent3', 'parent4'],
+                    ChildModel::class => ['child1', 'child2', 'child3', 'child4'],
+                ],
+            ],
+            'exclude across class hierarchy' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ChildModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent1', 'parent3', 'parent4', 'parent5'],
+                    ChildModel::class => ['child2', 'child4'],
+                ],
+            ],
+            'exclude across class hierarchy, child is main list' => [
+                'list1Class' => ChildModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ChildModel::class => ['child4'],
+                ],
+            ],
+            'exclude across different classes' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => SeparateModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'SeparateField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent1', 'parent4', 'parent5'],
+                    ChildModel::class => ['child3', 'child4'],
+                ],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideExcludeByList')]
+    public function testExcludeByList(string $list1Class, array $list2Spec, string $fieldToFilterBy, string $fieldFromOtherList, array $expectedFixtures): void
+    {
+        $list1 = new DataList($list1Class);
+        $list2 = new DataList($list2Spec['class']);
+        if (!empty($list2Spec['pre-filters'])) {
+            $list2 = $list2->filter($list2Spec['pre-filters']);
+        }
+        $list1 = $list1->excludeByList($list2, $fieldToFilterBy, $fieldFromOtherList);
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    #[DataProvider('provideExcludeByList')]
+    public function testExcludeByListArrayList(string $list1Class, array $list2Spec, string $fieldToFilterBy, string $fieldFromOtherList, array $expectedFixtures): void
+    {
+        $list1 = new DataList($list1Class);
+        $list2 = new DataList($list2Spec['class']);
+        if (!empty($list2Spec['pre-filters'])) {
+            $list2 = $list2->filter($list2Spec['pre-filters']);
+        }
+        $list2 = new ArrayList($list2->toArray());
+        if (!$list2->dataClass()) {
+            $list2->setDataClass($list2Spec['class']);
+        }
+        if ($list2->count() === 0) {
+            $this->expectException(InvalidArgumentException::class);
+            $this->expectExceptionMessageMatches('/^Cannot filter "[a-zA-Z0-9_]+"\."[a-zA-Z0-9_]+" against an empty set$/');
+        }
+        $list1 = $list1->excludeByList($list2, $fieldToFilterBy, $fieldFromOtherList);
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testExcludeByListMultipleCalls(): void
+    {
+        $expectedFixtures = [
+            ParentModel::class => ['parent1', 'parent3', 'parent4'],
+            ChildModel::class => ['child4'],
+        ];
+        $list1 = new DataList(ParentModel::class);
+        $list2 = (new DataList(ParentModel::class))->filter(['Title' => ['Two', 'Five']]);
+        $list3 = (new DataList(ChildModel::class))->filter(['Title' => ['One', 'Three']]);
+
+        // Make a chain of exclusions
+        $list1 = $list1->excludeByList($list3, 'ParentField', 'ParentField');
+        $list1 = $list1->excludeByList($list2);
+
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testExcludeByListBadDataclassThrowsException(): void
+    {
+        $teamsComments = TeamComment::get();
+        $teams = Team::get();
+        $this->expectException(InvalidArgumentException::class);
+        $teamsComments->excludeByList($teams);
+    }
+
+    public static function provideFilterByList(): array
+    {
+        return [
+            'filter by the whole list' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => [],
+                ],
+                'fieldToFilterBy' => 'ID',
+                'fieldFromOtherList' => 'ID',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent1', 'parent2', 'parent3', 'parent4', 'parent5'],
+                    ChildModel::class => ['child1', 'child2', 'child3', 'child4'],
+                ],
+            ],
+            'filter by reduced set' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ID',
+                'fieldFromOtherList' => 'ID',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent1', 'parent3'],
+                    ChildModel::class => ['child1', 'child3'],
+                ],
+            ],
+            'filter by empty list' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => 'Not a valid title'],
+                ],
+                'fieldToFilterBy' => 'ID',
+                'fieldFromOtherList' => 'ID',
+                'expectedFixtures' => [],
+            ],
+            'filter by non-ID field' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent1', 'parent2', 'parent3'],
+                    ChildModel::class => ['child1', 'child2', 'child3'],
+                ],
+            ],
+            'filter by field with null value' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['Five']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent5'],
+                ],
+            ],
+            'filter across class hierarchy' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => ChildModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent2'],
+                    ChildModel::class => ['child1', 'child3'],
+                ],
+            ],
+            'filter across class hierarchy, child is main list' => [
+                'list1Class' => ChildModel::class,
+                'list2Spec' => [
+                    'class' => ParentModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'ParentField',
+                'expectedFixtures' => [
+                    ChildModel::class => ['child1', 'child2', 'child3'],
+                ],
+            ],
+            'filter across different classes' => [
+                'list1Class' => ParentModel::class,
+                'list2Spec' => [
+                    'class' => SeparateModel::class,
+                    'pre-filters' => ['Title' => ['One', 'Three']],
+                ],
+                'fieldToFilterBy' => 'ParentField',
+                'fieldFromOtherList' => 'SeparateField',
+                'expectedFixtures' => [
+                    ParentModel::class => ['parent2', 'parent3'],
+                    ChildModel::class => ['child1', 'child2'],
+                ],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideFilterByList')]
+    public function testFilterByList(string $list1Class, array $list2Spec, string $fieldToFilterBy, string $fieldFromOtherList, array $expectedFixtures): void
+    {
+        $list1 = new DataList($list1Class);
+        $list2 = new DataList($list2Spec['class']);
+        if (!empty($list2Spec['pre-filters'])) {
+            $list2 = $list2->filter($list2Spec['pre-filters']);
+        }
+        $list1 = $list1->filterByList($list2, $fieldToFilterBy, $fieldFromOtherList);
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    #[DataProvider('provideFilterByList')]
+    public function testFilterByListArrayList(string $list1Class, array $list2Spec, string $fieldToFilterBy, string $fieldFromOtherList, array $expectedFixtures): void
+    {
+        $list1 = new DataList($list1Class);
+        $list2 = new DataList($list2Spec['class']);
+        if (!empty($list2Spec['pre-filters'])) {
+            $list2 = $list2->filter($list2Spec['pre-filters']);
+        }
+        $list2 = new ArrayList($list2->toArray());
+        if (!$list2->dataClass()) {
+            $list2->setDataClass($list2Spec['class']);
+        }
+        if ($list2->count() === 0) {
+            $this->expectException(InvalidArgumentException::class);
+            $this->expectExceptionMessageMatches('/^Cannot filter "[a-zA-Z0-9_]+"\."[a-zA-Z0-9_]+" against an empty set$/');
+        }
+        $list1 = $list1->filterByList($list2, $fieldToFilterBy, $fieldFromOtherList);
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testFilterByListMultipleCalls(): void
+    {
+        $expectedFixtures = [
+            ParentModel::class => ['parent2'],
+        ];
+        $list1 = new DataList(ParentModel::class);
+        $list2 = (new DataList(ParentModel::class))->filter(['Title' => ['Two', 'Five']]);
+        $list3 = (new DataList(ChildModel::class))->filter(['ParentField' => 'Match child1 ParentField']);
+
+        // Make a chain of filters
+        $list1 = $list1->filterByList($list3, 'ParentField', 'ParentField');
+        $list1 = $list1->filterByList($list2);
+
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testFilterByListBadDataclassThrowsException(): void
+    {
+        $teamsComments = TeamComment::get();
+        $teams = Team::get();
+        $this->expectException(InvalidArgumentException::class);
+        $teamsComments->filterByList($teams);
     }
 
     public function testSetDataQuery(): void
@@ -3226,5 +3561,21 @@ class DataListTest extends SapphireTest
 
         $this->assertEmpty($expectedIDs, 'chunk returns all the results that the regular iterator does');
         $this->assertEquals($expectedQueryCount, $queryCounter->getCount());
+    }
+
+    /**
+     * Used by testExcludeByList* and testFilterByList* tests
+     */
+    private function assertFilterOrExcludeExpectedFixtures(DataList $list, array $expectedFixtures): void
+    {
+        $result = $list->column();
+        $numExpected = 0;
+        foreach ($expectedFixtures as $fixtureClass => $fixtureNames) {
+            foreach ($fixtureNames as $fixtureName) {
+                $numExpected++;
+                $this->assertContains($this->idFromFixture($fixtureClass, $fixtureName), $result, "looking for fixture $fixtureName");
+            }
+        }
+        $this->assertCount($numExpected, $result, 'contents: ' . implode(', ', $result));
     }
 }

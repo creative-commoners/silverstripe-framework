@@ -32,11 +32,18 @@ use SilverStripe\ORM\ManyManyThroughList;
 use SilverStripe\ORM\Tests\DataObjectTest\RelationChildFirst;
 use SilverStripe\ORM\Tests\DataObjectTest\RelationChildSecond;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use SilverStripe\ORM\Tests\DataListTest\ChildModel;
+use SilverStripe\ORM\Tests\DataListTest\ParentModel;
 
 class EagerLoadedListTest extends SapphireTest
 {
-    // Borrow the model from DataObjectTest
-    protected static $fixture_file = 'DataObjectTest.yml';
+    protected static $fixture_file = [
+        // Borrow the fixtures from DataListTest
+        'DataListTest.yml',
+        // Borrow the fixtures from DataObjectTest
+        'DataObjectTest.yml',
+    ];
 
     public static function getExtraDataObjects()
     {
@@ -2317,5 +2324,102 @@ class EagerLoadedListTest extends SapphireTest
             $result
         );
         $this->assertStringEndsWith('</ul>', $result);
+    }
+
+    #[DataProviderExternal(DataListTest::class, 'provideExcludeByList')]
+    public function testExcludeByList(string $list1Class, array $list2Spec, string $fieldToFilterBy, string $fieldFromOtherList, array $expectedFixtures): void
+    {
+        $list1 = $this->getListWithRecords(new DataList($list1Class));
+        $list2 = $this->getListWithRecords(new DataList($list2Spec['class']));
+        if (!empty($list2Spec['pre-filters'])) {
+            $list2 = $list2->filter($list2Spec['pre-filters']);
+        }
+        if ($list2->count() === 0) {
+            $this->expectException(InvalidArgumentException::class);
+            $this->expectExceptionMessage("Cannot filter $fieldToFilterBy against an empty set");
+        }
+        $list1 = $list1->excludeByList($list2, $fieldToFilterBy, $fieldFromOtherList);
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testExcludeByListMultipleCalls(): void
+    {
+        $expectedFixtures = [
+            ParentModel::class => ['parent1', 'parent3', 'parent4'],
+            ChildModel::class => ['child4'],
+        ];
+        $list1 = $this->getListWithRecords(new DataList(ParentModel::class));
+        $list2 = $this->getListWithRecords((new DataList(ParentModel::class))->filter(['Title' => ['Two', 'Five']]));
+        $list3 = $this->getListWithRecords((new DataList(ChildModel::class))->filter(['Title' => ['One', 'Three']]));
+
+        // Make a chain of exclusions
+        $list1 = $list1->excludeByList($list3, 'ParentField', 'ParentField');
+        $list1 = $list1->excludeByList($list2);
+
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testExcludeByListBadDataclassThrowsException(): void
+    {
+        $teamsComments = $this->getListWithRecords(TeamComment::get());
+        $teams = $this->getListWithRecords(Team::get());
+        $this->expectException(InvalidArgumentException::class);
+        $teamsComments->excludeByList($teams);
+    }
+
+    #[DataProviderExternal(DataListTest::class, 'provideFilterByList')]
+    public function testFilterByList(string $list1Class, array $list2Spec, string $fieldToFilterBy, string $fieldFromOtherList, array $expectedFixtures): void
+    {
+        $list1 = $this->getListWithRecords(new DataList($list1Class));
+        $list2 = $this->getListWithRecords(new DataList($list2Spec['class']));
+        if (!empty($list2Spec['pre-filters'])) {
+            $list2 = $list2->filter($list2Spec['pre-filters']);
+        }
+        if ($list2->count() === 0) {
+            $this->expectException(InvalidArgumentException::class);
+            $this->expectExceptionMessage("Cannot filter $fieldToFilterBy against an empty set");
+        }
+        $list1 = $list1->filterByList($list2, $fieldToFilterBy, $fieldFromOtherList);
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testFilterByListMultipleCalls(): void
+    {
+        $expectedFixtures = [
+            ParentModel::class => ['parent2'],
+        ];
+        $list1 = $this->getListWithRecords(new DataList(ParentModel::class));
+        $list2 = $this->getListWithRecords((new DataList(ParentModel::class))->filter(['Title' => ['Two', 'Five']]));
+        $list3 = $this->getListWithRecords((new DataList(ChildModel::class))->filter(['ParentField' => 'Match child1 ParentField']));
+
+        // Make a chain of filters
+        $list1 = $list1->filterByList($list3, 'ParentField', 'ParentField');
+        $list1 = $list1->filterByList($list2);
+
+        $this->assertFilterOrExcludeExpectedFixtures($list1, $expectedFixtures);
+    }
+
+    public function testFilterByListBadDataclassThrowsException(): void
+    {
+        $teamsComments = $this->getListWithRecords(TeamComment::get());
+        $teams = $this->getListWithRecords(Team::get());
+        $this->expectException(InvalidArgumentException::class);
+        $teamsComments->filterByList($teams);
+    }
+
+    /**
+     * Used by testExcludeByList* and testFilterByList* tests
+     */
+    private function assertFilterOrExcludeExpectedFixtures(EagerLoadedList $list, array $expectedFixtures): void
+    {
+        $result = $list->column();
+        $numExpected = 0;
+        foreach ($expectedFixtures as $fixtureClass => $fixtureNames) {
+            foreach ($fixtureNames as $fixtureName) {
+                $numExpected++;
+                $this->assertContains($this->idFromFixture($fixtureClass, $fixtureName), $result, "looking for fixture $fixtureName");
+            }
+        }
+        $this->assertCount($numExpected, $result, 'contents: ' . implode(', ', $result));
     }
 }

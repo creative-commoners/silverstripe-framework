@@ -12,6 +12,8 @@ use SilverStripe\ORM\Queries\SQLSelect;
 use InvalidArgumentException;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Resettable;
+use SilverStripe\Dev\Deprecation;
+use SilverStripe\Security\RandomGenerator;
 
 /**
  * An object representing a query of data from the DataObject's supporting database.
@@ -820,6 +822,28 @@ class DataQuery implements Resettable
     }
 
     /**
+     * Filters the query where $fieldToFilterBy matches values in $fieldFromOtherList from $subQuery.
+     *
+     * @param string $fieldToFilterBy The name of the column in the current query to filter by
+     * @param string $fieldFromOtherList The name of the column in $subQuery to get filter values from
+     */
+    public function filterByQuery(DataQuery $subQuery, string $fieldToFilterBy = 'ID', string $fieldFromOtherList = 'ID'): static
+    {
+        return $this->filterOrExcludeByQuery($subQuery, false, $fieldToFilterBy, $fieldFromOtherList);
+    }
+
+    /**
+     * Excludes records in the query where $fieldToFilterBy matches values in $fieldFromOtherList from $subQuery.
+     *
+     * @param string $fieldToFilterBy The name of the column in the current query to filter by
+     * @param string $fieldFromOtherList The name of the column in $subQuery to get filter values from
+     */
+    public function excludeByQuery(DataQuery $subQuery, string $fieldToFilterBy = 'ID', string $fieldFromOtherList = 'ID'): static
+    {
+        return $this->filterOrExcludeByQuery($subQuery, true, $fieldToFilterBy, $fieldFromOtherList);
+    }
+
+    /**
      * Set the ORDER BY clause of this query
      *
      * Note: while the similarly named DataList::sort() does not allow raw SQL, DataQuery::sort() does allow it
@@ -1271,18 +1295,12 @@ class DataQuery implements Resettable
      * @param DataQuery $subtractQuery
      * @param string $field
      * @return $this
+     * @deprecated 6.1.0 use excludeByQuery() instead.
      */
     public function subtract(DataQuery $subtractQuery, $field = 'ID')
     {
-        $fieldExpression = $subtractQuery->expressionForField($field);
-        $subSelect = $subtractQuery->getFinalisedQuery();
-        $subSelect->setSelect([]);
-        $subSelect->selectField($fieldExpression, $field);
-        $subSelect->setOrderBy(null);
-        $subSelectSQL = $subSelect->sql($subSelectParameters);
-        $this->where([$this->expressionForField($field) . " NOT IN ($subSelectSQL)" => $subSelectParameters]);
-
-        return $this;
+        Deprecation::notice('6.1.0', 'Use excludeByQuery() instead.');
+        return $this->excludeByQuery($subtractQuery, $field, $field);
     }
 
     /**
@@ -1554,5 +1572,44 @@ class DataQuery implements Resettable
             return DB::withPrimary($callback);
         }
         return $callback();
+    }
+
+    private function filterOrExcludeByQuery(DataQuery $subQuery, bool $isExclude, string $fieldToFilterBy, string $fieldFromOtherList): static
+    {
+        if ($fieldFromOtherList === '' || $fieldToFilterBy === '') {
+            throw new InvalidArgumentException('$fieldToFilterBy and $fieldFromOtherList must not be empty strings');
+        }
+        $subSelect = $subQuery->getFinalisedQuery();
+        // Select only the relevant field, and ID. The ID is used below to validate the join.
+        $subSelect->setSelect([]);
+        $subSelect->selectField($subQuery->expressionForField($fieldFromOtherList), $fieldFromOtherList);
+        $subSelect->selectField($subQuery->expressionForField('ID'), 'ID');
+        // Remove order so the database can use whatever order is most efficient.
+        $subSelect->setOrderBy(null);
+
+        // Alias has to be unique so it doesn't conflict with another alias generated on the same query.
+        // A conflict is very unlikely but it's better to be 100% sure rather than having intermittent failures.
+        $from = $this->query->getFrom();
+        $subQueryAlias = null;
+        do {
+            // md5 is fast and very unlikely to have conflicts in this scenario.
+            $subQueryAlias = 'subQueryAlias' . RandomGenerator::singleton()->randomToken('md5');
+        } while (array_key_exists($subQueryAlias, $from));
+        // TL;DR: join on to the subquery works here while WHERE on its own would be complex to handle in an elegant way.
+        // Lengthy explanation:
+        // Join onto the subquery - this is more robust than adding it as a WHERE clause because it allows us to use an alias
+        // which protects us from errors if this method is called multiple times.
+        // We can't just do a straight "WHERE NOT IN (<subquery>)" because that doesn't account for null values, so any if we
+        // wanted to do that we'd need to use WHERE NOT EXISTS IN (<altered subquery>) where the altered subquery needs to check
+        // if the parent query $fieldToFilterBy is null-safe-equals to the subquery $fieldToFilterBy, and if both queries are on
+        // the same table that REQUIRES an alias to be used.
+        $subSelectSQL = $subSelect->sql($subSelectParameters);
+        $filterByExpression = $this->expressionForField($fieldToFilterBy);
+        $on = DB::get_conn()->nullSafeEqualsClause($filterByExpression, Convert::symbol2sql("{$subQueryAlias}.{$fieldFromOtherList}"));
+        $this->leftJoin('(' . $subSelectSQL . ')', $on, $subQueryAlias, parameters: $subSelectParameters);
+
+        // This WHERE clause is required to distinguish between a join with no results and a join where $fieldFromOtherList is NULL.
+        $this->where(DB::get_conn()->nullCheckClause(Convert::symbol2sql("{$subQueryAlias}.ID"), $isExclude));
+        return $this;
     }
 }
