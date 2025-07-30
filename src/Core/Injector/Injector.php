@@ -440,6 +440,9 @@ class Injector implements ContainerInterface
             // if so, we need to instantiate and replace immediately
             if (isset($this->serviceCache[$id])) {
                 $this->updateSpecConstructor($spec);
+                if (isset($spec['factory'])) {
+                    $spec['factory'] = $this->parseBacktickConfig($spec['factory']);
+                }
                 $this->instantiate($spec, $id);
             }
         }
@@ -521,33 +524,9 @@ class Injector implements ContainerInterface
             return $this->get($id);
         }
 
-        // Evaluate constants surrounded by back ticks
-        $hasBacticks = false;
-        $allMissing = true;
-        // $value must start and end with backticks, though there can be multiple
-        // things being subsituted within $value e.g. "`VAR_ONE`:`VAR_TWO`:`VAR_THREE`"
-        if (preg_match('/^`.+`$/', $value ?? '')) {
-            $hasBacticks = true;
-            preg_match_all('/`(?<name>[^`]+)`/', $value, $matches);
-            foreach ($matches['name'] as $name) {
-                $envValue = Environment::getEnv($name);
-                $val = '';
-                if ($envValue !== false) {
-                    $val = $envValue;
-                } elseif (defined($name)) {
-                    $val = constant($name);
-                }
-                $value = str_replace("`$name`", $val, $value);
-                if ($val) {
-                    $allMissing = false;
-                }
-            }
+        if (is_string($value)) {
+            $value = $this->parseBacktickConfig($value);
         }
-        // silverstripe sometimes explictly expects a null value rather than just an empty string
-        if ($hasBacticks && $allMissing && $value === '') {
-            return null;
-        }
-
         return $value;
     }
 
@@ -1022,6 +1001,10 @@ class Injector implements ContainerInterface
             // Resolve references in constructor args
             $this->updateSpecConstructor($spec);
         }
+        // Update any backticked factory spec to get environment variables
+        if (isset($spec['factory'])) {
+            $spec['factory'] = $this->parseBacktickConfig($spec['factory']);
+        }
 
         // Build instance
         return $this->instantiate($spec, $name, $type);
@@ -1150,5 +1133,38 @@ class Injector implements ContainerInterface
     public function createWithArgs($name, $constructorArgs)
     {
         return $this->get($name, false, $constructorArgs);
+    }
+
+    /**
+     * Evaluate constants or environment variables surrounded by backticks
+     */
+    private function parseBacktickConfig(string $value): ?string
+    {
+        $hasBacticks = false;
+        $allMissing = true;
+        // $value must start and end with backticks, though there can be multiple
+        // things being subsituted within $value e.g. "`VAR_ONE`:`VAR_TWO`:`VAR_THREE`"
+        if (preg_match('/^`.+`$/', $value ?? '')) {
+            $hasBacticks = true;
+            preg_match_all('/`(?<name>[^`]+)`/', $value, $matches);
+            foreach ($matches['name'] as $name) {
+                $envValue = Environment::getEnv($name);
+                $val = '';
+                if ($envValue !== false) {
+                    $val = $envValue;
+                } elseif (defined($name)) {
+                    $val = constant($name);
+                }
+                $value = str_replace("`$name`", $val, $value);
+                if ($val) {
+                    $allMissing = false;
+                }
+            }
+        }
+        // silverstripe sometimes explictly expects a null value rather than just an empty string
+        if ($hasBacticks && $allMissing && $value === '') {
+            return null;
+        }
+        return $value;
     }
 }

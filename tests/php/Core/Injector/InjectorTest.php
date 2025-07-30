@@ -28,6 +28,7 @@ use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
 use stdClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Core\Tests\Injector\InjectorTest\SimpleFactory;
 
 define('TEST_SERVICES', __DIR__ . '/AopProxyServiceTest');
 
@@ -877,6 +878,18 @@ class InjectorTest extends SapphireTest
         // Unregister service by class
         $injector->unregisterNamedObject(TestObject::class);
         $this->assertFalse($injector->has(TestObject::class));
+    }
+
+    public function testFactoryWithBackticks(): void
+    {
+        Environment::setEnv('SS_TEST_MY_BACKTICK_FACTORY', SimpleFactory::class);
+        $injector = new Injector();
+        $injector->load([
+            'SomeClass.backtick-factory' => [
+                'factory' => '`SS_TEST_MY_BACKTICK_FACTORY`'
+            ],
+        ]);
+        $this->assertInstanceOf(TestObject::class, $injector->get('SomeClass.backtick-factory'));
     }
 
     public function testCreateConfiggedObjectWithCustomConstructorArgs()

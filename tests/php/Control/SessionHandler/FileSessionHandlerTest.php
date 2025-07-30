@@ -19,6 +19,20 @@ class FileSessionHandlerTest extends SapphireTest
 
     protected $usesDatabase = false;
 
+    private string|false $gcLifeTime;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->gcLifeTime = ini_get('session.gc_maxlifetime');
+    }
+
+    protected function tearDown(): void
+    {
+        ini_set('session.gc_maxlifetime', $this->gcLifeTime);
+        parent::tearDown();
+    }
+
     public static function provideOpen(): array
     {
         return [
@@ -481,7 +495,7 @@ class FileSessionHandlerTest extends SapphireTest
         $handler->open($baseDir, 'PHPSESSID');
 
         ini_set('session.gc_maxlifetime', $gcLifetime);
-        Session::config()->set('lifetime', $configLifetime);
+        Session::config()->set('timeout', $configLifetime);
 
         try {
             $this->withSessionExpiry($nonSessionFilePath, function () use ($sessionFilesLifetimeMap, $handler, $nonSessionFilePath, $expectDeleted) {

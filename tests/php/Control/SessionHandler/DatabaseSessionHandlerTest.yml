@@ -1,0 +1,10 @@
+_sessions:
+  validSession:
+    ID: 'valid'
+    # the expiry will be set in setUp()
+    Expiry: 12345
+    Data: 'this one is valid'
+  expiredSession:
+    ID: 'expired'
+    Expiry: 12345
+    Data: 'this one is expired'

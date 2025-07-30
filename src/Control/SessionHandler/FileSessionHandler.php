@@ -7,9 +7,6 @@ use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use SensitiveParameter;
-use SessionHandlerInterface;
-use SessionUpdateTimestampHandlerInterface;
-use SilverStripe\Control\Session;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Path;
 use SilverStripe\ORM\FieldType\DBDatetime;
@@ -23,7 +20,7 @@ use Symfony\Component\Finder\Finder;
  * Similar to PHP's default filesystem session handler, except it doesn't lock the session file meaning
  * sessions are non-blocking.
  */
-class FileSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
+class FileSessionHandler extends AbstractSessionHandler
 {
     public const string SESSION_FILE_PREFIX = 'sess_';
 
@@ -327,18 +324,6 @@ class FileSessionHandler implements SessionHandlerInterface, SessionUpdateTimest
             throw new RuntimeException('Could not read modified time of session file');
         }
         return $mTime < (DBDatetime::now()->getTimestamp() - $maxLifeInSeconds);
-    }
-
-    /**
-     * Returns the cookie lifetime if it's non-zero, otherwise returns the garbage collection lifetime.
-     */
-    private function getLifetime(): int
-    {
-        $cookieLifetime = (int) Session::config()->get('lifetime');
-        if ($cookieLifetime) {
-            return $cookieLifetime;
-        }
-        return (int) ini_get('session.gc_maxlifetime');
     }
 
     private function logError(string $message): void
