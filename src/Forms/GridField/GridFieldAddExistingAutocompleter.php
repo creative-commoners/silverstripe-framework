@@ -17,6 +17,7 @@ use SilverStripe\Model\ArrayData;
 use SilverStripe\View\SSViewer;
 use LogicException;
 use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\View\TemplateEngine;
 use SilverStripe\View\ViewLayerData;
@@ -278,8 +279,14 @@ class GridFieldAddExistingAutocompleter extends AbstractGridFieldComponent imple
         }
 
         // Apply baseline filtering and limits which should hold regardless of any customisations
+        if (ClassInfo::hasMethod($results, 'excludeByList')) {
+            $results = $results->excludeByList($gridField->getList());
+        } elseif (ClassInfo::hasMethod($results, 'subtract')) {
+            $results = $results->subtract($gridField->getList());
+        } else {
+            $results = $results->exclude(['ID' => $gridField->getList()->column('ID')]);
+        }
         $results = $results
-            ->subtract($gridField->getList())
             ->filterAny($params)
             ->limit($this->getResultsLimit());
 
