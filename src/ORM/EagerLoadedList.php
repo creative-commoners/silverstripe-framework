@@ -10,6 +10,8 @@ use BadMethodCallException;
 use InvalidArgumentException;
 use LogicException;
 use SilverStripe\Core\ArrayLib;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\Model\List\ArrayList;
 use SilverStripe\Model\List\Map;
 use SilverStripe\Model\List\SS_List;
@@ -503,6 +505,22 @@ class EagerLoadedList extends ModelData implements Relation, SS_List
         return $list;
     }
 
+    /**
+     * Return a copy of this list which only includes items where $fieldToFilterBy matches values in $fieldFromOtherList from $list.
+     *
+     * If both fields are ID, the $list dataclass must be in the same class hierarchy as the dataclass in this list
+     *
+     * @param SS_List<DataObject> $list
+     * @param string $fieldToFilterBy The name of the field in $this to filter by
+     * @param string $fieldFromOtherList The name of the field in $list to get filter values from
+     * @return static<T>
+     * @throws InvalidArgumentException
+     */
+    public function filterByList(SS_List $list, string $fieldToFilterBy = 'ID', string $fieldFromOtherList = 'ID'): static
+    {
+        return $this->filterOrExcludeByList($list, $fieldToFilterBy, $fieldFromOtherList, false);
+    }
+
     public function exclude(...$args): static
     {
         $filters = $this->normaliseFilterArgs($args, __FUNCTION__);
@@ -531,6 +549,22 @@ class EagerLoadedList extends ModelData implements Relation, SS_List
     }
 
     /**
+     * Return a copy of this list which does not include items where $fieldToFilterBy matches values in $fieldFromOtherList from $list.
+     *
+     * If both fields are ID, the $list dataclass must be in the same class hierarchy as the dataclass in this list
+     *
+     * @param SS_List<DataObject> $list
+     * @param string $fieldToFilterBy The name of the field in $this to exclude by
+     * @param string $fieldFromOtherList The name of the field in $list to get exclude values from
+     * @return static<T>
+     * @throws InvalidArgumentException
+     */
+    public function excludeByList(SS_List $list, string $fieldToFilterBy = 'ID', string $fieldFromOtherList = 'ID'): static
+    {
+        return $this->filterOrExcludeByList($list, $fieldToFilterBy, $fieldFromOtherList, true);
+    }
+
+    /**
      * Return a new instance of the list with an added filter
      *
      * @param array $filterArray
@@ -550,9 +584,11 @@ class EagerLoadedList extends ModelData implements Relation, SS_List
      *
      * @return static<T>
      * @throws InvalidArgumentException
+     * @deprecated 6.1.0 use excludeByList() instead.
      */
     public function subtract(DataList $list): static
     {
+        Deprecation::notice('6.1.0', 'Use excludeByList() instead.');
         if ($this->dataClass() != $list->dataClass()) {
             throw new InvalidArgumentException('The list passed must have the same dataclass as this class');
         }
@@ -1025,5 +1061,42 @@ class EagerLoadedList extends ModelData implements Relation, SS_List
     private function isNumericNotString(mixed $value): bool
     {
         return is_numeric($value) && !is_string($value);
+    }
+
+    /**
+     * Get the class of items that the list holds, or null for lists with non-objects
+     */
+    private function getDataClassFromList(SS_List $list): ?string
+    {
+        if (ClassInfo::hasMethod($list, 'dataClass')) {
+            return $list->dataClass();
+        }
+        // Assume all items in the list have the same class, like ArrayList does.
+        $item = $list->first();
+        if (is_object($item)) {
+            return get_class($item);
+        }
+        return null;
+    }
+
+    /**
+     * Shared logic for filterByList() and excludeByList()
+     */
+    private function filterOrExcludeByList(SS_List $list, string $fieldToFilterBy, string $fieldFromOtherList, bool $isExclude): static
+    {
+        $thisDataClass = $this->dataClass();
+        $listDataClass = $this->getDataClassFromList($list);
+        if ($fieldToFilterBy === 'ID'
+            && $fieldFromOtherList === 'ID'
+            && !is_a($thisDataClass, $listDataClass, true)
+            && !is_a($listDataClass, $thisDataClass, true)
+        ) {
+            throw new InvalidArgumentException('If both columns are ID, the $list dataclass must be in the same class hierarchy as the dataclass in this list');
+        }
+        $columnFromList = $list->columnUnique($fieldFromOtherList);
+        if ($isExclude) {
+            return $this->exclude($fieldToFilterBy, $columnFromList);
+        }
+        return $this->filter($fieldToFilterBy, $columnFromList);
     }
 }

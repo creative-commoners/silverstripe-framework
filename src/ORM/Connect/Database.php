@@ -485,6 +485,17 @@ abstract class Database
     }
 
     /**
+     * Generates a WHERE clause checking if two columns are equal, which
+     * also returns `1` if both values are null.
+     */
+    public function nullSafeEqualsClause(string $field1, string $field2): string
+    {
+        $nullField1 = $this->nullCheckClause($field1, true);
+        $nullField2 = $this->nullCheckClause($field2, true);
+        return "($field1 = $field2 OR ($nullField1 AND $nullField2))";
+    }
+
+    /**
      * Generate a WHERE clause for text matching.
      *
      * @param string $field Quoted field name

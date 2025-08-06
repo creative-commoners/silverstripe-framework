@@ -429,6 +429,11 @@ class MySQLDatabase extends Database implements TransactionManager
         }
     }
 
+    public function nullSafeEqualsClause(string $field1, string $field2): string
+    {
+        return "$field1 <=> $field2";
+    }
+
     public function comparisonClause(
         $field,
         $value,

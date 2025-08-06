@@ -1,0 +1,48 @@
+# New fixtures that apply explicitly to DataListTest should be added here, so they don't interfer with DataObjectTest.
+# See also DataObjectTest.yml which is used in DataListTest.php
+SilverStripe\ORM\Tests\DataListTest\ParentModel:
+  parent1:
+    Title: 'One'
+    ParentField: 'Match child2 ChildField'
+  parent2:
+    Title: 'Two'
+    ParentField: 'Match child1 ParentField'
+  parent3:
+    Title: 'Three'
+    ParentField: 'Match child2 ParentField'
+  parent4:
+    Title: 'Four'
+    ParentField: 'Match separate2 SeparateField'
+  parent5:
+    Title: 'Five'
+    ParentField: null
+
+SilverStripe\ORM\Tests\DataListTest\ChildModel:
+  child1:
+    Title: 'One'
+    ParentField: 'Match child1 ParentField'
+    ChildField: 'Child field value'
+  child2:
+    Title: 'Two'
+    ParentField: 'Match child2 ParentField'
+    ChildField: 'Match child2 ChildField'
+  child3:
+    Title: 'Three'
+    ParentField: 'Parent field value'
+    ChildField: 'Child field value'
+  child4:
+    Title: 'Four'
+    ParentField: 'Another field value'
+    ChildField: 'Child field value'
+
+
+SilverStripe\ORM\Tests\DataListTest\SeparateModel:
+  separate1:
+    Title: 'One'
+    SeparateField: 'Match child2 ParentField'
+  separate2:
+    Title: 'Two'
+    SeparateField: 'Match separate2 SeparateField'
+  separate3:
+    Title: 'Three'
+    SeparateField: 'Match child1 ParentField'

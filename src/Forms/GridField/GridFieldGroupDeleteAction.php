@@ -4,6 +4,7 @@ namespace SilverStripe\Forms\GridField;
 
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Validation\ValidationException;
+use SilverStripe\ORM\DataList;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
@@ -86,21 +87,21 @@ class GridFieldGroupDeleteAction extends GridFieldDeleteAction
      */
     protected function canUnlink($record)
     {
+        // If the record isn't the current member or isn't an admin, don't allow unlinking.
         $currentUser = Security::getCurrentUser();
-        if ($currentUser
-            && $record instanceof Member
-            && (int)$record->ID === (int)$currentUser->ID
-            && Permission::checkMember($record, 'ADMIN')
+        if (!$currentUser
+            || !($record instanceof Member)
+            || (int)$record->ID !== (int)$currentUser->ID
+            || !Permission::checkMember($record, 'ADMIN')
         ) {
-            $adminGroups = array_intersect(
-                $record->Groups()->column() ?? [],
-                Permission::get_groups_by_permission('ADMIN')->column()
-            );
-
-            if (count($adminGroups ?? []) === 1 && array_search($this->groupID, $adminGroups ?? []) !== false) {
-                return false;
-            }
+            return false;
         }
+        // If there is exactly one admin group and it's THIS group, don't allow unlinking.
+        $adminGroups = $record->Groups()->filterByList(Permission::get_groups_by_permission('ADMIN'));
+        if ($adminGroups->count() === 1 && $adminGroups->filter(['ID' => $this->groupID])->exists()) {
+            return false;
+        }
+
         return true;
     }
 }
