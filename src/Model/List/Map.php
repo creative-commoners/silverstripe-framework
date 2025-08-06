@@ -155,9 +155,7 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
             return true;
         }
 
-        $record = $this->list->find($this->keyField, $key);
-
-        return $record != null;
+        return $this->list->filter($this->keyField, $key)->exists();
     }
 
     public function offsetGet(mixed $key): mixed

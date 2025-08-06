@@ -430,12 +430,12 @@ class ChangePasswordHandler extends RequestHandler
         // because there is a slim edge-case that the member doesn't have a salt or hashing algorithm set
         // (e.g. the member was created in code without a password) which would result in reusing the
         // token in plain text.
-        $foundMember = null;
+        $foundMember = false;
         $autoLoginTempHash = '';
         do {
             $autoLoginTempHash = Injector::inst()->get(RandomGenerator::class)->randomToken('sha256');
-            $foundMember = Member::get()->find('AutoLoginTempHash', $autoLoginTempHash);
-        } while ($foundMember !== null);
+            $foundMember = Member::get()->filter('AutoLoginTempHash', $autoLoginTempHash)->exists();
+        } while ($foundMember);
         ChangePasswordHandler::$tempHashAlreadyGenerated = true;
         return $autoLoginTempHash;
     }

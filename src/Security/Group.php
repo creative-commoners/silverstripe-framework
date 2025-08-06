@@ -96,7 +96,7 @@ class Group extends DataObject
         'Code' => true,
         'Sort' => true,
     ];
-    
+
     private static bool $require_sudo_mode = true;
 
     public function getAllChildren()
@@ -468,7 +468,7 @@ class Group extends DataObject
      */
     protected function identifierToGroupID($groupID)
     {
-        if (is_numeric($groupID) && Group::get()->byID($groupID)) {
+        if (is_numeric($groupID) && Group::get()->filter('ID', $groupID)->exists()) {
             return $groupID;
         } elseif (is_string($groupID) && $groupByCode = Group::get()->filter(['Code' => $groupID])->first()) {
             return $groupByCode->ID;
@@ -515,18 +515,21 @@ class Group extends DataObject
         // and require an admin to perform this change in case it does.
         // This prevents "sub-admin" users with group editing permissions to increase their privileges.
         if ($this->Parent()->exists() && !Permission::check('ADMIN')) {
-            $inheritedCodes = Permission::get()
-                ->filter('GroupID', $this->Parent()->collateAncestorIDs())
-                ->column('Code');
             $privilegedCodes = Permission::config()->get('privileged_permissions');
-            if (array_intersect($inheritedCodes ?? [], $privilegedCodes)) {
-                $result->addError(
-                    _t(
-                        'SilverStripe\\Security\\Group.HierarchyPermsError',
-                        'Can\'t assign parent group "{group}" with privileged permissions (requires ADMIN access)',
-                        ['group' => $this->Parent()->Title]
-                    )
-                );
+            if (!empty($privilegedCodes)) {
+                $inheritedCodes = Permission::get()->filter([
+                    'GroupID' => $this->Parent()->collateAncestorIDs(),
+                    'Code' => $privilegedCodes,
+                ]);
+                if ($inheritedCodes->exists()) {
+                    $result->addError(
+                        _t(
+                            'SilverStripe\\Security\\Group.HierarchyPermsError',
+                            'Can\'t assign parent group "{group}" with privileged permissions (requires ADMIN access)',
+                            ['group' => $this->Parent()->Title]
+                        )
+                    );
+                }
             }
         }
 

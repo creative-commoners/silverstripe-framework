@@ -18,12 +18,21 @@ class PermissionTest extends SapphireTest
     {
         $codes = Permission::get_codes();
         $this->assertArrayNotHasKey('SITETREE_VIEW_ALL', $codes);
+        $this->assertArrayHasKey('Other', $codes);
+        $this->assertArrayNotHasKey('SITETREE_VIEW_ALL', $codes['Other']);
+        $this->assertArrayHasKey('Administrator', $codes);
+        $this->assertArrayHasKey('ADMIN', $codes['Administrator']);
+        $this->assertArrayHasKey('TEST_CMS_EDITOR', $codes['Other']);
     }
 
     public function testGetCodesUngrouped()
     {
         $codes = Permission::get_codes(false);
         $this->assertArrayHasKey('SITETREE_VIEW_ALL', $codes);
+        $this->assertArrayHasKey('TEST_CMS_EDITOR', $codes);
+        $this->assertArrayNotHasKey('Other', $codes);
+        $this->assertArrayNotHasKey('Administrator', $codes);
+        $this->assertArrayHasKey('ADMIN', $codes);
     }
 
     public function testDirectlyAppliedPermissions()
