@@ -84,6 +84,16 @@ class LegacyParamArgvInput extends ArgvInput
                 } else {
                     $convertedFlags[] = $flagName . '=' . $value;
                 }
+            } elseif ($option->isNegatable()) {
+                // If the option does not accept a value, though allows a negated --no-<flag> option
+                $default = $option->getDefault();
+                $valueAsBool = filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? $default;
+                if ($valueAsBool) {
+                    $convertedFlags[] = $flagName;
+                } else {
+                    $negatedFlagName = str_replace('--', '--no-', $flagName);
+                    $convertedFlags[] = $negatedFlagName;
+                }
             } else {
                 // If the option doesn't accept a value, only add the flag if the value is true.
                 $valueAsBool = filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? true;
