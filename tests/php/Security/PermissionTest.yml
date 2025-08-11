@@ -65,10 +65,12 @@
 
 'SilverStripe\Security\Permission':
   extra1:
-    Code: SITETREE_VIEW_ALL
+    # Prefixing Code's with "X_" so they do not conflict with the permissions
+    # defined in silverstripe/cms SiteTree::providePermissions()
+    Code: X_SITETREE_VIEW_ALL
     Group: '=>SilverStripe\Security\Group.author'
   globalauthor:
-    Code: SITETREE_EDIT_ALL
+    Code: X_SITETREE_EDIT_ALL
     Group: '=>SilverStripe\Security\Group.globalauthor'
   leftandmain:
     Code: CMS_ACCESS_LeftAndMain
