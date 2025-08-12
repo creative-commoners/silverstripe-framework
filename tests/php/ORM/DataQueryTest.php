@@ -27,6 +27,8 @@ class DataQueryTest extends SapphireTest
         DataQueryTest\ObjectG::class,
         DataQueryTest\ObjectH::class,
         DataQueryTest\ObjectI::class,
+        DataQueryTest\ObjectJ::class,
+        DataQueryTest\ObjectK::class,
         DataQueryTest\ObjectHasMultiRelationalHasOne::class,
         DataQueryTest\ObjectHasMultiRelationalHasMany::class,
         SQLSelectTest\CteRecursiveObject::class,
@@ -466,7 +468,7 @@ class DataQueryTest extends SapphireTest
         $query->sort('"SortOrder"');
         $query->where(
             [
-            '"DataQueryTest_C"."Title" = ?' => ['First']
+                '"DataQueryTest_C"."Title" = ?' => ['First']
             ]
         );
         $result = $query->getFinalisedQuery(['Title']);
@@ -878,5 +880,20 @@ class DataQueryTest extends SapphireTest
         $dataQuery->innerJoin('test_implicit_joins', '"DataQueryTest_G"."ID" = "test_implicit_joins"."ID"');
         // This will throw an exception if it fails - it passes if there's no exception.
         $dataQuery->execute();
+    }
+
+    public function testDistinctCount()
+    {
+        // This should return 1, not 2. We have two records in the "TestKs" relation called 'sam' but only one 'Distinct' ObjectJ parent record
+        $count = DataQueryTest\ObjectJ::get()->filter("TestKs.Name", 'sam')->count();
+        $this->assertEquals(1, $count);
+
+        // We have two 'sam' objects
+        $count = DataQueryTest\ObjectK::get()->filter('Name', 'sam')->count();
+        $this->assertEquals(2, $count);
+
+        $distinct = $this->objFromFixture(DataQueryTest\ObjectJ::class, 'distinct1');
+        $count = $distinct->TestKs()->count();
+        $this->assertEquals(2, $count);
     }
 }
