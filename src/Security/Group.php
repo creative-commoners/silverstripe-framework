@@ -59,7 +59,6 @@ use SilverStripe\Core\Validation\ValidationResult;
  */
 class Group extends DataObject
 {
-
     private static $db = [
         "Title" => "Varchar(255)",
         "Description" => "Text",
@@ -98,6 +97,13 @@ class Group extends DataObject
     ];
 
     private static bool $require_sudo_mode = true;
+
+    private static array $query_cache_dependent_classes = [
+        Permission::class,
+        PermissionRole::class,
+        PermissionRoleCode::class,
+        Member::class,
+    ];
 
     public function getAllChildren()
     {

@@ -24,7 +24,6 @@ use SilverStripe\View\TemplateGlobalProvider;
  */
 class Permission extends DataObject implements TemplateGlobalProvider, Resettable, i18nEntityProvider
 {
-
     // the (1) after Type specifies the DB default value which is needed for
     // upgrades from older SilverStripe versions
     private static $db = [
@@ -107,6 +106,13 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
     ];
 
     private static bool $require_sudo_mode = true;
+
+    private static array $query_cache_dependent_classes = [
+        PermissionRole::class,
+        PermissionRoleCode::class,
+        Group::class,
+        Member::class,
+    ];
 
     /**
      * Check that the current member has the given permission.
@@ -209,9 +215,7 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
 
         // Code filters
         $codeParams = is_array($code) ? $code : [$code];
-        $codeClause = DB::placeholders($codeParams);
         $adminParams = $adminImpliesAll ? ['ADMIN'] : [];
-        $adminClause = $adminImpliesAll ?  ", ?" : '';
 
         // The following code should only be used if you're not using the "any" arg.  This is kind
         // of obsolete functionality and could possibly be deprecated.
@@ -219,7 +223,6 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
         if (empty($groupParams)) {
             return false;
         }
-        $groupClause = DB::placeholders($groupParams);
 
         // Arg component
         $argClause = "";
@@ -241,39 +244,30 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
         }
 
         // Raw SQL for efficiency
-        $permission = DB::withPrimary(fn() => DB::prepared_query(
-            "SELECT \"ID\"
-            FROM \"Permission\"
-            WHERE (
-                \"Code\" IN ($codeClause $adminClause)
-                AND \"Type\" = ?
-                AND \"GroupID\" IN ($groupClause)
-                $argClause
-            )",
-            array_merge(
-                $codeParams,
-                $adminParams,
-                [Permission::GRANT_PERMISSION],
-                $groupParams,
-                $argParams
-            )
-        )->value());
+        $permissionIDs = Permission::get()
+            ->setUseCache(true)
+            ->filter([
+                'Code' => [...$adminParams, ...$codeParams],
+                'Type' => Permission::GRANT_PERMISSION,
+                'GroupID' => $groupParams
+            ])
+            ->where([$argClause => $argParams])
+            ->limit(1)
+            ->column('ID');
 
-        if ($permission) {
-            return $permission;
+        if ($permissionIDs) {
+            return array_pop($permissionIDs);
         }
 
         // Strict checking disabled?
-        if (!static::config()->strict_checking || !$strict) {
-            $hasPermission = DB::withPrimary(fn() => DB::prepared_query(
-                "SELECT COUNT(*)
-                FROM \"Permission\"
-                WHERE (
-                    \"Code\" IN ($codeClause) AND
-                    \"Type\" = ?
-                )",
-                array_merge($codeParams, [Permission::GRANT_PERMISSION])
-            )->value());
+        if (!static::config()->get('strict_checking') || !$strict) {
+            $hasPermission = Permission::get()
+                ->setUseCache(true)
+                ->filter([
+                    'Code' => $codeParams,
+                    'Type' => Permission::GRANT_PERMISSION,
+                ])
+                ->exists();
 
             if (!$hasPermission) {
                 return false;
@@ -297,6 +291,7 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
             // Get the allowed permissions for this user based on the permissions assigned
             // directly to its groups, and the permissions assigned to roles on its groups.
             $allowed = Permission::get()
+                ->setUseCache(true)
                 ->filter([
                     'Type' => Permission::GRANT_PERMISSION,
                     'GroupID' => $groupIDs,
@@ -305,13 +300,14 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
                     $schema = DataObject::getSchema();
                     // These permissions are explicitly NOT allowed and
                     // need to be excluded from the PermissionRoleCode set
-                    $denied = Permission::get()->filter([
+                    $denied = Permission::get()->setUseCache(true)->filter([
                         'Type' => Permission::DENY_PERMISSION,
                         'GroupID' => $groupIDs,
                     ]);
 
                     // Get permission codes from roles these groups are assigned to, exluding the denied list above.
                     $permissionRoleCodes = PermissionRoleCode::get()
+                        ->setUseCache(true)
                         ->filter(['GroupID' => $groupIDs])
                         ->excludeByList($denied, 'Code', 'Code')
                         // Apply necessary joins
@@ -358,7 +354,7 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
 
         if ($member) {
             // Build a list of the IDs of the groups.
-            $groupIDs = $member->Groups()->column();
+            $groupIDs = $member->Groups()->setUseCache(true)->column();
 
             // Session caching
             if (!$memberID) {
@@ -482,6 +478,7 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
 
         $groupClause = DB::placeholders($groupIDs);
         $members = Member::get()
+            ->setUseCache(true)
             ->where(["\"Group\".\"ID\" IN ($groupClause)" => $groupIDs])
             ->leftJoin("Group_Members", '"Member"."ID" = "Group_Members"."MemberID"')
             ->leftJoin("Group", '"Group_Members"."GroupID" = "Group"."ID"');
@@ -501,6 +498,7 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
 
         // Via Roles are groups that have the permission via a role
         return Group::get()
+            ->setUseCache(true)
             ->where([
                 "\"PermissionRoleCode\".\"Code\" IN ($codeClause) OR \"Permission\".\"Code\" IN ($codeClause)"
                 => array_merge($codeParams, $codeParams)
@@ -641,19 +639,17 @@ class Permission extends DataObject implements TemplateGlobalProvider, Resettabl
         }
     }
 
-    protected function onBeforeWrite()
-    {
-        parent::onBeforeWrite();
-
-        // Just in case we've altered someone's permissions
-        Permission::reset();
-    }
-
     public static function get_template_global_variables()
     {
         return [
             'HasPerm' => 'check'
         ];
+    }
+
+    public function flushCache(bool $persistent = true): static
+    {
+        Permission::reset();
+        return parent::flushCache($persistent);
     }
 
     public function provideI18nEntities()

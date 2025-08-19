@@ -50,6 +50,13 @@ class PermissionRole extends DataObject
 
     private static bool $require_sudo_mode = true;
 
+    private static array $query_cache_dependent_classes = [
+        Permission::class,
+        PermissionRoleCode::class,
+        Group::class,
+        Member::class,
+    ];
+
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();

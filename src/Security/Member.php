@@ -275,6 +275,13 @@ class Member extends DataObject
      */
     private static $auto_login_token_lifetime = 172800;
 
+    private static array $query_cache_dependent_classes = [
+        Permission::class,
+        PermissionRole::class,
+        PermissionRoleCode::class,
+        Group::class,
+    ];
+
     /**
      * Used to track whether {@link Member::changePassword} has made changed that need to be written. Used to prevent
      * the write from calling changePassword again.
@@ -848,8 +855,6 @@ class Member extends DataObject
     protected function onAfterWrite()
     {
         parent::onAfterWrite();
-
-        Permission::reset();
 
         if ($this->isChanged('Password') && static::config()->get('password_logging_enabled')) {
             MemberPassword::log($this);
@@ -1846,5 +1851,11 @@ class Member extends DataObject
             throw new RuntimeException('Unable to generate a random password');
         }
         return $password;
+    }
+
+    public function flushCache(bool $persistent = true): static
+    {
+        Permission::reset();
+        return parent::flushCache($persistent);
     }
 }

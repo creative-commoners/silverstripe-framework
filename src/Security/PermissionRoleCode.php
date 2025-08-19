@@ -36,6 +36,13 @@ class PermissionRoleCode extends DataObject
         ],
     ];
 
+    private static array $query_cache_dependent_classes = [
+        Permission::class,
+        PermissionRole::class,
+        Group::class,
+        Member::class,
+    ];
+
     public function validate(): ValidationResult
     {
         $result = parent::validate();
