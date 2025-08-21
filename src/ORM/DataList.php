@@ -109,8 +109,8 @@ class DataList extends ModelData implements SS_List, Resettable
         if ($class) {
             // Reset for all superclasses as well, since superclass queries
             // include records from subclasses
-            $classHierarchy = ClassInfo::ancestry($class);
-            foreach ($classHierarchy as $currentClass) {
+            $classesToReset = DataQuery::getClassesForQueryCacheReset(ClassInfo::ancestry($class));
+            foreach ($classesToReset as $currentClass) {
                 unset(DataList::$cachedQueries[$currentClass]);
             }
         } else {

@@ -10,6 +10,7 @@ use SilverStripe\ORM\Connect\Query;
 use SilverStripe\ORM\Queries\SQLConditionGroup;
 use SilverStripe\ORM\Queries\SQLSelect;
 use InvalidArgumentException;
+use SilverStripe\Core\ArrayLib;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Resettable;
 use SilverStripe\Dev\Deprecation;
@@ -92,12 +93,33 @@ class DataQuery implements Resettable
             return;
         }
 
-        // Reset for all superclasses as well, since superclass queries
-        // include records from subclasses
-        $classHierarchy = ClassInfo::ancestry($class);
-        foreach ($classHierarchy as $currentClass) {
+        // Reset for all superclasses and dependent classes as well, since superclass queries include
+        // records from subclasses
+        $classesToReset = static::getClassesForQueryCacheReset(ClassInfo::ancestry($class));
+        foreach ($classesToReset as $currentClass) {
             SQLSelect::reset($currentClass);
         }
+    }
+
+    /**
+     * Get the full set of class names that need to be reset, based on the query_cache_dependent_classes
+     * configuration property of the passed in classes.
+     */
+    public static function getClassesForQueryCacheReset(array $classes): array
+    {
+        /** @var class-string<DataObject> $class */
+        foreach (ArrayLib::iterateVolatile($classes) as $class) {
+            $dependents = $class::config()->get('query_cache_dependent_classes') ?? [];
+            $remainingDependents = array_diff($dependents, $classes);
+            foreach ($remainingDependents as $dependentClass) {
+                foreach (ClassInfo::ancestry($dependentClass) as $key => $value) {
+                    if (!isset($classes[$key])) {
+                        $classes[$key] = $value;
+                    }
+                }
+            }
+        }
+        return $classes;
     }
 
     /**

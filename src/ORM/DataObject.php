@@ -370,6 +370,15 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
     private static ?DataObjectSchema $schema = null;
 
     /**
+     * A list of DataObject subclasses whose query caches should be reset whenever resetting
+     * the query cache for this class.
+     *
+     * Do not include other classes from the current hierarchy in this list.
+     * i.e. Page should not include SiteTree or vice versa.
+     */
+    private static array $query_cache_dependent_classes = [];
+
+    /**
      * Get schema object
      *
      * @return DataObjectSchema
