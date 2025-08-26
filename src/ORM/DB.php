@@ -219,7 +219,7 @@ class DB
      * @param array $parameters Out parameter for the resulting query parameters
      * @param string $name An optional name given to a connection in the DB::setConn() call.
      * If omitted, a dynamic connection is returned.
-     * @return string|null The resulting SQL as a string
+     * @return string|null The resulting SQL as a string or null if there's no DB connector or the query was empty
      */
     public static function build_sql(SQLExpression $expression, &$parameters, $name = DB::CONN_DYNAMIC)
     {
