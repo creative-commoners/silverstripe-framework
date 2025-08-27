@@ -324,15 +324,11 @@ class TreeDropdownFieldTest extends SapphireTest
         $field = new TreeDropdownField('TestTree', 'Test tree', File::class);
         $fileMock = $this->objFromFixture(File::class, 'asdf');
         $field->setValue($fileMock->ID);
-        $readonlyField = $field->performReadonlyTransformation();
-        $result = (string) $readonlyField->Field();
-        $this->assertStringContainsString(
-            '<span class="readonly" id="TestTree">&lt;Special &amp; characters&gt;</span>',
-            $result
-        );
-        $this->assertStringContainsString(
-            '<input type="hidden" name="TestTree" value="' . $fileMock->ID . '" />',
-            $result
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="TestTree" role="textbox" aria-readonly="true" tabindex="0">'
+            . '&lt;Special &amp; characters&gt;</span>'
+            . '<input type="hidden" name="TestTree" value="' . $fileMock->ID . '" />'),
+            $this->toXml((string) $field->performReadonlyTransformation()->Field())
         );
     }
 
@@ -459,5 +455,15 @@ class TreeDropdownFieldTest extends SapphireTest
         }
         $actual = $field->getChildrenMethod();
         $this->assertSame($expected, $actual);
+    }
+
+    /**
+     * Ensure there is a single parent node in preparation for using assertXmlStringEqualsXmlString()
+     * which is tolerant of whitespaces differences
+     * This prevents the error PHPUnit\Util\Xml\XmlException: Extra content at the end of the document
+     */
+    private function toXml(string $html)
+    {
+        return "<div>$html</div>";
     }
 }

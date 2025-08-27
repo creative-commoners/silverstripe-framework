@@ -45,8 +45,11 @@ class LookupFieldTest extends SapphireTest
         $field->setValue(null);
         $result = trim($field->Field()->getValue() ?? '');
 
-        $this->assertStringContainsString('<span class="readonly" id="test"><i>(none)</i></span>', $result);
-        $this->assertStringContainsString('<input type="hidden" name="test" value="" />', $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+            . '<i>(none)</i></span><input type="hidden" name="test" value="" />'),
+            $this->toXml($result),
+        );
     }
 
     public function testStringValueWithNumericArraySource()
@@ -55,8 +58,11 @@ class LookupFieldTest extends SapphireTest
         $field = new LookupField('test', 'test', $source);
         $field->setValue(1);
         $result = trim($field->Field()->getValue() ?? '');
-        $this->assertStringContainsString('<span class="readonly" id="test">one</span>', $result);
-        $this->assertStringContainsString('<input type="hidden" name="test" value="1" />', $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+            . 'one</span><input type="hidden" name="test" value="1" />'),
+            $this->toXml($result)
+        );
     }
 
     public function testUnknownStringValueWithNumericArraySource()
@@ -66,8 +72,11 @@ class LookupFieldTest extends SapphireTest
         $field->setValue('w00t');
         $result = trim($field->Field()->getValue() ?? '');
 
-        $this->assertStringContainsString('<span class="readonly" id="test">w00t</span>', $result);
-        $this->assertStringContainsString('<input type="hidden" name="test" value="" />', $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+            . 'w00t</span><input type="hidden" name="test" value="" />'),
+            $this->toXml($result)
+        );
     }
 
     public function testArrayValueWithAssociativeArraySource()
@@ -78,8 +87,11 @@ class LookupFieldTest extends SapphireTest
         $field->setValue(['one','two']);
         $result = trim($field->Field()->getValue() ?? '');
 
-        $this->assertStringContainsString('<span class="readonly" id="test">one val, two val</span>', $result);
-        $this->assertStringContainsString('<input type="hidden" name="test" value="one, two" />', $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+            . 'one val, two val</span><input type="hidden" name="test" value="one, two" />'),
+            $this->toXml($result)
+        );
     }
 
     public function testArrayValueWithNumericArraySource()
@@ -90,8 +102,11 @@ class LookupFieldTest extends SapphireTest
         $field->setValue([1,2]);
         $result = trim($field->Field()->getValue() ?? '');
 
-        $this->assertStringContainsString('<span class="readonly" id="test">one, two</span>', $result);
-        $this->assertStringContainsString('<input type="hidden" name="test" value="1, 2" />', $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+            . 'one, two</span><input type="hidden" name="test" value="1, 2" />'),
+            $this->toXml($result)
+        );
     }
 
     public function testArrayValueWithSqlMapSource()
@@ -105,12 +120,15 @@ class LookupFieldTest extends SapphireTest
         $field->setValue([$member1->ID, $member2->ID]);
         $result = trim($field->Field()->getValue() ?? '');
 
-        $this->assertStringContainsString('<span class="readonly" id="test">member1, member2</span>', $result);
-        $this->assertStringContainsString(sprintf(
-            '<input type="hidden" name="test" value="%s, %s" />',
-            $member1->ID,
-            $member2->ID
-        ), $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml(sprintf(
+                '<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+                . 'member1, member2</span><input type="hidden" name="test" value="%s, %s" />',
+                $member1->ID,
+                $member2->ID
+            )),
+            $this->toXml($result)
+        );
     }
 
     public function testWithMultiDimensionalSource()
@@ -131,13 +149,29 @@ class LookupFieldTest extends SapphireTest
         $field->setValue(3);
         $result = trim($field->Field()->getValue() ?? '');
 
-        $this->assertStringContainsString('<span class="readonly" id="test">Carrots</span>', $result);
-        $this->assertStringContainsString('<input type="hidden" name="test" value="3" />', $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+            . 'Carrots</span><input type="hidden" name="test" value="3" />'),
+            $this->toXml($result)
+        );
 
         $field->setValue([3, 9]);
         $result = trim($field->Field()->getValue() ?? '');
 
-        $this->assertStringContainsString('<span class="readonly" id="test">Carrots, Vegan</span>', $result);
-        $this->assertStringContainsString('<input type="hidden" name="test" value="3, 9" />', $result);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="test" role="textbox" aria-readonly="true" tabindex="0">'
+            . 'Carrots, Vegan</span><input type="hidden" name="test" value="3, 9" />'),
+            $this->toXml($result)
+        );
+    }
+
+    /**
+     * Ensure there is a single parent node in preparation for using assertXmlStringEqualsXmlString()
+     * which is tolerant of whitespaces differences
+     * This prevents the error PHPUnit\Util\Xml\XmlException: Extra content at the end of the document
+     */
+    private function toXml(string $html)
+    {
+        return "<div>$html</div>";
     }
 }

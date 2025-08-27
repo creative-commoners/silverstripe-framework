@@ -1,6 +1,9 @@
-<span id="$ID" <% if $extraClass %>class="$extraClass"<% end_if %>>
-	$FormattedValue
-</span>
+<span id="$ID"
+    <% if $extraClass %>class="$extraClass"<% end_if %>
+    role="textbox"
+    aria-readonly="true"
+    tabindex="0"
+>$FormattedValue</span>
 <% if $IncludeHiddenField %>
-	<input $getAttributesHTML("id", "type") id="hidden-{$ID}" type="hidden" />
+    <input $getAttributesHTML("id", "type") id="hidden-{$ID}" type="hidden" />
 <% end_if %>
