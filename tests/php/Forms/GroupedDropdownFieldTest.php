@@ -151,16 +151,28 @@ class GroupedDropdownFieldTest extends SapphireTest
 
         // value on first level
         $field->setValue("1");
-        $this->assertMatchesRegularExpression(
-            '#<span class="readonly" id="Test">One</span>\n?<input type="hidden" name="Test" value="1" />#',
-            (string)$field->performReadonlyTransformation()->Field()
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="Test" role="textbox" aria-readonly="true" tabindex="0">One</span>'
+            . '<input type="hidden" name="Test" value="1" />'),
+            $this->toXml((string) $field->performReadonlyTransformation()->Field())
         );
 
         // value on first level
         $field->setValue("2");
-        $this->assertMatchesRegularExpression(
-            '#<span class="readonly" id="Test">Two</span>\n?<input type="hidden" name="Test" value="2" />#',
-            (string)$field->performReadonlyTransformation()->Field()
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml('<span class="readonly" id="Test" role="textbox" aria-readonly="true" tabindex="0">Two</span>'
+            . '<input type="hidden" name="Test" value="2" />'),
+            $this->toXml((string) $field->performReadonlyTransformation()->Field())
         );
+    }
+
+    /**
+     * Ensure there is a single parent node in preparation for using assertXmlStringEqualsXmlString()
+     * which is tolerant of whitespaces differences
+     * This prevents the error PHPUnit\Util\Xml\XmlException: Extra content at the end of the document
+     */
+    private function toXml(string $html)
+    {
+        return "<div>$html</div>";
     }
 }

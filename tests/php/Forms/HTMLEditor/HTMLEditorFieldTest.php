@@ -180,20 +180,17 @@ class HTMLEditorFieldTest extends FunctionalTest
         /** @var HTMLReadonlyField $readonly */
         $readonly = $editor->performReadonlyTransformation();
         /** @var DBHTMLText $readonlyContent */
-        $readonlyContent = $readonly->Field();
-
-        $this->assertEquals(
-            <<<EOS
-<span class="readonly typography" id="Content">
-	<img width="10" height="20" alt="" src="/assets/HTMLEditorFieldTest/f5c7c2f814/example__ResizedImageWzEwLDIwXQ.jpg" loading="lazy">
-
-
-</span>
-
-
-EOS
-            ,
-            $readonlyContent->getValue()
+        $readonlyContent = (string) $readonly->Field();
+        // xml needs the <img> tag to be self-closing
+        $actual = str_replace('loading="lazy">', 'loading="lazy" />', $readonlyContent);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml(
+                '<span class="readonly typography" id="Content" role="textbox" aria-readonly="true" tabindex="0">'
+                . '<img width="10" height="20" alt=""'
+                . ' src="/assets/HTMLEditorFieldTest/f5c7c2f814/example__ResizedImageWzEwLDIwXQ.jpg" loading="lazy" />'
+                . '</span>'
+            ),
+            $this->toXml($actual)
         );
 
         // Test with include input tag
@@ -201,20 +198,20 @@ EOS
             ->setIncludeHiddenField(true);
         /** @var DBHTMLText $readonlyContent */
         $readonlyContent = $readonly->Field();
-        $this->assertEquals(
-            <<<EOS
-<span class="readonly typography" id="Content">
-	<img width="10" height="20" alt="" src="/assets/HTMLEditorFieldTest/f5c7c2f814/example__ResizedImageWzEwLDIwXQ.jpg" loading="lazy">
-
-
-</span>
-
-	<input type="hidden" name="Content" value="[image src=&quot;/assets/HTMLEditorFieldTest/f5c7c2f814/example.jpg&quot; width=&quot;10&quot; height=&quot;20&quot; id=&quot;{$fileID}&quot;]" />
-
-
-EOS
-            ,
-            $readonlyContent->getValue()
+        $readonlyContent = (string) $readonly->Field();
+        // xml needs the <img> tag to be self-closing
+        $actual = str_replace('loading="lazy">', 'loading="lazy" />', $readonlyContent);
+        $this->assertXmlStringEqualsXmlString(
+            $this->toXml(
+                '<span class="readonly typography" id="Content" role="textbox" aria-readonly="true" tabindex="0">'
+                . '<img width="10" height="20" alt=""'
+                . ' src="/assets/HTMLEditorFieldTest/f5c7c2f814/example__ResizedImageWzEwLDIwXQ.jpg" loading="lazy" />'
+                . '</span>'
+                . '<input name="Content" type="hidden" value="'
+                . '[image src=&quot;/assets/HTMLEditorFieldTest/f5c7c2f814/example.jpg&quot; width=&quot;10&quot;'
+                . ' height=&quot;20&quot; id=&quot;1&quot;]"/>'
+            ),
+            $this->toXml($actual)
         );
     }
 
@@ -269,5 +266,15 @@ EOS
         $editor->setValue($htmlValue);
         $editor->saveInto($obj);
         $this->assertEquals($htmlValue, $obj->Content, 'Table is removed');
+    }
+
+    /**
+     * Ensure there is a single parent node in preparation for using assertXmlStringEqualsXmlString()
+     * which is tolerant of whitespaces differences
+     * This prevents the error PHPUnit\Util\Xml\XmlException: Extra content at the end of the document
+     */
+    private function toXml(string $html)
+    {
+        return "<div>$html</div>";
     }
 }

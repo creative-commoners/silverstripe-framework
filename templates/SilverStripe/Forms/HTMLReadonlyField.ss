@@ -1,5 +1,9 @@
-<span class="readonly typography" id="$ID">
-	<% if $FormattedValue %>$FormattedValue<% else %><i>(not set)</i><% end_if %>
+<span class="readonly typography"
+      id="$ID"
+      role="textbox"
+      aria-readonly="true"
+      tabindex="0"
+><% if $FormattedValue %>$FormattedValue<% else %><i>(not set)</i><% end_if %>
 </span>
 <% if $IncludeHiddenField %>
 	<input type="hidden" name="$Name.ATT" value="$FormattedValueEntities.RAW" />
