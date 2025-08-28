@@ -1,8 +1,17 @@
 <ul $AttributesHTML>
-	<% loop $Options %>
-		<li class="$Class" role="$Role">
-			<input id="$ID" class="radio" name="$Name" type="radio" value="$Value"<% if $isChecked %> checked<% end_if %><% if $isDisabled %> disabled<% end_if %> <% if $Up.Required %>required<% end_if %> />
-			<label class="form-label" for="$ID">$Title</label>
-		</li>
-	<% end_loop %>
+    <% loop $Options %>
+        <li class="$Class">
+            <input id="$ID"
+                   class="radio"
+                   name="$Name"
+                   type="radio"
+                   role="$Role"
+                   value="$Value"
+                   <% if $isChecked %>checked<% end_if %>
+                   <% if $isDisabled %>disabled<% end_if %>
+                   <% if $Up.Required %>required<% end_if %>
+            />
+            <label class="form-label" for="$ID">$Title</label>
+        </li>
+    <% end_loop %>
 </ul>
