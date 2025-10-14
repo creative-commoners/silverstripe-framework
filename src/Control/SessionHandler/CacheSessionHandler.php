@@ -54,6 +54,7 @@ class CacheSessionHandler extends AbstractSessionHandler
      */
     public function read(#[SensitiveParameter] string $id): string|false
     {
+        $this->checkSessionID($id);
         return $this->cache->get($id, '');
     }
 

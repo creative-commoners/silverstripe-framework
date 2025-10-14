@@ -9,9 +9,16 @@ use SilverStripe\Control\SessionHandler\DatabaseSessionHandler;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\DB;
 use SilverStripe\ORM\FieldType\DBDatetime;
+use RuntimeException;
 
 class DatabaseSessionHandlerTest extends SapphireTest
 {
+    private const ID_NEW = 'bcaaaaaaaaaaaaaaaaaaaaaaaaaaaa01';
+
+    private const ID_VALID = 'bcaaaaaaaaaaaaaaaaaaaaaaaaaaaa02';
+
+    private const ID_EXPIRED = 'bcaaaaaaaaaaaaaaaaaaaaaaaaaaaa03';
+
     protected $usesDatabase = true;
 
     protected static $fixture_file = 'DatabaseSessionHandlerTest.yml';
@@ -31,7 +38,8 @@ class DatabaseSessionHandlerTest extends SapphireTest
         $this->gcLifeTime = ini_get('session.gc_maxlifetime');
         $expiry = DBDatetime::now()->getTimestamp() + 1000;
         $tableName = DatabaseSessionHandler::config()->get('table_name');
-        DB::query('UPDATE "' . $tableName . '" SET "Expiry" = ' . $expiry . ' WHERE "ID" = \'valid\'');
+        $id = DatabaseSessionHandlerTest::ID_VALID;
+        DB::query('UPDATE "' . $tableName . '" SET "Expiry" = ' . $expiry . ' WHERE "ID" = \'' . $id . '\'');
     }
 
     protected function tearDown(): void
@@ -51,15 +59,15 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'new session (aka no file)' => [
-                'sessionID' => 'new-session',
+                'sessionID' => DatabaseSessionHandlerTest::ID_NEW,
                 'expected' => '',
             ],
             'existing session' => [
-                'sessionID' => 'valid',
+                'sessionID' => DatabaseSessionHandlerTest::ID_VALID,
                 'expected' => 'this one is valid',
             ],
             'expired session' => [
-                'sessionID' => 'expired',
+                'sessionID' => DatabaseSessionHandlerTest::ID_EXPIRED,
                 'expected' => '',
             ],
         ];
@@ -84,25 +92,25 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'overrides existing session' => [
-                'sessionID' => 'valid',
+                'sessionID' => DatabaseSessionHandlerTest::ID_VALID,
                 'gcLifetime' => 100,
                 'configLifetime' => 500,
                 'expectedLifetime' => 500,
             ],
             'overrides expired session' => [
-                'sessionID' => 'expired',
+                'sessionID' => DatabaseSessionHandlerTest::ID_EXPIRED,
                 'gcLifetime' => 500,
                 'configLifetime' => 100,
                 'expectedLifetime' => 100,
             ],
             'creates new session' => [
-                'sessionID' => 'new-session',
+                'sessionID' => DatabaseSessionHandlerTest::ID_NEW,
                 'gcLifetime' => 0,
                 'configLifetime' => 150,
                 'expectedLifetime' => 150,
             ],
             'uses gc for lifetime fallback' => [
-                'sessionID' => 'new-session',
+                'sessionID' => DatabaseSessionHandlerTest::ID_NEW,
                 'gcLifetime' => 200,
                 'configLifetime' => 0,
                 'expectedLifetime' => 200,
@@ -133,13 +141,13 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'deletes existing session' => [
-                'sessionID' => 'valid',
+                'sessionID' => DatabaseSessionHandlerTest::ID_VALID,
             ],
             'deletes expired session' => [
-                'sessionID' => 'expired',
+                'sessionID' => DatabaseSessionHandlerTest::ID_EXPIRED,
             ],
             'no action for missing session' => [
-                'sessionID' => 'new-session'
+                'sessionID' => DatabaseSessionHandlerTest::ID_NEW,
             ],
         ];
     }
@@ -230,15 +238,15 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'new session is invalid' => [
-                'sessionID' => 'new-session',
+                'sessionID' => DatabaseSessionHandlerTest::ID_NEW,
                 'expected' => false,
             ],
             'existing session is valid' => [
-                'sessionID' => 'valid',
+                'sessionID' => DatabaseSessionHandlerTest::ID_VALID,
                 'expected' => true,
             ],
             'expired existing session is invalid' => [
-                'sessionID' => 'expired',
+                'sessionID' => DatabaseSessionHandlerTest::ID_EXPIRED,
                 'expected' => false,
             ],
         ];
@@ -255,15 +263,15 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'session already exists' => [
-                'sessionID' => 'valid',
+                'sessionID' => DatabaseSessionHandlerTest::ID_VALID,
                 'expectedContent' => 'new content',
             ],
             'session already expired' => [
-                'sessionID' => 'expired',
+                'sessionID' => DatabaseSessionHandlerTest::ID_EXPIRED,
                 'expectedContent' => 'new content',
             ],
             'session doesnt exist (edge case)' => [
-                'sessionID' => 'new-session',
+                'sessionID' => DatabaseSessionHandlerTest::ID_NEW,
                 'expectedContent' => 'new content',
             ],
         ];
@@ -287,5 +295,14 @@ class DatabaseSessionHandlerTest extends SapphireTest
         $session = $result->record();
         $this->assertSame($now->getTimestamp() + $lifetime, $session['Expiry']);
         $this->assertSame($expectedContent, $session['Data']);
+    }
+
+    public function testInvalidSessionIDThrowsException(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Invalid session ID');
+        $handler = new DatabaseSessionHandler();
+        $sessionID = 'spaces are not valid';
+        $handler->read($sessionID);
     }
 }
