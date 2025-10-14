@@ -119,13 +119,13 @@ class FileSessionHandlerTest extends SapphireTest
         return [
             'path no subdirs' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionID' => 'a0f123456789',
-                'expected' => Path::join(static::$sessionSavePath, 'sess_a0f123456789'),
+                'sessionID' => md5('a0f123456789'),
+                'expected' => Path::join(static::$sessionSavePath, 'sess_' . md5('a0f123456789')),
             ],
             'path three subdirs' => [
                 'savePath' => '3;' . static::$sessionSavePath,
-                'sessionID' => 'a0f123456789',
-                'expected' => Path::join(static::$sessionSavePath, 'a/0/f', 'sess_a0f123456789'),
+                'sessionID' => md5('a0f123456789'),
+                'expected' => Path::join(static::$sessionSavePath, 'c/b/9', 'sess_' . md5('a0f123456789')),
             ],
         ];
     }
@@ -172,7 +172,7 @@ class FileSessionHandlerTest extends SapphireTest
     #[DataProvider('provideNeedsPermissionUpdate')]
     public function testNeedsPermissionUpdate(string $savePath, bool $createFileBeforeTest, bool $expected): void
     {
-        $sessionFilePath = Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'new-session');
+        $sessionFilePath = Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('new-session'));
         $this->assertFileDoesNotExist($sessionFilePath);
 
         $handler = new FileSessionHandler();
@@ -247,20 +247,20 @@ class FileSessionHandlerTest extends SapphireTest
         return [
             'new session (aka no file)' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'new-session'),
-                'sessionID' => 'new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('new-session')),
+                'sessionID' => md5('new-session'),
                 'expected' => '',
             ],
             'existing session' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-session1'),
-                'sessionID' => 'test-session1',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-session1')),
+                'sessionID' => md5('test-session1'),
                 'expected' => "session1 value\n",
             ],
             'existing session with subdirs' => [
                 'savePath' => '2;' . static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, 't/e', FileSessionHandler::SESSION_FILE_PREFIX . 'test-session2'),
-                'sessionID' => 'test-session2',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, '4/8', FileSessionHandler::SESSION_FILE_PREFIX . md5('test-session2')),
+                'sessionID' => md5('test-session2'),
                 'expected' => "session2 value\n",
             ],
         ];
@@ -294,7 +294,7 @@ class FileSessionHandlerTest extends SapphireTest
         $handler = new FileSessionHandler();
         $handler->open(static::$sessionSavePath, 'PHPSESSID');
 
-        $sessionID = 'test-session1';
+        $sessionID = md5('test-session1');
         $sessionFilePath = Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . $sessionID);
 
         // Make sure the file has expired when reading
@@ -308,26 +308,26 @@ class FileSessionHandlerTest extends SapphireTest
         return [
             'overrides existing file' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-existing-session'),
-                'sessionID' => 'test-existing-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-existing-session')),
+                'sessionID' => md5('test-existing-session'),
                 'createFileBeforeTest' => true,
             ],
             'overrides existing file with subdirs' => [
                 'savePath' => '2;' . static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, 't/e', FileSessionHandler::SESSION_FILE_PREFIX . 'test-existing-session'),
-                'sessionID' => 'test-existing-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, '6/f', FileSessionHandler::SESSION_FILE_PREFIX . md5('test-existing-session')),
+                'sessionID' => md5('test-existing-session'),
                 'createFileBeforeTest' => true,
             ],
             'creates new file' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-new-session'),
-                'sessionID' => 'test-new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-new-session')),
+                'sessionID' => md5('test-new-session'),
                 'createFileBeforeTest' => false,
             ],
             'creates new file with subdirs' => [
                 'savePath' => '2;' . static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, 't/e', FileSessionHandler::SESSION_FILE_PREFIX . 'test-new-session'),
-                'sessionID' => 'test-new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, '3/a', FileSessionHandler::SESSION_FILE_PREFIX . md5('test-new-session')),
+                'sessionID' => md5('test-new-session'),
                 'createFileBeforeTest' => false,
             ],
         ];
@@ -357,20 +357,20 @@ class FileSessionHandlerTest extends SapphireTest
         return [
             'default perms' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-new-session'),
-                'sessionID' => 'test-new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-new-session')),
+                'sessionID' => md5('test-new-session'),
                 'expected' => '0600',
             ],
             'custom perms' => [
                 'savePath' => '0;0555;' . static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-new-session'),
-                'sessionID' => 'test-new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-new-session')),
+                'sessionID' => md5('test-new-session'),
                 'expected' => '0555',
             ],
             'same as existing perms' => [
                 'savePath' => '0;0777;' . static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-new-session'),
-                'sessionID' => 'test-new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-new-session')),
+                'sessionID' => md5('test-new-session'),
                 'expected' => '0777',
             ],
         ];
@@ -400,26 +400,26 @@ class FileSessionHandlerTest extends SapphireTest
         return [
             'deletes existing file' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-existing-session'),
-                'sessionID' => 'test-existing-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-existing-session')),
+                'sessionID' => md5('test-existing-session'),
                 'createFileBeforeTest' => true,
             ],
             'deletes existing file with subdirs' => [
                 'savePath' => '2;' . static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, 't/e', FileSessionHandler::SESSION_FILE_PREFIX . 'test-existing-session'),
-                'sessionID' => 'test-existing-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, '6/f', FileSessionHandler::SESSION_FILE_PREFIX . md5('test-existing-session')),
+                'sessionID' => md5('test-existing-session'),
                 'createFileBeforeTest' => true,
             ],
             'no action for missing file' => [
                 'savePath' => static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-new-session'),
-                'sessionID' => 'test-new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-new-session')),
+                'sessionID' => md5('test-new-session'),
                 'createFileBeforeTest' => false,
             ],
             'no action for missing file with subdirs' => [
                 'savePath' => '2;' . static::$sessionSavePath,
-                'sessionFilePath' => Path::join(static::$sessionSavePath, 't/e', FileSessionHandler::SESSION_FILE_PREFIX . 'test-new-session'),
-                'sessionID' => 'test-new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, '4/8', FileSessionHandler::SESSION_FILE_PREFIX . md5('test-new-session')),
+                'sessionID' => md5('test-new-session'),
                 'createFileBeforeTest' => false,
             ],
         ];
@@ -534,26 +534,26 @@ class FileSessionHandlerTest extends SapphireTest
     {
         return [
             'new session (no file) is invalid' => [
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'new-session'),
-                'sessionID' => 'new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('new-session')),
+                'sessionID' => md5('new-session'),
                 'isExpired' => true,
                 'expected' => false,
             ],
             'new session (no file) is invalid (expiry doesnt change anything)' => [
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'new-session'),
-                'sessionID' => 'new-session',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('new-session')),
+                'sessionID' => md5('new-session'),
                 'isExpired' => false,
                 'expected' => false,
             ],
             'existing session is valid' => [
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-session1'),
-                'sessionID' => 'test-session1',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-session1')),
+                'sessionID' => md5('test-session1'),
                 'isExpired' => false,
                 'expected' => true,
             ],
             'expired existing session is invalid' => [
-                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . 'test-session1'),
-                'sessionID' => 'test-session1',
+                'sessionFilePath' => Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . md5('test-session1')),
+                'sessionID' => md5('test-session1'),
                 'isExpired' => true,
                 'expected' => false,
             ],
@@ -590,7 +590,7 @@ class FileSessionHandlerTest extends SapphireTest
     {
         $handler = new FileSessionHandler();
         $handler->open(static::$sessionSavePath, 'PHPSESSID');
-        $sessionID = 'new-session';
+        $sessionID = md5('new-session');
         $sessionFilePath = Path::join(static::$sessionSavePath, FileSessionHandler::SESSION_FILE_PREFIX . $sessionID);
         $this->assertFileDoesNotExist($sessionFilePath);
 

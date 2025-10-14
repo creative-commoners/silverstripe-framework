@@ -190,6 +190,9 @@ class FileSessionHandler extends AbstractSessionHandler
      */
     public function validateId(#[SensitiveParameter] string $id): bool
     {
+        if (!$this->validatePhpSessId($id)) {
+            return false;
+        }
         $path = $this->getFilePath($id);
         $filesystem = new Filesystem();
         $fileExists = $filesystem->exists($path);

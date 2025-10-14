@@ -31,7 +31,8 @@ class DatabaseSessionHandlerTest extends SapphireTest
         $this->gcLifeTime = ini_get('session.gc_maxlifetime');
         $expiry = DBDatetime::now()->getTimestamp() + 1000;
         $tableName = DatabaseSessionHandler::config()->get('table_name');
-        DB::query('UPDATE "' . $tableName . '" SET "Expiry" = ' . $expiry . ' WHERE "ID" = \'valid\'');
+        $id = md5('valid');
+        DB::query('UPDATE "' . $tableName . '" SET "Expiry" = ' . $expiry . ' WHERE "ID" = \'' . $id . '\'');
     }
 
     protected function tearDown(): void
@@ -51,15 +52,15 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'new session (aka no file)' => [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
                 'expected' => '',
             ],
             'existing session' => [
-                'sessionID' => 'valid',
+                'sessionID' => md5('valid'),
                 'expected' => 'this one is valid',
             ],
             'expired session' => [
-                'sessionID' => 'expired',
+                'sessionID' => md5('expired'),
                 'expected' => '',
             ],
         ];
@@ -84,25 +85,25 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'overrides existing session' => [
-                'sessionID' => 'valid',
+                'sessionID' => md5('valid'),
                 'gcLifetime' => 100,
                 'configLifetime' => 500,
                 'expectedLifetime' => 500,
             ],
             'overrides expired session' => [
-                'sessionID' => 'expired',
+                'sessionID' => md5('expired'),
                 'gcLifetime' => 500,
                 'configLifetime' => 100,
                 'expectedLifetime' => 100,
             ],
             'creates new session' => [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
                 'gcLifetime' => 0,
                 'configLifetime' => 150,
                 'expectedLifetime' => 150,
             ],
             'uses gc for lifetime fallback' => [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
                 'gcLifetime' => 200,
                 'configLifetime' => 0,
                 'expectedLifetime' => 200,
@@ -133,13 +134,13 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'deletes existing session' => [
-                'sessionID' => 'valid',
+                'sessionID' => md5('valid'),
             ],
             'deletes expired session' => [
-                'sessionID' => 'expired',
+                'sessionID' => md5('expired'),
             ],
             'no action for missing session' => [
-                'sessionID' => 'new-session'
+                'sessionID' => md5('new-session')
             ],
         ];
     }
@@ -230,15 +231,15 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'new session is invalid' => [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
                 'expected' => false,
             ],
             'existing session is valid' => [
-                'sessionID' => 'valid',
+                'sessionID' => md5('valid'),
                 'expected' => true,
             ],
             'expired existing session is invalid' => [
-                'sessionID' => 'expired',
+                'sessionID' => md5('expired'),
                 'expected' => false,
             ],
         ];
@@ -255,15 +256,15 @@ class DatabaseSessionHandlerTest extends SapphireTest
     {
         return [
             'session already exists' => [
-                'sessionID' => 'valid',
+                'sessionID' => md5('valid'),
                 'expectedContent' => 'new content',
             ],
             'session already expired' => [
-                'sessionID' => 'expired',
+                'sessionID' => md5('expired'),
                 'expectedContent' => 'new content',
             ],
             'session doesnt exist (edge case)' => [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
                 'expectedContent' => 'new content',
             ],
         ];

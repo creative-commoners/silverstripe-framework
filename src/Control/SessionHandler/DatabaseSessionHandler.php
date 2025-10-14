@@ -126,6 +126,9 @@ class DatabaseSessionHandler extends AbstractSessionHandler
      */
     public function validateId(#[SensitiveParameter] string $id): bool
     {
+        if (!$this->validatePhpSessId($id)) {
+            return false;
+        }
         if (!$this->isDatabaseReady()) {
             $this->logError('Could not validate session ID - database is not ready');
             return false;

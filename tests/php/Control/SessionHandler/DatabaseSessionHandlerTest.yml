@@ -1,10 +1,10 @@
 _sessions:
   validSession:
-    ID: 'valid'
+    ID: '9f7d0ee82b6a6ca7ddeae841f3253059' # md5('valid')
     # the expiry will be set in setUp()
     Expiry: 12345
     Data: 'this one is valid'
   expiredSession:
-    ID: 'expired'
+    ID: 'c4bfb2a0bab0e91bc7dcfbe3bbec246e' # md5('expired')
     Expiry: 12345
     Data: 'this one is expired'

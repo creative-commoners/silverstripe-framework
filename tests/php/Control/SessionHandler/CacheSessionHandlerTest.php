@@ -17,11 +17,11 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         return [
             [
-                'sessionID' => 'existing-session',
+                'sessionID' => md5('existing-session'),
                 'expected' => 'some-data',
             ],
             [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
                 'expected' => '',
             ],
         ];
@@ -32,7 +32,7 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         $cache = new Psr16Cache(new ArrayAdapter());
         $handler = new CacheSessionHandler($cache);
-        $cache->set('existing-session', 'some-data');
+        $cache->set(md5('existing-session'), 'some-data');
         $this->assertSame($expected, $handler->read($sessionID));
     }
 
@@ -40,18 +40,18 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         $cache = new Psr16Cache(new ArrayAdapter());
         $handler = new CacheSessionHandler($cache);
-        $cache->set('existing-session', 'some-data', -1);
-        $this->assertSame('', $handler->read('existing-session'));
+        $cache->set(md5('existing-session'), 'some-data', -1);
+        $this->assertSame('', $handler->read(md5('existing-session')));
     }
 
     public static function provideWrite(): array
     {
         return [
             [
-                'sessionID' => 'existing-session',
+                'sessionID' => md5('existing-session'),
             ],
             [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
             ],
         ];
     }
@@ -61,7 +61,7 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         $cache = new Psr16Cache(new ArrayAdapter());
         $handler = new CacheSessionHandler($cache);
-        $cache->set('existing-session', 'some-data');
+        $cache->set(md5('existing-session'), 'some-data');
         $handler->write($sessionID, 'updated-data');
         $this->assertSame('updated-data', $cache->get($sessionID));
     }
@@ -70,10 +70,10 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         return [
             [
-                'sessionID' => 'existing-session',
+                'sessionID' => md5('existing-session'),
             ],
             [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
             ],
         ];
     }
@@ -83,7 +83,7 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         $cache = new Psr16Cache(new ArrayAdapter());
         $handler = new CacheSessionHandler($cache);
-        $cache->set('existing-session', 'some-data');
+        $cache->set(md5('existing-session'), 'some-data');
         $this->assertTrue($handler->destroy($sessionID));
         $this->assertNull($cache->get($sessionID));
     }
@@ -92,18 +92,23 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         return [
             'new session (no file) is invalid' => [
-                'sessionID' => 'new-session',
+                'sessionID' => md5('new-session'),
                 'isExpired' => false,
                 'expected' => false,
             ],
             'existing session is valid' => [
-                'sessionID' => 'existing-session',
+                'sessionID' => md5('existing-session'),
                 'isExpired' => false,
                 'expected' => true,
             ],
             'expired existing session is invalid' => [
-                'sessionID' => 'existing-session',
+                'sessionID' => md5('existing-session'),
                 'isExpired' => true,
+                'expected' => false,
+            ],
+            'invalid phpsessid format is invalid' => [
+                'sessionID' => 'spaces are not valid',
+                'isExpired' => false,
                 'expected' => false,
             ],
         ];
@@ -114,7 +119,7 @@ class CacheSessionHandlerTest extends SapphireTest
     {
         $cache = new Psr16Cache(new ArrayAdapter());
         $handler = new CacheSessionHandler($cache);
-        $cache->set('existing-session', 'some-data', $isExpired ? -1 : 60);
+        $cache->set(md5('existing-session'), 'some-data', $isExpired ? -1 : 60);
         $this->assertSame($expected, $handler->validateId($sessionID));
     }
 
@@ -123,13 +128,13 @@ class CacheSessionHandlerTest extends SapphireTest
         $arrayAdapter = new ArrayAdapter();
         $cache = new Psr16Cache($arrayAdapter);
         $handler = new CacheSessionHandler($cache);
-        $cache->set('existing-session', 'some-data', 999999999);
+        $cache->set(md5('existing-session'), 'some-data', 999999999);
 
-        $this->assertTrue($handler->updateTimestamp('existing-session', 'new content'));
-        $this->assertTrue($cache->has('existing-session'));
+        $this->assertTrue($handler->updateTimestamp(md5('existing-session'), 'new content'));
+        $this->assertTrue($cache->has(md5('existing-session')));
         $reflectionExpiries = new ReflectionProperty($arrayAdapter, 'expiries');
         $reflectionExpiries->setAccessible(true);
-        $expiry = $reflectionExpiries->getValue($arrayAdapter)['existing-session'];
+        $expiry = $reflectionExpiries->getValue($arrayAdapter)[md5('existing-session')];
 
         // 999999 is way more than the number of seconds the session should live for
         // so calling updateTimestamp should set it to less than that but more than right now
@@ -137,6 +142,6 @@ class CacheSessionHandlerTest extends SapphireTest
         // and Symfony's cache stuff doesn't use our internal DateTime so we can't set a mock now.
         $this->assertLessThan(microtime(true) + 999999, $expiry);
         $this->assertGreaterThan(microtime(true), $expiry);
-        $this->assertSame('new content', $cache->get('existing-session'));
+        $this->assertSame('new content', $cache->get(md5('existing-session')));
     }
 }

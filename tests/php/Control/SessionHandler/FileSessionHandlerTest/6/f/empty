@@ -1,0 +1,2 @@
+This dir is intentionally left empty, though it needs to exists for git to track it.
+It's used by FileSessionHandlerTest::testWrite() and FileSessionHandlerTest::testDestroy()

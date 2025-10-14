@@ -72,6 +72,9 @@ class CacheSessionHandler extends AbstractSessionHandler
      */
     public function validateId(#[SensitiveParameter] string $id): bool
     {
+        if (!$this->validatePhpSessId($id)) {
+            return false;
+        }
         return $this->cache->has($id);
     }
 
