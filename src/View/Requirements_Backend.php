@@ -362,29 +362,37 @@ class Requirements_Backend
      * Register the given JavaScript file as required.
      *
      * @param string $file Either relative to docroot or in the form "vendor/package:resource"
-     * @param array $options List of options. Available options include:
-     * - 'provides' : List of scripts files included in this file
+     * @param array $options List of options. These will be used as attributes on the `<script>` tag
+     * except for 'provides'.
+     * A value with the key 'provides' represents a list of scripts files included in this file.
+     * Examples of options which will be used as attributes include:
      * - 'async' : Boolean value to set async attribute to script tag
      * - 'defer' : Boolean value to set defer attribute to script tag
      * - 'type' : Override script type= value.
      * - 'integrity' : SubResource Integrity hash
      * - 'crossorigin' : Cross-origin policy for the resource
+     *
+     * If an attribute should exist on its own with no value (e.g. `async`), use a boolean true.
+     * If an attribute should have a value of the string true (e.g. `some-attr="true"`), use a string "true".
      */
     public function javascript($file, $options = [])
     {
         $file = ModuleResourceLoader::singleton()->resolvePath($file);
 
-        // Get type
-        $type = null;
-        if (isset($this->javascript[$file]['type'])) {
-            $type = $this->javascript[$file]['type'];
+        // Record scripts included in this file
+        if (isset($options['provides'])) {
+            $this->providedJavascript[$file] = array_values($options['provides'] ?? []);
+            // unset so it's not used as an attribute
+            unset($options['provides']);
         }
-        if (isset($options['type'])) {
-            $type = $options['type'];
+
+        // Set type to previously defined type if not in options array
+        if (!isset($options['type']) && isset($this->javascript[$file]['type'])) {
+            $options['type'] = $this->javascript[$file]['type'];
         }
 
         // make sure that async/defer is set if it is set once even if file is included multiple times
-        $async = (
+        $options['async'] = (
             isset($options['async']) && $options['async']
             || (
                 isset($this->javascript[$file])
@@ -392,7 +400,7 @@ class Requirements_Backend
                 && $this->javascript[$file]['async']
             )
         );
-        $defer = (
+        $options['defer'] = (
             isset($options['defer']) && $options['defer']
             || (
                 isset($this->javascript[$file])
@@ -400,21 +408,8 @@ class Requirements_Backend
                 && $this->javascript[$file]['defer']
             )
         );
-        $integrity = $options['integrity'] ?? null;
-        $crossorigin = $options['crossorigin'] ?? null;
 
-        $this->javascript[$file] = [
-            'async' => $async,
-            'defer' => $defer,
-            'type' => $type,
-            'integrity' => $integrity,
-            'crossorigin' => $crossorigin,
-        ];
-
-        // Record scripts included in this file
-        if (isset($options['provides'])) {
-            $this->providedJavascript[$file] = array_values($options['provides'] ?? []);
-        }
+        $this->javascript[$file] = $options;
     }
 
     /**
@@ -516,26 +511,23 @@ class Requirements_Backend
      * attributes.
      *
      * @param string $script The script content as a string (without enclosing `<script>` tag)
-     * @param array $options List of options. Available options include:
+     * @param array $options List of options. These are applied as attributes to the `<script>` tag. Examples include:
      * - 'type' : Specifies the type of script
      * - 'crossorigin' : Cross-origin policy for the resource
      * @param string|int $uniquenessID A unique ID that ensures a piece of code is only added once
+     *
+     * If an attribute should exist on its own with no value (e.g. `async`), use a boolean true.
+     * If an attribute should have a value of the string true (e.g. `some-attr="true"`), use a string "true".
      */
     public function customScriptWithAttributes(string $script, array $attributes = [], string|int|null $uniquenessID = null)
     {
-        $attrs = [];
-        foreach (['type', 'crossorigin'] as $attrKey) {
-            if (isset($attributes[$attrKey])) {
-                $attrs[$attrKey] = strtolower($attributes[$attrKey]);
-            }
-        }
         if ($uniquenessID) {
             $this->customScript[$uniquenessID] = $script;
-            $this->customScriptAttributes[$uniquenessID] = $attrs;
+            $this->customScriptAttributes[$uniquenessID] = $attributes;
         } else {
             $this->customScript[] = $script;
             $index = count($this->customScript) - 1;
-            $this->customScriptAttributes[$index] = $attrs;
+            $this->customScriptAttributes[$index] = $attributes;
         }
     }
 
@@ -636,21 +628,16 @@ class Requirements_Backend
      * @param string $file The CSS file to load, relative to site root
      * @param string $media Comma-separated list of media types to use in the link tag
      *                      (e.g. 'screen,projector')
-     * @param array $options List of options. Available options include:
+     * @param array $options List of attributes which will be added to the `<link>` tag. Examples include:
      * - 'integrity' : SubResource Integrity hash
      * - 'crossorigin' : Cross-origin policy for the resource
      */
     public function css($file, $media = null, $options = [])
     {
         $file = ModuleResourceLoader::singleton()->resolvePath($file);
-
-        $integrity = $options['integrity'] ?? null;
-        $crossorigin = $options['crossorigin'] ?? null;
-
         $this->css[$file] = [
             "media" => $media,
-            "integrity" => $integrity,
-            "crossorigin" => $crossorigin,
+            ...$options,
         ];
     }
 
@@ -808,24 +795,8 @@ class Requirements_Backend
 
         // Script tags for js links
         foreach ($this->getJavascript() as $file => $attributes) {
-            // Build html attributes
-            $htmlAttributes = [
-                'type' => isset($attributes['type']) ? $attributes['type'] : null,
-                'src' => $this->pathForFile($file),
-            ];
-            if (!empty($attributes['async'])) {
-                $htmlAttributes['async'] = 'async';
-            }
-            if (!empty($attributes['defer'])) {
-                $htmlAttributes['defer'] = 'defer';
-            }
-            if (!empty($attributes['integrity'])) {
-                $htmlAttributes['integrity'] = $attributes['integrity'];
-            }
-            if (!empty($attributes['crossorigin'])) {
-                $htmlAttributes['crossorigin'] = $attributes['crossorigin'];
-            }
-            $jsRequirements .= HTML::createTag('script', $htmlAttributes);
+            $attributes['src'] = $this->pathForFile($file);
+            $jsRequirements .= HTML::createTag('script', $attributes);
             $jsRequirements .= "\n";
         }
 
@@ -852,16 +823,8 @@ class Requirements_Backend
                 'rel' => 'stylesheet',
                 'type' => 'text/css',
                 'href' => $this->pathForFile($file),
+                ...$params,
             ];
-            if (!empty($params['media'])) {
-                $htmlAttributes['media'] = $params['media'];
-            }
-            if (!empty($params['integrity'])) {
-                $htmlAttributes['integrity'] = $params['integrity'];
-            }
-            if (!empty($params['crossorigin'])) {
-                $htmlAttributes['crossorigin'] = $params['crossorigin'];
-            }
             $requirements .= HTML::createTag('link', $htmlAttributes);
             $requirements .= "\n";
         }
@@ -1128,10 +1091,7 @@ class Requirements_Backend
      *
      * @param string $combinedFileName Filename of the combined file relative to docroot
      * @param array $files Array of filenames relative to docroot
-     * @param array $options Array of options for combining files. Available options are:
-     * - 'media' : If including CSS Files, you can specify a media type
-     * - 'async' : If including JavaScript Files, boolean value to set async attribute to script tag
-     * - 'defer' : If including JavaScript Files, boolean value to set defer attribute to script tag
+     * @param array $options Array of options for combining files. See `css()` and `javascript()` for details.
      */
     public function combineFiles($combinedFileName, $files, $options = [])
     {
@@ -1156,7 +1116,7 @@ class Requirements_Backend
             }
             switch ($type) {
                 case 'css':
-                    $this->css($path, (isset($options['media']) ? $options['media'] : null), $options);
+                    $this->css($path, null, $options);
                     break;
                 case 'js':
                     $this->javascript($path, $options);
@@ -1303,11 +1263,7 @@ class Requirements_Backend
                         if (!in_array($css, $fileList)) {
                             $newCSS[$css] = $spec;
                         } elseif (!$included && $combinedURL) {
-                            $newCSS[$combinedURL] = [
-                                'media' => $options['media'] ?? null,
-                                'integrity' => $options['integrity'] ?? null,
-                                'crossorigin' => $options['crossorigin'] ?? null,
-                            ];
+                            $newCSS[$combinedURL] = $options;
                             $included = true;
                         }
                         // If already included, or otherwise blocked, then don't add into CSS

@@ -512,7 +512,7 @@ class RequirementsTest extends SapphireTest
 
         /* ASYNC IS INCLUDED IN SCRIPT TAG */
         $this->assertMatchesRegularExpression(
-            '/src=".*' . preg_quote($combinedFileName ?? '', '/') . '" async/',
+            '/async src=".*' . preg_quote($combinedFileName ?? '', '/') . '"/',
             $html,
             'async is included in script tag'
         );
@@ -560,17 +560,17 @@ class RequirementsTest extends SapphireTest
 
         /* NORMAL REQUIREMENTS DON'T HAVE ASYNC/DEFER */
         $this->assertDoesNotMatchRegularExpression(
-            '/src=".*\/RequirementsTest_a\.js\?m=\d+" async/',
+            '/async src=".*\/RequirementsTest_a\.js\?m=\d+"/',
             $html,
             'normal requirements don\'t have async'
         );
         $this->assertDoesNotMatchRegularExpression(
-            '/src=".*\/RequirementsTest_a\.js\?m=\d+" defer/',
+            '/defer src=".*\/RequirementsTest_a\.js\?m=\d+"/',
             $html,
             'normal requirements don\'t have defer'
         );
         $this->assertDoesNotMatchRegularExpression(
-            '/src=".*\/RequirementsTest_a\.js\?m=\d+" async defer/',
+            '/async defer src=".*\/RequirementsTest_a\.js\?m=\d+"/',
             $html,
             'normal requirements don\'t have async/defer'
         );
@@ -586,7 +586,7 @@ class RequirementsTest extends SapphireTest
 
         /* DEFER IS INCLUDED IN SCRIPT TAG */
         $this->assertMatchesRegularExpression(
-            '/src=".*' . preg_quote($combinedFileName ?? '', '/') . '" defer/',
+            '/defer src=".*' . preg_quote($combinedFileName ?? '', '/') . '"/',
             $html,
             'defer is included in script tag'
         );
@@ -634,17 +634,17 @@ class RequirementsTest extends SapphireTest
 
         /* NORMAL REQUIREMENTS DON'T HAVE ASYNC/DEFER */
         $this->assertDoesNotMatchRegularExpression(
-            '/src=".*\/RequirementsTest_a\.js\?m=\d+" async/',
+            '/async src=".*\/RequirementsTest_a\.js\?m=\d+"/',
             $html,
             'normal requirements don\'t have async'
         );
         $this->assertDoesNotMatchRegularExpression(
-            '/src=".*\/RequirementsTest_a\.js\?m=\d+" defer/',
+            '/defer src=".*\/RequirementsTest_a\.js\?m=\d+"/',
             $html,
             'normal requirements don\'t have defer'
         );
         $this->assertDoesNotMatchRegularExpression(
-            '/src=".*\/RequirementsTest_a\.js\?m=\d+" async defer/',
+            '/async defer src=".*\/RequirementsTest_a\.js\?m=\d+"/',
             $html,
             'normal requirements don\'t have async/defer'
         );
@@ -660,7 +660,7 @@ class RequirementsTest extends SapphireTest
 
         /* ASYNC/DEFER IS INCLUDED IN SCRIPT TAG */
         $this->assertMatchesRegularExpression(
-            '/src=".*' . preg_quote($combinedFileName ?? '', '/') . '" async="async" defer="defer"/',
+            '/async defer src=".*' . preg_quote($combinedFileName ?? '', '/') . '"/',
             $html,
             'async and defer are included in script tag'
         );
@@ -1400,14 +1400,13 @@ EOS
         $this->setupRequirements($backend);
 
         $backend->javascript('javascript/RequirementsTest_a.js', ['integrity' => 'abc', 'crossorigin' => 'use-credentials']);
-        // Tests attribute appending AND lowercase string conversion
-        $backend->customScriptWithAttributes("//TEST", ['type' => 'module', 'crossorigin' => 'Anonymous']);
+        $backend->customScriptWithAttributes("//TEST", ['type' => 'module', 'crossorigin' => 'anonymous']);
         $backend->css('css/RequirementsTest_a.css', null, ['integrity' => 'def', 'crossorigin' => 'anonymous']);
         $html = $backend->includeInHTML(RequirementsTest::$html_template);
 
         /* Javascript has correct attributes */
         $this->assertMatchesRegularExpression(
-            '#<script src=".*/javascript/RequirementsTest_a.js.*" integrity="abc" crossorigin="use-credentials"#',
+            '#<script integrity="abc" crossorigin="use-credentials" src=".*/javascript/RequirementsTest_a.js.*"#',
             $html,
             'javascript has correct sri attributes'
         );
@@ -1425,6 +1424,97 @@ EOS
             'css has correct sri attributes'
         );
     }
+
+    public function testJavascriptAttributes()
+    {
+        $backend = Injector::inst()->create(Requirements_Backend::class);
+        $this->setupRequirements($backend);
+        $backend->javascript('javascript/RequirementsTest_a.js', [
+            'arbitrary' => 'abc',
+            'exclude1' => false,
+            'exclude2' => null,
+            'boolean' => true,
+            'notboolean1' => "true",
+            'notboolean2' => "false",
+            'zero' => 0,
+        ]);
+        $html = $backend->includeInHTML(RequirementsTest::$html_template);
+        $this->assertMatchesRegularExpression(
+            '#<script arbitrary="abc" boolean notboolean1="true" notboolean2="false" zero="0" src=".*/javascript/RequirementsTest_a.js.*"#',
+            $html
+        );
+    }
+
+    public function testCustomScriptAttributes()
+    {
+        $backend = Injector::inst()->create(Requirements_Backend::class);
+        $this->setupRequirements($backend);
+        $backend->customScriptWithAttributes('//TEST', [
+            'arbitrary' => 'abc',
+            'exclude1' => false,
+            'exclude2' => null,
+            'boolean' => true,
+            'notboolean1' => "true",
+            'notboolean2' => "false",
+            'zero' => 0,
+        ]);
+        $html = $backend->includeInHTML(RequirementsTest::$html_template);
+        $this->assertMatchesRegularExpression(
+            '#<script arbitrary="abc" boolean notboolean1="true" notboolean2="false" zero="0">//<!\[CDATA\[\s*//TEST\s*//\]\]></script>#',
+            $html
+        );
+    }
+
+    public function testCombineFilesAttributes()
+    {
+        $backend = Injector::inst()->create(Requirements_Backend::class);
+        $this->setupRequirements($backend);
+
+        $backend->javascript('javascript/RequirementsTest_b.js');
+        $backend->javascript('javascript/RequirementsTest_c.js');
+        $backend->combineFiles(
+            'RequirementsTest_bc.js',
+            [
+                'javascript/RequirementsTest_b.js',
+                'javascript/RequirementsTest_c.js'
+            ],
+            [
+                'arbitrary' => 'abc',
+                'exclude1' => false,
+                'exclude2' => null,
+                'boolean' => true,
+                'notboolean1' => "true",
+                'notboolean2' => "false",
+                'zero' => 0,
+            ]
+        );
+        $html = $backend->includeInHTML(RequirementsTest::$html_template);
+        $this->assertMatchesRegularExpression(
+            '#<script arbitrary="abc" boolean notboolean1="true" notboolean2="false" zero="0" src=".*/_combinedfiles/RequirementsTest_bc-[a-z0-9]+.js.*"#',
+            $html
+        );
+    }
+
+    public function testCssAttributes()
+    {
+        $backend = Injector::inst()->create(Requirements_Backend::class);
+        $this->setupRequirements($backend);
+        $backend->css('css/RequirementsTest_a.css', 'screen,protector', [
+            'arbitrary' => 'abc',
+            'exclude1' => false,
+            'exclude2' => null,
+            'boolean' => true,
+            'notboolean1' => "true",
+            'notboolean2' => "false",
+            'zero' => 0,
+        ]);
+        $html = $backend->includeInHTML(RequirementsTest::$html_template);
+        $this->assertMatchesRegularExpression(
+            '#<link .*href=".*/RequirementsTest_a\.css.*" media="screen,protector" arbitrary="abc" boolean notboolean1="true" notboolean2="false" zero="0"#',
+            $html
+        );
+    }
+
 
     public function testUniquenessID()
     {
