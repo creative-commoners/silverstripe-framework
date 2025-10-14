@@ -81,6 +81,7 @@ class DatabaseSessionHandler extends AbstractSessionHandler
      */
     public function read(#[SensitiveParameter] string $id): string|false
     {
+        $this->checkSessionID($id);
         if (!$this->isDatabaseReady()) {
             $this->logError('Could not read session - database is not ready');
             return false;

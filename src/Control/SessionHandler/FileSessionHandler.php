@@ -125,6 +125,7 @@ class FileSessionHandler extends AbstractSessionHandler
      */
     public function read(#[SensitiveParameter] string $id): string|false
     {
+        $this->checkSessionID($id);
         $path = $this->getFilePath($id);
         $filesystem = new Filesystem();
         // If the file doesn't exist, it's a new session so just return empty string.
