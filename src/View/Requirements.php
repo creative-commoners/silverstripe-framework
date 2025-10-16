@@ -121,10 +121,15 @@ class Requirements implements Flushable
      * Register the given JavaScript file as required.
      *
      * @param string $file Relative to docroot
-     * @param array $options List of options. Available options include:
-     * - 'provides' : List of scripts files included in this file
+     * @param array $options List of options. If you're using the default requirements backend, these
+     * will be used as attributes on the `<script>` tag except for 'provides'.
+     * A value with the key 'provides' represents a list of scripts files included in this file.
+     * Examples of options which will be used as attributes include:
      * - 'async' : Boolean value to set async attribute to script tag
      * - 'defer' : Boolean value to set defer attribute to script tag
+     *
+     * If an attribute should exist on its own with no value (e.g. `async`), use a boolean true.
+     * If an attribute should have a value of the string true (e.g. `some-attr="true"`), use a string "true".
      */
     public static function javascript($file, $options = [])
     {
@@ -147,10 +152,14 @@ class Requirements implements Flushable
      * attributes.
      *
      * @param string $script The script content as a string (without enclosing `<script>` tag)
-     * @param array $options List of options. Available options include:
+     * @param array $options List of options. If you're using the default requirements backend, these
+     * are applied as attributes to the `<script>` tag. Examples include:
      * - 'type' : Specifies the type of script
      * - 'crossorigin' : Cross-origin policy for the resource
      * @param string|int|null $uniquenessID A unique ID that ensures a piece of code is only added once
+     *
+     * If an attribute should exist on its own with no value (e.g. `nomodule`), use a boolean true.
+     * If an attribute should have a value of the string true (e.g. `some-attr="true"`), use a string "true".
      */
     public static function customScriptWithAttributes(string $script, array $options = [], string|int|null $uniquenessID = null)
     {
@@ -208,7 +217,8 @@ class Requirements implements Flushable
      * @param string $file  The CSS file to load, relative to site root
      * @param string $media Comma-separated list of media types to use in the link tag
      *                      (e.g. 'screen,projector')
-     * @param array $options List of options. Available options include:
+     * @param array $options List of options. If you're using the default requirements backend, these
+     * are applied as attributes to the `<link>` tag. Examples include:
      * - 'integrity' : SubResource Integrity hash
      * - 'crossorigin' : Cross-origin policy for the resource
      */
@@ -389,10 +399,7 @@ class Requirements implements Flushable
      *
      * @param string $combinedFileName Filename of the combined file relative to docroot
      * @param array  $files            Array of filenames relative to docroot
-     * @param array  $options          Array of options for combining files. Available options are:
-     * - 'media' : If including CSS Files, you can specify a media type
-     * - 'async' : If including JavaScript Files, boolean value to set async attribute to script tag
-     * - 'defer' : If including JavaScript Files, boolean value to set defer attribute to script tag
+     * @param array  $options          Array of options for combining files. See `css()` and `javascript()` for details
      */
     public static function combine_files($combinedFileName, $files, $options = [])
     {

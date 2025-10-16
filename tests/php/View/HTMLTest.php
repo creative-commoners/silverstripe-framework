@@ -26,8 +26,9 @@ class HTMLTest extends SapphireTest
             'details' => null,
             'disabled' => false,
             'readonly' => true,
+            'somethingelse' => 'true',
         ]);
-        $this->assertEquals('<meta value="0" max="3" readonly="1">', $tag);
+        $this->assertEquals('<meta value="0" max="3" readonly somethingelse="true">', $tag);
     }
 
     public function testNormalTag()

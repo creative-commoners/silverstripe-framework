@@ -68,12 +68,21 @@ class HTML
             $whitelisted = in_array($attributeKey, $legalEmptyAttributes ?? []);
 
             // Only set non-empty strings (ensures strlen(0) > 0)
+            // Note that boolean `true` passes this condition but boolean `false` does not
+            // This allows setting value-less boolean attributes such as `defer`
             if (strlen($attributeValue ?? '') > 0 || $whitelisted) {
-                $preparedAttributes .= sprintf(
-                    ' %s="%s"',
-                    $attributeKey,
-                    Convert::raw2att($attributeValue)
-                );
+                if ($attributeValue === true) {
+                    $preparedAttributes .= sprintf(
+                        ' %s',
+                        $attributeKey
+                    );
+                } else {
+                    $preparedAttributes .= sprintf(
+                        ' %s="%s"',
+                        $attributeKey,
+                        Convert::raw2att($attributeValue)
+                    );
+                }
             }
         }
 
