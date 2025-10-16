@@ -164,12 +164,15 @@ class FileSessionHandler extends AbstractSessionHandler
         $path = $this->getFilePath($id);
         $filesystem = new Filesystem();
 
-        // Save file contents
-        try {
-            $filesystem->dumpFile($path, $data);
-        } catch (IOException $e) {
-            $this->logError('Could not write to session file: ' . $this->getSafeExceptionMessage($e, $id));
-            return false;
+        // Create the file if it doesn't exist
+        // We do this without data initially so an attacker doesn't have access to session data with potentially invalid permissions
+        if (!$filesystem->exists($path)) {
+            try {
+                $filesystem->dumpFile($path, '');
+            } catch (IOException $e) {
+                $this->logError('Could not create session file: ' . $this->getSafeExceptionMessage($e, $id));
+                return false;
+            }
         }
 
         // Set file permissions
@@ -180,6 +183,14 @@ class FileSessionHandler extends AbstractSessionHandler
                 $this->logError('Could not set permissions for session file: ' . $this->getSafeExceptionMessage($e, $id));
                 return false;
             }
+        }
+
+        // Save file contents
+        try {
+            $filesystem->dumpFile($path, $data);
+        } catch (IOException $e) {
+            $this->logError('Could not write to session file: ' . $this->getSafeExceptionMessage($e, $id));
+            return false;
         }
 
         return true;
@@ -233,6 +244,10 @@ class FileSessionHandler extends AbstractSessionHandler
      */
     private function setSavePath(string $path): void
     {
+        // If session.save-path is empty, we should use the tmp dir.
+        if (!$path) {
+            $path = sys_get_temp_dir();
+        }
         // Handle configuration for depth and mode arguments
         // $path can have up to two optional params ending with semi-colon defining
         // 1) the number of subdirs and 2) the octal mode e.g. N;MODE;/path
