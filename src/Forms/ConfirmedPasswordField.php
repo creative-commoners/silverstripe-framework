@@ -212,6 +212,7 @@ class ConfirmedPasswordField extends FormField
             'message' => $message,
             'tooLow' => $tooLow,
         ]));
+        $response->addHeader('Content-Type', 'application/json');
         return $response;
     }
 

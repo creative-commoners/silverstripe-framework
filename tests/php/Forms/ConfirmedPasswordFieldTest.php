@@ -19,6 +19,7 @@ use Closure;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Security\Validation\EntropyPasswordValidator;
 use SilverStripe\Security\Validation\PasswordValidator;
 use SilverStripe\Core\Injector\Injector;
@@ -599,6 +600,9 @@ class ConfirmedPasswordFieldTest extends SapphireTest
         $response = $field->strength($request);
         $this->assertSame($expectedStatusCode, $response->getStatusCode());
         $this->assertSame($expectedBody, $response->getBody());
+        $defaultContentType = (new HTTPResponse)->getHeader('Content-Type');
+        $expectedContentType = $expectedBody ? 'application/json' : $defaultContentType;
+        $this->assertSame($expectedContentType, $response->getHeader('Content-Type'));
     }
     
     public static function provideDataAttributes(): array
