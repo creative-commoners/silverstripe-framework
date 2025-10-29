@@ -77,10 +77,10 @@ class DBEnum extends DBString implements Resettable
             $this->setEnum($enum);
             $enum = $this->getEnum();
 
-            // If there's a default, then use this
+            // If there's a default, then use it
             if ($default && !is_int($default)) {
                 if (in_array($default, $enum)) {
-                    $this->setDefault($default);
+                    $options['default'] = $default;
                 } else {
                     throw new \InvalidArgumentException(
                         "Enum::__construct() The default value '$default' does not match any item in the enumeration"
@@ -88,10 +88,10 @@ class DBEnum extends DBString implements Resettable
                 }
             } elseif (is_int($default) && $default < count($enum)) {
                 // Set to specified index if given
-                $this->setDefault($enum[$default]);
+                $options['default'] = $enum[$default];
             } else {
                 // Set to null if specified
-                $this->setDefault(null);
+                $options['default'] = null;
             }
         }
 
@@ -252,6 +252,20 @@ class DBEnum extends DBString implements Resettable
     {
         $this->default = $default;
         $this->setDefaultValue($default);
+        return $this;
+    }
+
+    public function setOptions(array $options = []): static
+    {
+        parent::setOptions($options);
+
+        if (array_key_exists('default', $options)) {
+            if ($this->getNullifyEmpty() && $this->isEmptyValue($options['default'])) {
+                $options['default'] = null;
+            }
+            $this->setDefault($options['default']);
+        }
+
         return $this;
     }
 }

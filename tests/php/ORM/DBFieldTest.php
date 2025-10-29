@@ -58,6 +58,7 @@ use SilverStripe\Core\Validation\FieldValidation\DatetimeFieldValidator;
 use SilverStripe\ORM\FieldType\DBClassNameVarchar;
 use SilverStripe\Core\Validation\FieldValidation\NumericFieldValidator;
 use SilverStripe\Core\Validation\FieldValidation\NumericNonStringFieldValidator;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBGenerated;
 
 /**
@@ -424,12 +425,14 @@ class DBFieldTest extends SapphireTest
 
     public function testDefaultValues(): void
     {
+        $dataObjectClasses = ClassInfo::subclassesFor(DataObject::class, false);
         $expectedBaseDefault = null;
         $expectedDefaults = [
             DBBoolean::class => false,
             DBDecimal::class => 0.0,
             DBInt::class => 0,
             DBFloat::class => 0.0,
+            DBClassName::class => $dataObjectClasses[array_key_first($dataObjectClasses)],
         ];
         $count = 0;
         $classes = ClassInfo::subclassesFor(DBField::class);

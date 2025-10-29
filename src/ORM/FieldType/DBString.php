@@ -30,8 +30,13 @@ abstract class DBString extends DBField
      */
     public function __construct($name = null, $options = [])
     {
-        $this->options['nullifyEmpty'] = true;
-        $this->options['default'] = '';
+        $options = is_array($options) ? $options : [];
+        if (!array_key_exists('nullifyEmpty', $options)) {
+            $options['nullifyEmpty'] = true;
+        }
+        if (!array_key_exists('default', $options)) {
+            $options['default'] = '';
+        }
         parent::__construct($name, $options);
     }
 
@@ -49,10 +54,13 @@ abstract class DBString extends DBField
     {
         parent::setOptions($options);
 
-        if (array_key_exists('nullifyEmpty', $options ?? [])) {
+        if (array_key_exists('nullifyEmpty', $options)) {
             $this->options['nullifyEmpty'] = (bool) $options['nullifyEmpty'];
         }
-        if (array_key_exists('default', $options ?? [])) {
+        if (array_key_exists('default', $options)) {
+            if ($this->getNullifyEmpty() && $this->isEmptyValue($options['default'])) {
+                $options['default'] = null;
+            }
             $this->setDefaultValue($options['default']);
         }
 
@@ -93,7 +101,7 @@ abstract class DBString extends DBField
     public function prepValueForDB(mixed $value): array|string|null
     {
         // Cast non-empty value
-        if (is_scalar($value) && strlen($value ?? '')) {
+        if (!$this->isEmptyValue($value)) {
             return (string)$value;
         }
 
@@ -102,6 +110,21 @@ abstract class DBString extends DBField
             return null;
         }
         return '';
+    }
+
+    public function writeToManipulation(array &$manipulation): void
+    {
+        // If we're not nullifying empty, the empty string should be passed to the database as-is.
+        if (!$this->getNullifyEmpty() && $this->getValue() === '') {
+            $manipulation['fields'][$this->name] = '';
+        } else {
+            parent::writeToManipulation($manipulation);
+        }
+    }
+
+    protected function isEmptyValue(mixed $value): bool
+    {
+        return !is_scalar($value) || strlen($value ?? '') === 0;
     }
 
     public function forTemplate(): string

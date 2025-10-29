@@ -82,12 +82,13 @@ class DBVarchar extends DBString
             'precision' => $this->size,
             'character set' => $charset,
             'collate' => $collation,
-            'arrayValue' => $this->arrayValue
+            'arrayValue' => $this->arrayValue,
+            'default' => $this->getDefaultValue(),
         ];
 
         return [
             'type' => 'varchar',
-            'parts' => $parts
+            'parts' => $parts,
         ];
     }
 
