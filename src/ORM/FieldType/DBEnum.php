@@ -9,6 +9,7 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\SelectField;
 use SilverStripe\Core\ArrayLib;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\ORM\Connect\MySQLDatabase;
 use SilverStripe\ORM\DB;
 use SilverStripe\Model\ModelData;
@@ -33,6 +34,7 @@ class DBEnum extends DBString implements Resettable
 
     /**
      * Default value
+     * @deprecated 6.2.0 Use setDefaultValue() and getDefaultValue() instead.
      */
     protected ?string $default = null;
 
@@ -116,7 +118,7 @@ class DBEnum extends DBString implements Resettable
             'enums' => $this->getEnumObsolete(),
             'character set' => $charset,
             'collate' => $collation,
-            'default' => $this->getDefault(),
+            'default' => $this->getDefaultValue(),
             'table' => $this->getTable(),
             'arrayValue' => $this->arrayValue
         ];
@@ -239,33 +241,23 @@ class DBEnum extends DBString implements Resettable
 
     /**
      * Get default value
+     * @deprecated 6.2.0 Use getDefaultValue() instead.
      */
     public function getDefault(): ?string
     {
-        return $this->default;
+        Deprecation::notice('6.2.0', 'Use getDefaultValue() instead.');
+        return $this->default ?? $this->getDefaultValue();
     }
 
     /**
      * Set default value
+     * @deprecated 6.2.0 Use setDefaultValue() instead.
      */
     public function setDefault(?string $default): static
     {
+        Deprecation::notice('6.2.0', 'Use setDefaultValue() instead.');
         $this->default = $default;
         $this->setDefaultValue($default);
-        return $this;
-    }
-
-    public function setOptions(array $options = []): static
-    {
-        parent::setOptions($options);
-
-        if (array_key_exists('default', $options)) {
-            if ($this->getNullifyEmpty() && $this->isEmptyValue($options['default'])) {
-                $options['default'] = null;
-            }
-            $this->setDefault($options['default']);
-        }
-
         return $this;
     }
 }
