@@ -16,7 +16,6 @@ use SilverStripe\Core\Validation\ValidationInterface;
 use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Dev\Debug;
 use SilverStripe\Dev\Deprecation;
-use SilverStripe\Forms\FieldGroup;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\FormScaffolder;
@@ -2496,20 +2495,7 @@ class DataObject extends ModelData implements DataObjectInterface, i18nEntityPro
 
             // If we're using a WithinRangeFilter, split the field into two separate fields (from and to)
             if (is_a($spec['filter'] ?? '', WithinRangeFilter::class, true)) {
-                $fieldFrom = $field;
-                $fieldTo = clone $field;
-                $originalTitle = $field->Title();
-                $originalName = $field->getName();
-
-                $fieldFrom->setName($originalName . '_SearchFrom');
-                $fieldFrom->setTitle(_t(__CLASS__ . '.FILTER_WITHINRANGE_FROM', 'From'));
-                $fieldTo->setName($originalName . '_SearchTo');
-                $fieldTo->setTitle(_t(__CLASS__ . '.FILTER_WITHINRANGE_TO', 'To'));
-
-                $field = FieldGroup::create(
-                    $originalTitle,
-                    [$fieldFrom, $fieldTo]
-                )->setName($originalName)->addExtraClass('fieldgroup--fill-width');
+                $field = WithinRangeFilter::convertToRangeField($field);
             }
 
             $fields->push($field);
