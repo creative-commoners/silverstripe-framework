@@ -741,6 +741,10 @@ class GridField extends FormField
                 'tr',
                 [
                     'class' => 'ss-gridfield-item ss-gridfield-no-items',
+                    // The "role" attribute should be redundant, but since it's clickable via javascript some assistive
+                    // technologies may think it's an interactive element for the purposes of WCAG 2.2 A 4.1.2.
+                    // We hope that adding an explicit "role" helps resolve that confusion.
+                    'role' => 'row',
                 ],
                 $cell
             );
@@ -860,6 +864,7 @@ class GridField extends FormField
 
         return [
             'class' => implode(' ', $rowClasses),
+            'role' => 'row',
             'data-id' => $record->ID,
             'data-class' => $record->ClassName,
         ];
