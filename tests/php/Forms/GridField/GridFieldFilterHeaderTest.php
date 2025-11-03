@@ -3,6 +3,7 @@
 namespace SilverStripe\Forms\Tests\GridField;
 
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
 use ReflectionProperty;
 use SilverStripe\Control\HTTPRequest;
@@ -14,6 +15,7 @@ use SilverStripe\Forms\Form;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
+use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use SilverStripe\Forms\GridField\GridFieldFilterHeader;
 use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\Cheerleader;
 use SilverStripe\Forms\Tests\GridField\GridFieldFilterHeaderTest\CheerleaderHat;
@@ -197,6 +199,44 @@ class GridFieldFilterHeaderTest extends SapphireTest
         $component = $gridField->getConfig()->getComponentByType(GridFieldFilterHeader::class);
 
         $this->assertFalse($component->canFilterAnyColumns($gridField));
+    }
+
+    public static function provideCanFilterAnyColumnsOnlyAdditional(): array
+    {
+        return [
+            [
+                'dataClass' => ArrayData::class,
+            ],
+            [
+                'dataClass' => Team::class,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideCanFilterAnyColumnsOnlyAdditional')]
+    public function testCanFilterAnyColumnsOnlyAdditional(string $dataClass): void
+    {
+        $config = GridFieldConfig::create()->addComponents([
+            $filter = new GridFieldFilterHeader(),
+            $columnData = new GridFieldDataColumns(),
+        ]);
+
+        if ($dataClass === ArrayData::class) {
+            $list = new ArrayList([
+                new ArrayData(['Title' => 'Boogie']),
+            ]);
+            $searchContext = new BasicSearchContext(ArrayData::class);
+            $columnData->setDisplayFields(['Title' => 'Title']);
+        } else {
+            $list = new DataList($dataClass);
+            $searchContext = singleton($dataClass)->getDefaultSearchContext();
+        }
+
+        $filter->setSearchContext($searchContext);
+        $searchContext->addAdditionalFieldSpecs(['Title' => []]);
+        $gridField = new GridField('testfield', 'testfield', $list, $config);
+
+        $this->assertTrue($filter->canFilterAnyColumns($gridField));
     }
 
     public function testRenderHeadersNonDataObject()

@@ -342,6 +342,23 @@ class BasicSearchContextTest extends SapphireTest
         $this->assertCount(0, $results);
     }
 
+    public function testAdditionalFieldSpecs(): void
+    {
+        $general1 = $this->objFromFixture(SearchContextTest\GeneralSearch::class, 'general1');
+        $list = new ArrayList();
+        $list->merge(SearchContextTest\GeneralSearch::get());
+        $generalField = BasicSearchContext::config()->get('general_search_field_name');
+        $context = new BasicSearchContext(SearchContextTest\GeneralSearch::class);
+        $context->addAdditionalFieldSpecs([
+            'ExcludeThisField' => [
+                'general' => true,
+            ],
+        ]);
+        // Overriding the field spec above should let us find results using this field
+        $results = $context->getQuery([$generalField => $general1->ExcludeThisField], existingQuery: $list);
+        $this->assertNotEmpty($general1->ExcludeThisField);
+        $this->assertCount(2, $results);
+    }
 
     #[DataProviderExternal(SearchContextTest::class, 'provideQueryWithinRangeFilter')]
     public function testQueryWithinRangeFilter(array $params, array $expectedFixtureNames): void

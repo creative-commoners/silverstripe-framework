@@ -589,6 +589,41 @@ class SearchContextTest extends SapphireTest
         $results = $context->getResults([$generalField => 'arbitrary']);
         $this->assertCount(1, $results);
         $this->assertEquals('General One', $results->first()->Name);
+
+        // Matches nothing, because that field is excluded from general search
+        $results = $context->getResults([$generalField => 'excluded']);
+        $this->assertCount(0, $results);
+
+        // Matches against MatchAny1 or MatchAny2 field via MatchAny
+        $results = $context->getResults([$generalField => 'first']);
+        $this->assertCount(1, $results);
+        $results = $context->getResults([$generalField => 'second']);
+        $this->assertCount(1, $results);
+    }
+
+    public function testAdditionalFieldSpecs(): void
+    {
+        $general1 = $this->objFromFixture(SearchContextTest\GeneralSearch::class, 'general1');
+        $generalField = $general1->getGeneralSearchFieldName();
+        $context = $general1->getDefaultSearchContext();
+        $context->addAdditionalFieldSpecs([
+            'ExcludeThisField' => [
+                'general' => true,
+            ],
+            'MatchAny' => [
+                'match_any' => [
+                    'MatchAny1',
+                ],
+            ],
+        ]);
+
+        // Compare with testGeneralSearch
+        $results = $context->getResults([$generalField => 'excluded']);
+        $this->assertCount(2, $results);
+        $results = $context->getResults([$generalField => 'first']);
+        $this->assertCount(1, $results);
+        $results = $context->getResults([$generalField => 'second']);
+        $this->assertCount(0, $results);
     }
 
     public function testSpecificSearchFields()
