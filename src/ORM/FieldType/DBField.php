@@ -12,6 +12,7 @@ use SilverStripe\ORM\Queries\SQLSelect;
 use SilverStripe\Model\ModelData;
 use SilverStripe\Core\Validation\FieldValidation\FieldValidationTrait;
 use SilverStripe\Core\Validation\FieldValidation\FieldValidationInterface;
+use SilverStripe\Dev\Deprecation;
 
 /**
  * Single field in the database.
@@ -65,6 +66,8 @@ abstract class DBField extends ModelData implements DBIndexable, FieldValidation
     /**
      * Used for generating DB schema. {@see DBSchemaManager}
      * Despite its name, this seems to be a string
+     *
+     * @deprecated 6.2.0 Will be removed without equivalent functionality to replace it in a future major release.
      */
     protected $arrayValue;
 
@@ -531,13 +534,21 @@ DBG;
         return (string)$this->forTemplate();
     }
 
+    /**
+     * @deprecated 6.2.0 Will be removed without equivalent functionality to replace it in a future major release.
+     */
     public function getArrayValue()
     {
+        Deprecation::noticeWithNoReplacment('6.2.0');
         return $this->arrayValue;
     }
 
+    /**
+     * @deprecated 6.2.0 Will be removed without equivalent functionality to replace it in a future major release.
+     */
     public function setArrayValue($value): static
     {
+        Deprecation::noticeWithNoReplacment('6.2.0');
         $this->arrayValue = $value;
         return $this;
     }

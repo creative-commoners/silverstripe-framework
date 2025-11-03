@@ -412,7 +412,6 @@ abstract class DBSchemaManager
                 if ($pos !== false) {
                     //If so, remove it and store that info separately
                     $arrayValue = substr($fieldSpec, $pos);
-                    $fieldSpec = substr($fieldSpec, 0, $pos);
                 }
 
                 /** @var DBField $fieldObj */

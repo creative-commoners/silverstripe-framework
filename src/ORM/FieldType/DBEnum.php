@@ -9,6 +9,7 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\SelectField;
 use SilverStripe\Core\ArrayLib;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\ORM\Connect\MySQLDatabase;
 use SilverStripe\ORM\DB;
 use SilverStripe\Model\ModelData;
@@ -33,6 +34,7 @@ class DBEnum extends DBString implements Resettable
 
     /**
      * Default value
+     * @deprecated 6.2.0 Use setDefaultValue() and getDefaultValue() instead.
      */
     protected ?string $default = null;
 
@@ -77,10 +79,10 @@ class DBEnum extends DBString implements Resettable
             $this->setEnum($enum);
             $enum = $this->getEnum();
 
-            // If there's a default, then use this
+            // If there's a default, then use it
             if ($default && !is_int($default)) {
                 if (in_array($default, $enum)) {
-                    $this->setDefault($default);
+                    $options['default'] = $default;
                 } else {
                     throw new \InvalidArgumentException(
                         "Enum::__construct() The default value '$default' does not match any item in the enumeration"
@@ -88,10 +90,10 @@ class DBEnum extends DBString implements Resettable
                 }
             } elseif (is_int($default) && $default < count($enum)) {
                 // Set to specified index if given
-                $this->setDefault($enum[$default]);
+                $options['default'] = $enum[$default];
             } else {
                 // Set to null if specified
-                $this->setDefault(null);
+                $options['default'] = null;
             }
         }
 
@@ -116,7 +118,7 @@ class DBEnum extends DBString implements Resettable
             'enums' => $this->getEnumObsolete(),
             'character set' => $charset,
             'collate' => $collation,
-            'default' => $this->getDefault(),
+            'default' => $this->getDefaultValue(),
             'table' => $this->getTable(),
             'arrayValue' => $this->arrayValue
         ];
@@ -239,17 +241,21 @@ class DBEnum extends DBString implements Resettable
 
     /**
      * Get default value
+     * @deprecated 6.2.0 Use getDefaultValue() instead.
      */
     public function getDefault(): ?string
     {
-        return $this->default;
+        Deprecation::notice('6.2.0', 'Use getDefaultValue() instead.');
+        return $this->default ?? $this->getDefaultValue();
     }
 
     /**
      * Set default value
+     * @deprecated 6.2.0 Use setDefaultValue() instead.
      */
     public function setDefault(?string $default): static
     {
+        Deprecation::notice('6.2.0', 'Use setDefaultValue() instead.');
         $this->default = $default;
         $this->setDefaultValue($default);
         return $this;

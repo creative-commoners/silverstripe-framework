@@ -59,8 +59,8 @@ class DBText extends DBString
             'datatype' => 'mediumtext',
             'character set' => $charset,
             'collate' => $collation,
-            'default' => $this->defaultVal,
-            'arrayValue' => $this->arrayValue
+            'default' => $this->getDefaultValue(),
+            'arrayValue' => $this->arrayValue,
         ];
 
         return [

@@ -5,6 +5,7 @@ namespace SilverStripe\ORM\FieldType;
 use InvalidArgumentException;
 use SilverStripe\Assets\Storage\DBFile;
 use SilverStripe\Core\Validation\ValidationResult;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Model\ModelData;
 use SilverStripe\ORM\DB;
@@ -126,8 +127,12 @@ class DBGenerated extends DBField
         return $this->getChildField()->getValue();
     }
 
+    /**
+     * @deprecated 6.2.0 Will be removed without equivalent functionality to replace it in a future major release.
+     */
     public function getArrayValue()
     {
+        Deprecation::noticeWithNoReplacment('6.2.0');
         return $this->getChildField()->getArrayValue();
     }
 
@@ -142,8 +147,12 @@ class DBGenerated extends DBField
         return parent::setValue($value, $record, $markChanged);
     }
 
+    /**
+     * @deprecated 6.2.0 Will be removed without equivalent functionality to replace it in a future major release.
+     */
     public function setArrayValue($value): static
     {
+        Deprecation::noticeWithNoReplacment('6.2.0');
         $this->getChildField()->setArrayValue($value);
         return parent::setArrayValue($value);
     }

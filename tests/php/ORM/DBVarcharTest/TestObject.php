@@ -11,6 +11,8 @@ class TestObject extends DataObject implements TestOnly
 
     private static $db = [
         'Title' => 'Varchar(129)',
-        'NullableField' => 'Varchar(111, ["nullifyEmpty" => false])'
+        'NullableField' => 'Varchar(111, ["nullifyEmpty" => false])',
+        'HasDefault' => 'Varchar(50, ["default" => "default value"])',
+        'HasDefaultOldSyntax' => 'Varchar(50, array("default" => "default value"))',
     ];
 }
