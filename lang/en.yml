@@ -189,10 +189,16 @@ en:
     Search_Default: Search
   SilverStripe\Forms\GridField\GridFieldGroupDeleteAction:
     UnlinkSelfFailure: 'Cannot remove yourself from this group, you will lose admin rights'
+  SilverStripe\Forms\GridField\GridFieldImportButton:
+    CLOSE_MODAL: Close
   SilverStripe\Forms\GridField\GridFieldLevelUp:
+    NavigateUp: 'Navigate up a level'
+  SilverStripe\Forms\GridField\GridFieldLevelup:
     NavigateUp: 'Navigate up a level'
   SilverStripe\Forms\GridField\GridFieldPaginator:
     First: First
+    Last: Last
+    Next: Next
     OF: of
     Page: Page
     Previous: Previous
