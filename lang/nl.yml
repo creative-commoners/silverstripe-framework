@@ -170,7 +170,7 @@ nl:
     NEXT: 'Naar volgende item'
     PREVIOUS: 'Naar vorige item'
     SAVEDUP: 'Succesvol opgeslagen'
-    SAVETOASTMESSAGE: '{type} "{name}" is opgeslagen'
+    SAVETOASTMESSAGE: '{type} "{title}" is opgeslagen'
     ViewPermissionsFailure: 'Onvoldoende rechten om "{ObjectTitle}" te bekijken'
   SilverStripe\Forms\GridField\GridFieldEditButton:
     EDIT: Bewerken
@@ -180,9 +180,13 @@ nl:
     Search_Default: Zoek
   SilverStripe\Forms\GridField\GridFieldGroupDeleteAction:
     UnlinkSelfFailure: 'Je kan jezelf niet verwijderen van deze groep, omdat je dan geen admin-rechten meer hebt.'
+  SilverStripe\Forms\GridField\GridFieldImportButton:
+    CLOSE_MODAL: Sluiten
   SilverStripe\Forms\GridField\GridFieldPaginator:
+    Next: Volgende
     OF: van
     Page: Pagina
+    Previous: Vorige
     View: Bekijk
   SilverStripe\Forms\GridField\GridFieldViewButton:
     VIEW: Bekijk
