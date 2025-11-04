@@ -15,6 +15,8 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
 use SilverStripe\Forms\GridField\GridField;
+use PHPUnit\Framework\Attributes\DataProvider;
+use DOMDocument;
 
 class GridFieldSortableHeaderTest extends SapphireTest
 {
@@ -248,5 +250,57 @@ class GridFieldSortableHeaderTest extends SapphireTest
         $state->SortDirection = 'asc';
 
         $component->getManipulatedData($gridField, $list);
+    }
+
+    public static function provideTestAriaSortAttributes(): array
+    {
+        return [
+            'unsorted' => [
+                'sortColumn' => null,
+                'sortDirection' => null,
+                'expected' => null,
+            ],
+            'ascending' => [
+                'sortColumn' => 'Name',
+                'sortDirection' => 'asc',
+                'expected' => 'ascending',
+            ],
+            'descending' => [
+                'sortColumn' => 'Name',
+                'sortDirection' => 'desc',
+                'expected' => 'descending',
+            ],
+        ];
+    }
+
+    #[DataProvider('provideTestAriaSortAttributes')]
+    public function testAriaSortAttributes(
+        ?string $sortColumn,
+        ?string $sortDirection,
+        ?string $expected
+    ): void {
+        $list = new DataList(Team::class);
+        $config = new GridFieldConfig_RecordEditor();
+        $form = new Form(null, 'Form', new FieldList(), new FieldList());
+        $gridField = new GridField('testfield', 'testfield', $list, $config);
+        $gridField->setForm($form);
+        $component = $gridField->getConfig()->getComponentByType(GridFieldSortableHeader::class);
+        $state = $gridField->State->GridFieldSortableHeader;
+        if ($sortColumn !== null) {
+            $state->SortColumn = $sortColumn;
+        }
+        if ($sortDirection !== null) {
+            $state->SortDirection = $sortDirection;
+        }
+        $html = $component->getHTMLFragments($gridField)['header']->getValue();
+        $dom = new DOMDocument();
+        $dom->loadHTML($html);
+        $th = $dom->getElementsByTagName('tr')->item(0)->getElementsByTagName('th')->item(0);
+        if ($expected === null) {
+            $this->assertFalse($th->hasAttribute('aria-sort'));
+            return;
+        } else {
+            $this->assertTrue($th->getAttribute('aria-sort') === $expected);
+        }
     }
 }
