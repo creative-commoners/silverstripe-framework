@@ -124,13 +124,12 @@ class BasicSearchContext extends SearchContext
     private function getCanGeneralSearch(string $fieldName): bool
     {
         $singleton = singleton($this->modelClass);
+        $fields = $this->getSearchFieldsSpec($singleton);
 
         // Allowed if we're dealing with arbitrary data.
-        if (!ClassInfo::hasMethod($singleton, 'searchableFields')) {
+        if (empty($fields) && !ClassInfo::hasMethod($singleton, 'searchableFields')) {
             return true;
         }
-
-        $fields = $singleton->searchableFields();
 
         // Not allowed if the field isn't searchable.
         if (!isset($fields[$fieldName])) {

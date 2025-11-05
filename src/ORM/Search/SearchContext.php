@@ -90,6 +90,12 @@ class SearchContext
     protected $withinRangeFieldsChecked = [];
 
     /**
+     * Specifications for searchable fields to add to the specifications returned from
+     * searchableFields() on the model.
+     */
+    private array $additionalFieldSpecs = [];
+
+    /**
      * A key value pair of values that should be searched for.
      * The keys should match the field names specified in {@link SearchContext::$fields}.
      * Usually these values come from a submitted searchform
@@ -117,18 +123,17 @@ class SearchContext
      */
     public function getSearchFields()
     {
-        if ($this->fields?->exists()) {
-            return $this->fields;
+        if (!$this->fields->exists()) {
+            $singleton = singleton($this->modelClass);
+            if (!$singleton->hasMethod('scaffoldSearchFields')) {
+                throw new LogicException(
+                    'Cannot dynamically determine search fields. Pass the fields to setFields()'
+                    . " or implement a scaffoldSearchFields() method on {$this->modelClass}"
+                );
+            }
+            $this->fields = $singleton->scaffoldSearchFields();
         }
-
-        $singleton = singleton($this->modelClass);
-        if (!$singleton->hasMethod('scaffoldSearchFields')) {
-            throw new LogicException(
-                'Cannot dynamically determine search fields. Pass the fields to setFields()'
-                . " or implement a scaffoldSearchFields() method on {$this->modelClass}"
-            );
-        }
-        return $singleton->scaffoldSearchFields();
+        return $this->fields;
     }
 
     protected function applyBaseTableFields()
@@ -175,7 +180,7 @@ class SearchContext
         $this->withinRangeFieldsChecked = [];
         /** @var DataObject $modelObj */
         $modelObj = Injector::inst()->create($this->modelClass);
-        $searchableFields = $modelObj->searchableFields();
+        $searchableFields = $this->getSearchFieldsSpec($modelObj);
         foreach ($this->searchParams as $searchField => $searchPhrase) {
             $searchField = str_replace('__', '.', $searchField ?? '');
             if ($searchField !== '' && $searchField === $modelObj->getGeneralSearchFieldName()) {
@@ -512,6 +517,47 @@ class SearchContext
     public function getSearchParams()
     {
         return $this->searchParams;
+    }
+
+    /**
+     * Get the specification for searchable fields, e.g. which fields can be used in general search.
+     * This is a combination of searchableFields() (where applicable) and getAdditionalFieldSpecs().
+     */
+    public function getSearchFieldsSpec(?object $modelObject): array
+    {
+        if (!$modelObject) {
+            $modelObject = Injector::inst()->create($this->modelClass);
+        }
+        if (!ClassInfo::hasMethod($modelObject, 'searchableFields')) {
+            return $this->getAdditionalFieldSpecs();
+        }
+        return array_merge($modelObject->searchableFields(), $this->getAdditionalFieldSpecs());
+    }
+
+    /**
+     * Get the additional field specifications that are applied on top of any searchableFields().
+     */
+    public function getAdditionalFieldSpecs(): array
+    {
+        return $this->additionalFieldSpecs;
+    }
+
+    /**
+     * Add field specifications to be applied on top of any searchableFields().
+     */
+    public function addAdditionalFieldSpecs(array $specs): static
+    {
+        $this->additionalFieldSpecs = array_merge($this->additionalFieldSpecs, $specs);
+        return $this;
+    }
+
+    /**
+     * Set field specifications to be applied on top of any searchableFields().
+     */
+    public function setAdditionalFieldSpecs(array $specs): static
+    {
+        $this->additionalFieldSpecs = $specs;
+        return $this;
     }
 
     public function getModelClass(): string
