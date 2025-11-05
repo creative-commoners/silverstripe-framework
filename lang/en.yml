@@ -203,6 +203,9 @@ en:
     Page: Page
     Previous: Previous
     View: View
+    Pagination: Pagination
+    PaginationForTitle: Pagination for {title}
+    InputTitle: 'Current page, currently {current} of {total}'
   SilverStripe\Forms\GridField\GridFieldViewButton:
     VIEW: View
   SilverStripe\Forms\HTMLEditor\TinyMCEConfig:
