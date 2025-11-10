@@ -283,7 +283,13 @@ class GridFieldPaginator extends AbstractGridFieldComponent implements GridField
                 'LastPage' => $lastPage,
                 'FirstShownRecord' => $firstShownRecord,
                 'LastShownRecord' => $lastShownRecord,
-                'NumRecords' => $totalRows
+                'NumRecords' => $totalRows,
+                'InputTitle' => _t(
+                    __CLASS__ . '.InputTitle',
+                    'Current page, currently {current} of {total}',
+                    ['current' => $state->currentPage, 'total' => $totalPages]
+                ),
+                'AriaLabel' => $this->getAriaLabel($gridField),
             ]);
         }
     }
@@ -324,5 +330,26 @@ class GridFieldPaginator extends AbstractGridFieldComponent implements GridField
     public function getItemsPerPage()
     {
         return $this->itemsPerPage;
+    }
+
+    /**
+    * An accessible ARIA label using the GridField's title or model name.
+     */
+    private function getAriaLabel(GridField $gridField): string
+    {
+        $title = $gridField->Title();
+        if (!$title) {
+            try {
+                $modelClass = $gridField->getModelClass();
+                $title = $modelClass::singleton()->i18n_plural_name();
+            } catch (LogicException) {
+                return _t(__CLASS__ . '.Pagination', 'Pagination');
+            }
+        }
+        return _t(
+            __CLASS__ . '.PaginationForTitle',
+            'Pagination for {title}',
+            ['title' => $title]
+        );
     }
 }
