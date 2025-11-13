@@ -92,6 +92,9 @@ class FormField extends RequestHandler implements FieldValidationInterface
     /** @see $schemaDataType */
     const SCHEMA_DATA_TYPE_STRUCTURAL = 'Structural';
 
+    /** @see $schemaDataType */
+    const SCHEMA_DATA_TYPE_STRUCTURAL_CUSTOM = 'StructuralCustom';
+
     /**
      * @var Form
      */
@@ -242,6 +245,10 @@ class FormField extends RequestHandler implements FieldValidationInterface
      *   - Structural: Represents a field that is NOT posted back. This may contain other fields,
      *     or simply be a block of stand-alone content. As with 'Custom',
      *     the component property is mandatory if this is assigned.
+     *   - StructuralCustom: Represents a field that is NOT posted back. This field must have the
+     *     capability of containing other fields - the child field schema will be passed in instead
+     *     of passing in the child components directly. The component property is mandatory if this
+     *     is assigned.
      *
      * Each value has an equivalent constant, e.g. {@link FormField::SCHEMA_DATA_TYPE_STRING}.
      *
