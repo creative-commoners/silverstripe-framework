@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Forms;
 
+use LogicException;
 use SilverStripe\Core\Validation\FieldValidation\CompositeFieldValidator;
 use SilverStripe\Dev\Debug;
 
@@ -58,6 +59,9 @@ class CompositeField extends FormField
 
     public function __construct($children = null)
     {
+        if ($this instanceof ChildFieldManager) {
+            throw new LogicException('CompositeField must not implement ChildFieldManager');
+        }
         // Normalise $children to a FieldList
         if (!$children instanceof FieldList) {
             if (!is_array($children)) {

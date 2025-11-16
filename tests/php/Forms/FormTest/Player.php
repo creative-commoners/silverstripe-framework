@@ -13,7 +13,8 @@ class Player extends DataObject implements TestOnly
     private static $db = [
         'Name' => 'Varchar',
         'Biography' => 'Text',
-        'Birthday' => 'Date'
+        'Birthday' => 'Date',
+        'ExtraField' => 'Varchar',
     ];
 
     private static $belongs_many_many = [

@@ -17,6 +17,8 @@ use SilverStripe\Forms\PopoverField;
 use SilverStripe\Forms\FormField;
 use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Forms\HiddenField;
+use SilverStripe\Forms\Tests\FormTest\ChildFieldManagerField;
 
 class FormSchemaTest extends SapphireTest
 {
@@ -207,6 +209,43 @@ class FormSchemaTest extends SapphireTest
 
         $this->assertIsArray($schema);
         $this->assertEquals($expected, $schema);
+    }
+
+    public function testGetNestedState(): void
+    {
+        $form = new Form(
+            null,
+            'TestForm',
+            new FieldList([
+                new TextField("Name", value: 'awawa'),
+                (new HiddenField("MyHiddenField", value: 'ooooh'))
+                    ->setMessage('Some fancy message'),
+                new ChildFieldManagerField([
+                    (new TextField('NestedField', value: 'I am nested!'))
+                        ->setMessage('This is a nested message.'),
+                ]),
+            ]),
+            new FieldList(
+                (new FormAction("save", "Save"))
+                    ->setIcon('save'),
+                (new FormAction("cancel", "Cancel"))
+                    ->setUseButtonTag(true),
+                new PopoverField(
+                    "More options",
+                    [
+                        new FormAction("publish", "Publish record"),
+                        new FormAction("archive", "Archive"),
+                    ]
+                )
+            )
+        );
+        $form->disableSecurityToken();
+        $formSchema = new FormSchema();
+        $expected = json_decode(file_get_contents(__DIR__ . '/FormSchemaTest/testGetNestedState.json') ?? '', true);
+        $state = $formSchema->getState($form);
+
+        $this->assertIsArray($state);
+        $this->assertEquals($expected, $state);
     }
 
     /**

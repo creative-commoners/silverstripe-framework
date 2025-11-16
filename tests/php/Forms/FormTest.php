@@ -43,6 +43,7 @@ use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\SudoModePasswordField;
 use SilverStripe\Security\SudoMode\SudoModeServiceInterface;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\Forms\Tests\FormTest\ChildFieldManagerField;
 use SilverStripe\Forms\Validation\CompositeValidator;
 use SilverStripe\Forms\Validation\RequiredFieldsValidator;
 
@@ -165,7 +166,8 @@ class FormTest extends FunctionalTest
                 new TextField('namespace[key2]'),
                 new TextField('namespace[key3][key4]'),
                 new TextField('othernamespace[key5][key6][key7]'),
-                new TextField('dot.field')
+                new TextField('dot.field'),
+                new ChildFieldManagerField([new TextField('managed')]),
             ),
             new FieldList()
         );
@@ -186,8 +188,8 @@ class FormTest extends FunctionalTest
                     ]
                 ]
             ],
-            'dot.field' => 'dot.field val'
-
+            'dot.field' => 'dot.field val',
+            'managed' => 'managed value',
         ];
 
         $form->loadDataFrom($requestData);
@@ -198,6 +200,7 @@ class FormTest extends FunctionalTest
         $this->assertEquals('val4', $fields->fieldByName('namespace[key3][key4]')->getValue());
         $this->assertEquals('val7', $fields->fieldByName('othernamespace[key5][key6][key7]')->getValue());
         $this->assertEquals('dot.field val', $fields->fieldByName('dot.field')->getValue());
+        $this->assertEquals('managed value', $fields->getAllDataFields()['managed']->getValue());
     }
 
     public function testSubmitReadonlyFields()
@@ -267,7 +270,8 @@ class FormTest extends FunctionalTest
                 new TextareaField('Biography'),
                 new DateField('Birthday'),
                 new NumericField('BirthdayYear'), // dynamic property
-                new TextField('FavouriteTeam.Name') // dot syntax
+                new TextField('FavouriteTeam.Name'), // dot syntax
+                new ChildFieldManagerField([new TextField('ExtraField')]),
             ),
             new FieldList()
         );
@@ -282,6 +286,7 @@ class FormTest extends FunctionalTest
                 'Birthday' => '1982-01-01',
                 'BirthdayYear' => '1982',
                 'FavouriteTeam.Name' => 'Team 1',
+                'ExtraField' => 'some additional value',
             ],
             'LoadDataFrom() loads simple fields and dynamic getters'
         );
@@ -296,6 +301,7 @@ class FormTest extends FunctionalTest
                 'Birthday' => null,
                 'BirthdayYear' => 0,
                 'FavouriteTeam.Name' => null,
+                'ExtraField' => null,
             ],
             'LoadNonBlankDataFrom() loads only fields with values, and doesnt overwrite existing values'
         );
@@ -839,12 +845,19 @@ class FormTest extends FunctionalTest
         $form->setEncType(Form::ENC_TYPE_MULTIPART);
         $this->assertEquals('multipart/form-data', $form->getEncType());
 
+        // New form - add a FileField
         $form = $this->getStubForm();
         $form->Fields()->push(new FileField('MyField'));
         $this->assertEquals('multipart/form-data', $form->getEncType());
 
+        // Validate explicit enc type overrides detection
         $form->setEncType(Form::ENC_TYPE_URLENCODED);
         $this->assertEquals('application/x-www-form-urlencoded', $form->getEncType());
+
+        // New form - add a FileField through a child field manager
+        $form = $this->getStubForm();
+        $form->Fields()->push(new ChildFieldManagerField([new FileField('MyField')]));
+        $this->assertEquals('multipart/form-data', $form->getEncType());
     }
 
     public function testAddExtraClass()
