@@ -133,7 +133,6 @@ class CacheSessionHandlerTest extends SapphireTest
         $this->assertTrue($handler->updateTimestamp(CacheSessionHandlerTest::ID_EXISTING, 'new content'));
         $this->assertTrue($cache->has(CacheSessionHandlerTest::ID_EXISTING));
         $reflectionExpiries = new ReflectionProperty($arrayAdapter, 'expiries');
-        $reflectionExpiries->setAccessible(true);
         $expiry = $reflectionExpiries->getValue($arrayAdapter)[CacheSessionHandlerTest::ID_EXISTING];
 
         // 999999 is way more than the number of seconds the session should live for

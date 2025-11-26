@@ -55,8 +55,6 @@ class CompositeValidatorTest extends SapphireTest
 
         $reflectionClass = new ReflectionClass(CompositeValidator::class);
         $property = $reflectionClass->getProperty('form');
-        $property->setAccessible(true);
-
         $compositeValidator = new CompositeValidator();
         $validator = new TestValidator();
 

@@ -145,7 +145,6 @@ class GridFieldDetailFormTest extends FunctionalTest
         // Trigger creation of the item edit form
         $reflectionDetailForm = new \ReflectionClass($detailForm);
         $reflectionMethod = $reflectionDetailForm->getMethod('getItemRequestHandler');
-        $reflectionMethod->setAccessible(true);
         $itemrequest = $reflectionMethod->invoke($detailForm, $gridField, $record, new Controller());
         $itemrequest->ItemEditForm();
 
@@ -169,7 +168,6 @@ class GridFieldDetailFormTest extends FunctionalTest
         // Trigger creation of the item edit form
         $reflectionDetailForm = new \ReflectionClass($detailForm);
         $reflectionMethod = $reflectionDetailForm->getMethod('getItemRequestHandler');
-        $reflectionMethod->setAccessible(true);
         $itemrequest = $reflectionMethod->invoke($detailForm, $gridField, $record, new Controller());
         $itemrequest->ItemEditForm();
 
@@ -525,7 +523,6 @@ class GridFieldDetailFormTest extends FunctionalTest
         $request->match(Controller::join_links($gridField->Link(), 'item/$ID'));
 
         $reflectionMethod = new ReflectionMethod($component, 'getRecordFromRequest');
-        $reflectionMethod->setAccessible(true);
         $this->assertSame($hasRecord, (bool) $reflectionMethod->invoke($component, $gridField, $request));
     }
 
@@ -559,7 +556,6 @@ class GridFieldDetailFormTest extends FunctionalTest
         $request->match(Controller::join_links($gridField->Link(), 'item/$ID'));
 
         $reflectionMethod = new ReflectionMethod($component, 'getRecordFromRequest');
-        $reflectionMethod->setAccessible(true);
         $this->assertEquals(new ArrayDataWithID(['ID' => 0]), $reflectionMethod->invoke($component, $gridField, $request));
     }
 
@@ -596,7 +592,6 @@ class GridFieldDetailFormTest extends FunctionalTest
         $this->expectExceptionMessage(ArrayData::class . ' must have an ID field.');
 
         $reflectionMethod = new ReflectionMethod($component, 'getRecordFromRequest');
-        $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($component, $gridField, $request);
     }
 }

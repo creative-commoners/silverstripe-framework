@@ -349,8 +349,6 @@ class SessionTest extends SapphireTest
     {
         $session = new Session(null);
         $methodIsCookieSecure = new ReflectionMethod($session, 'isCookieSecure');
-        $methodIsCookieSecure->setAccessible(true);
-
         Config::modify()->set(Session::class, 'cookie_secure', false);
         $this->assertFalse($methodIsCookieSecure->invoke($session, 'Lax', true));
         $this->assertFalse($methodIsCookieSecure->invoke($session, 'Lax', false));
@@ -368,8 +366,6 @@ class SessionTest extends SapphireTest
     {
         $session = new Session(null);
         $methodBuildCookieParams = new ReflectionMethod($session, 'buildCookieParams');
-        $methodBuildCookieParams->setAccessible(true);
-
         $params = $methodBuildCookieParams->invoke($session, new NullHTTPRequest());
         $this->assertSame(
             [
@@ -452,8 +448,6 @@ class SessionTest extends SapphireTest
     ): void {
         $session = new Session(null);
         $methodBuildCookieParams = new ReflectionMethod($session, 'buildCookieParams');
-        $methodBuildCookieParams->setAccessible(true);
-
         Config::modify()->set(Session::class, 'cookie_secure', $secure);
         Config::modify()->set(Session::class, 'cookie_samesite', $sameSite);
         Config::modify()->set(Director::class, 'alternate_base_url', $alternateBase);
@@ -471,8 +465,6 @@ class SessionTest extends SapphireTest
     {
         $session = new Session(null);
         $methodBuildCookieParams = new ReflectionMethod($session, 'buildCookieParams');
-        $methodBuildCookieParams->setAccessible(true);
-
         // Throw an exception when a warning is logged so we can catch it
         $mockLogger = $this->getMockBuilder(Logger::class)->setConstructorArgs(['testLogger'])->getMock();
         $catchMessage = 'A warning was logged';
@@ -493,8 +485,6 @@ class SessionTest extends SapphireTest
     {
         $session = new Session(null);
         $methodBuildCookieParams = new ReflectionMethod($session, 'buildCookieParams');
-        $methodBuildCookieParams->setAccessible(true);
-
         $this->expectException(LogicException::class);
         Config::modify()->set(Session::class, 'cookie_samesite', 'invalid');
         $methodBuildCookieParams->invoke($session, new NullHTTPRequest());

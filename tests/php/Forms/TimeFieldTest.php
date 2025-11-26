@@ -223,7 +223,6 @@ class TimeFieldTest extends SapphireTest
     {
         $field = new TimeField('Time');
         $method = new ReflectionMethod($field, 'tidyInternal');
-        $method->setAccessible(true);
         $actual = $method->invoke($field, $time, $returnNullOnFailure);
         $this->assertSame($expected, $actual);
     }

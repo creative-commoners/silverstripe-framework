@@ -381,8 +381,9 @@ class Controller extends RequestHandler implements TemplateGlobalProvider
     public function getViewer($action)
     {
         // Hard-coded templates
-        if (isset($this->templates[$action]) && $this->templates[$action]) {
-            $templates = $this->templates[$action];
+        $key = $action ?? '';
+        if (isset($this->templates[$key]) && $this->templates[$key]) {
+            $templates = $this->templates[$key];
         } elseif (isset($this->templates['index']) && $this->templates['index']) {
             $templates = $this->templates['index'];
         } elseif ($this->template) {
@@ -481,7 +482,8 @@ class Controller extends RequestHandler implements TemplateGlobalProvider
      */
     public function hasActionTemplate($action)
     {
-        if (isset($this->templates[$action])) {
+        $key = $action ?? '';
+        if (isset($this->templates[$key])) {
             return true;
         }
 
@@ -489,7 +491,7 @@ class Controller extends RequestHandler implements TemplateGlobalProvider
         $templates   = [];
 
         while ($parentClass != __CLASS__) {
-            $templates[] = strtok($parentClass ?? '', '_') . '_' . $action;
+            $templates[] = strtok($parentClass ?? '', '_') . '_' . $key;
             $parentClass = get_parent_class($parentClass ?? '');
         }
 

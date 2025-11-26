@@ -808,7 +808,6 @@ class ConfirmedPasswordFieldTest extends SapphireTest
         $field->setRequireStrongPassword($requireStrong);
         $field->setIsOnMemberForm($onMemberForm);
         $refl = new ReflectionMethod($field, 'getMinPasswordStrengthForEvaluation');
-        $refl->setAccessible(true);
         $actual = $refl->invoke($field);
         $this->assertSame($expected, $actual);
     }
@@ -848,7 +847,6 @@ class ConfirmedPasswordFieldTest extends SapphireTest
     {
         $field = new ConfirmedPasswordField('Test');
         $refl = new ReflectionMethod($field, 'getStrengthLabel');
-        $refl->setAccessible(true);
         $actual = $refl->invoke($field, $strength);
         $this->assertSame($expected, $actual);
     }

@@ -176,8 +176,6 @@ class CookieJarTest extends SapphireTest
     {
         $cookieJar = new CookieJar();
         $methodCookieIsSecure = new ReflectionMethod($cookieJar, 'cookieIsSecure');
-        $methodCookieIsSecure->setAccessible(true);
-
         $this->assertTrue($methodCookieIsSecure->invoke($cookieJar, 'None', false));
         $this->assertTrue($methodCookieIsSecure->invoke($cookieJar, 'None', true));
         $this->assertTrue($methodCookieIsSecure->invoke($cookieJar, 'Lax', true));

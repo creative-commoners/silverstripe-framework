@@ -320,7 +320,6 @@ class SapphireTestTest extends SapphireTest
         i18n::set_locale('ab_CD');
         i18n::config()->set('default_locale', 'ab_CD');
         $method = new ReflectionMethod(SapphireTest::class, 'setI18nLocale');
-        $method->setAccessible(true);
         $obj = new class($doSet, $supported) extends SapphireTest
         {
             private string $supported;

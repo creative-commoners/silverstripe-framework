@@ -474,11 +474,13 @@ class Convert
     {
         $scales = ['B','K','M','G','T','P','E','Z','Y'];
         // Get scale
-        $scale = (int)floor(log($bytes ?? 0.0, 1024));
+        $value = floor(log($bytes ?? 0.0, 1024));
+        // Handle values such as `INF` and `NAN` which are "not representable as int"
+        // and emit a warning if cast to int.
+        $scale = is_finite($value) ? (int) $value : 0;
         if (!isset($scales[$scale])) {
             $scale = 2;
         }
-
         // Size
         $num = round($bytes / pow(1024, $scale), $decimal ?? 0);
         return $num . $scales[$scale];

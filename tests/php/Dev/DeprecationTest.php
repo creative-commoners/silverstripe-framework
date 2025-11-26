@@ -521,8 +521,6 @@ class DeprecationTest extends SapphireTest
     public function testVarAsBoolean($rawValue, bool $expected)
     {
         $reflectionVarAsBoolean = new ReflectionMethod(Deprecation::class, 'varAsBoolean');
-        $reflectionVarAsBoolean->setAccessible(true);
-
         $this->assertSame($expected, $reflectionVarAsBoolean->invoke(null, $rawValue));
     }
 
@@ -600,7 +598,6 @@ class DeprecationTest extends SapphireTest
         $origMode = $kernel->getEnvironment();
         $origEnvEnabled = Environment::getEnv('SS_DEPRECATION_ENABLED');
         $reflectionEnabled = new ReflectionProperty(Deprecation::class, 'currentlyEnabled');
-        $reflectionEnabled->setAccessible(true);
         $origStaticEnabled = $reflectionEnabled->getValue();
 
         try {

@@ -29,7 +29,7 @@
         "guzzlehttp/psr7": "^2.7",
         "embed/embed": "^4.4.7",
         "greenlion/php-sql-parser": "^4.7.0",
-        "league/csv": "^9.18",
+        "league/csv": "^9.27",
         "m1/env": "^2.2.0",
         "masterminds/html5": "^2.9",
         "monolog/monolog": "^3.8",

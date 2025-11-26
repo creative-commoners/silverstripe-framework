@@ -498,8 +498,6 @@ class EmailTest extends SapphireTest
         $email = new Email();
         $class = new \ReflectionClass(Email::class);
         $method = $class->getMethod('getDefaultFrom');
-        $method->setAccessible(true);
-
         // default to no-reply@mydomain.com if admin_email config not set
         Email::config()->set('admin_email', null);
         $this->assertSame('no-reply@www.mysite.com', $method->invokeArgs($email, []));
@@ -526,7 +524,6 @@ class EmailTest extends SapphireTest
     public function testCreateAddressArray(string|array $address, string $name, array $expected): void
     {
         $method = new \ReflectionMethod(Email::class, 'createAddressArray');
-        $method->setAccessible(true);
         $obj = new Email();
         $actual = $method->invoke($obj, $address, $name);
         for ($i = 0; $i < count($expected); $i++) {

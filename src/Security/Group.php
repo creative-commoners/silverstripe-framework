@@ -747,7 +747,7 @@ class Group extends DataObject
             ->toArray();
         $code = $this->Code;
         $count = 2;
-        while (isset($currentGroups[$code])) {
+        while (isset($currentGroups[$code ?? ''])) {
             $code = $this->Code . '-' . $count;
             $count++;
         }

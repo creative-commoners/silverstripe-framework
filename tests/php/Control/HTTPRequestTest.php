@@ -346,8 +346,6 @@ class HTTPRequestTest extends SapphireTest
     {
         $req = new TrustedProxyMiddleware();
         $reflectionMethod = new ReflectionMethod($req, 'getIPFromHeaderValue');
-        $reflectionMethod->setAccessible(true);
-
         $headers = [
             '80.79.208.21, 149.126.76.1, 10.51.0.68' => '80.79.208.21',
             '52.19.19.103, 10.51.0.49' => '52.19.19.103',

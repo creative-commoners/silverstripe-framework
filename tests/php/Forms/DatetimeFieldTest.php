@@ -591,7 +591,6 @@ class DatetimeFieldTest extends SapphireTest
     {
         $field = new DatetimeField('Date');
         $method = new ReflectionMethod($field, 'tidyInternal');
-        $method->setAccessible(true);
         $actual = $method->invoke($field, $date, $returnNullOnFailure);
         $this->assertEquals($expected, $actual);
     }

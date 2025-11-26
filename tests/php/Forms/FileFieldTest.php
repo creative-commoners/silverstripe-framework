@@ -105,7 +105,6 @@ class FileFieldTest extends FunctionalTest
         $field->setAllowedExtensions('jpg', 'png');
 
         $method = new ReflectionMethod($field, 'getAcceptFileTypes');
-        $method->setAccessible(true);
         $allowed = $method->invoke($field);
 
         $expected = ['.jpg', '.png', 'image/jpeg', 'image/png'];

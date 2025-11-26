@@ -587,7 +587,6 @@ class DBFieldTest extends SapphireTest
             }
             $expected = $expectedFieldValidators[$class];
             $method = new ReflectionMethod($class, 'getFieldValidators');
-            $method->setAccessible(true);
             $obj = new $class('MyField');
             $actual = array_map('get_class', $method->invoke($obj));
             $this->assertSame($expected, $actual, $class);
