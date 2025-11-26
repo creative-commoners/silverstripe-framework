@@ -371,7 +371,7 @@ trait SearchableDropdownTrait
             //   0 => '10',
             //   1 => '15'
             // ];
-            return array_map('intval', $arr);
+            return array_map('intval', array_filter($arr));
         }
         if ((is_string($value) || is_int($value)) && ctype_digit((string) $value) && $value != 0) {
             return [(int) $value];
