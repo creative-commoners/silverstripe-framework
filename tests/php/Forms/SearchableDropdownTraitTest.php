@@ -124,10 +124,6 @@ class SearchableDropdownTraitTest extends SapphireTest
     public static function provideGetValueArray(): array
     {
         return [
-            'empty' => [
-                'value' => '',
-                'expected' => [],
-            ],
             'array single form builder' => [
                 'value' => ['label' => 'MyTitle15', 'value' => '10', 'selected' => false],
                 'expected' => [10],
@@ -139,13 +135,17 @@ class SearchableDropdownTraitTest extends SapphireTest
                 ],
                 'expected' => [10, 15],
             ],
+            'array simple ints' => [
+                'value' => [2, 4],
+                'expected' => [2, 4],
+            ],
+            'array simple strings' => [
+                'value' => ['6', '8'],
+                'expected' => [6, 8],
+            ],
             'string int' => [
                 'value' => '3',
                 'expected' => [3],
-            ],
-            'zero string' => [
-                'value' => '0',
-                'expected' => [],
             ],
             'datalist' => [
                 'value' => '<DataListValue>',
@@ -159,12 +159,32 @@ class SearchableDropdownTraitTest extends SapphireTest
                 'value' => new stdClass(),
                 'expected' => [],
             ],
+            'empty' => [
+                'value' => '',
+                'expected' => [],
+            ],
+            'zero string' => [
+                'value' => '0',
+                'expected' => [],
+            ],
             'negative int' => [
                 'value' => -1,
                 'expected' => [],
             ],
             'negative string int' => [
                 'value' => '-1',
+                'expected' => [],
+            ],
+            'array - empty' => [
+                'value' => [],
+                'expected' => [],
+            ],
+            'array - empty string' => [
+                'value' => [''],
+                'expected' => [],
+            ],
+            'array - zero string' => [
+                'value' => ['0'],
                 'expected' => [],
             ],
         ];
