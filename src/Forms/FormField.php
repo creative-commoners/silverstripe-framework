@@ -384,7 +384,7 @@ class FormField extends RequestHandler implements FieldValidationInterface
             );
         }
 
-        $link = Controller::join_links($this->form->FormAction(), 'field/' . $this->name, $action);
+        $link = Controller::join_links($this->form->FormAction(), 'field/' . $this->getName(), $action);
         $this->extend('updateLink', $link, $action);
         return $link;
     }

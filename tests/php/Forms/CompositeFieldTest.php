@@ -9,6 +9,7 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Validation\RequiredFieldsValidator;
 use SilverStripe\Forms\TextField;
+use SilverStripe\Forms\Form;
 
 class CompositeFieldTest extends SapphireTest
 {
@@ -277,5 +278,13 @@ class CompositeFieldTest extends SapphireTest
         $fieldTwo = TextField::create('Two');
         $field = new CompositeField($fieldOne, $fieldTwo);
         $this->assertSame([$fieldOne, $fieldTwo], $field->getValueForValidation());
+    }
+
+    public function testLink(): void
+    {
+        $form = new Form(null, 'Test', new FieldList(), new FieldList());
+        $form->setFormAction('foo');
+        $field->setForm($form);
+        $this->assertSame('foo/field/OneTwo/bar', $field->Link('bar'));
     }
 }
