@@ -32,7 +32,7 @@ class SingleLookupField extends SingleSelectField
      */
     protected function valueToLabel()
     {
-        $value = $this->value;
+        $value = $this->value ?? '';
         $source = $this->getSource();
         $source = ($source instanceof Map) ? $source->toArray() : $source;
 

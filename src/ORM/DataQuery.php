@@ -1481,7 +1481,7 @@ class DataQuery implements Resettable
      */
     public function setQueryParam($key, $value)
     {
-        $this->queryParams[$key] = $value;
+        $this->queryParams[$key ?? ''] = $value;
         return $this;
     }
 

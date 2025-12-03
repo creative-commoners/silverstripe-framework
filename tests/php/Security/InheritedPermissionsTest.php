@@ -473,8 +473,6 @@ class InheritedPermissionsTest extends SapphireTest
     {
         $reflection = new ReflectionClass(InheritedPermissions::class);
         $method = $reflection->getMethod('generateCacheKey');
-        $method->setAccessible(true);
-
         return $method->invokeArgs($inst, [$type, $memberID]);
     }
 }

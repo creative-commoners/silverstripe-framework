@@ -179,7 +179,7 @@ class GridFieldExportButton extends AbstractGridFieldComponent implements GridFi
     {
         $csvColumns = $this->getExportColumnsForGridField($gridField);
 
-        $csvWriter = Writer::createFromFileObject(new \SplTempFileObject());
+        $csvWriter = Writer::from(new \SplTempFileObject());
         $csvWriter->setDelimiter($this->getCsvSeparator());
         $csvWriter->setEnclosure($this->getCsvEnclosure());
         $csvWriter->setEndOfLine("\r\n"); //use windows line endings for compatibility with some csv libraries

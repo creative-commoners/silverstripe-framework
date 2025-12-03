@@ -55,6 +55,6 @@ class PhpSyntaxTest extends SapphireTest
             BASE_PATH,
             escapeshellarg(".{$ext}\$")
         );
-        return explode("\n", trim(`$cmd`));
+        return explode("\n", trim(shell_exec($cmd)));
     }
 }

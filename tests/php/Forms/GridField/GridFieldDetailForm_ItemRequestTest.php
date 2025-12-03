@@ -86,12 +86,10 @@ class GridFieldDetailForm_ItemRequestTest extends SapphireTest
         $itemRequest->setRequest($request);
         // Assert method
         $refl = new ReflectionMethod($itemRequest, 'getGridFieldItemAdjacencies');
-        $refl->setAccessible(true);
         $expectedData = [103, 104, 105, 106, 107];
         $this->assertSame($expectedData, $refl->invoke($itemRequest));
         // Assert cache
         $refl = new ReflectionProperty($itemRequest, 'cachedGridFieldItemAdjacencies');
-        $refl->setAccessible(true);
         $this->assertSame(
             ['9cffefcf339420d11129b3220eccf141' => $expectedData],
             $refl->getValue($itemRequest)

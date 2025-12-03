@@ -689,8 +689,6 @@ class SearchContextTest extends SapphireTest
         $general1 = $this->objFromFixture(SearchContextTest\GeneralSearch::class, 'general1');
         $context = $general1->getDefaultSearchContext();
         $getSearchFilterReflection = new ReflectionMethod($context, 'getGeneralSearchFilter');
-        $getSearchFilterReflection->setAccessible(true);
-
         // By default, uses the PartialMatchFilter.
         $this->assertSame(
             PartialMatchFilter::class,

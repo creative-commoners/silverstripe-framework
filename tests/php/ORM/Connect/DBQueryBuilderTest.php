@@ -53,8 +53,6 @@ class DBQueryBuilderTest extends SapphireTest
     {
         $queryBuilder = new DBQueryBuilder();
         $reflectionMethod = new ReflectionMethod($queryBuilder, 'shouldBuildTraceComment');
-        $reflectionMethod->setAccessible(true);
-
         if ($envValue !== null) {
             Environment::setEnv('SS_TRACE_DB_QUERY_ORIGIN', $envValue);
         }

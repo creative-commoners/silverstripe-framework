@@ -74,7 +74,8 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
         $array = [];
 
         foreach ($this as $k => $v) {
-            $array[$k] = $v;
+            $key = $k ?? '';
+            $array[$key] = $v;
         }
 
         return $array;
@@ -243,10 +244,11 @@ class Map implements ArrayAccess, Countable, IteratorAggregate
         }
 
         foreach ($this->list as $record) {
-            if (isset($this->firstItems[$record->$keyField])) {
+            $key = $record->$keyField ?? '';
+            if (isset($this->firstItems[$key])) {
                 continue;
             }
-            if (isset($this->lastItems[$record->$keyField])) {
+            if (isset($this->lastItems[$key])) {
                 continue;
             }
             yield $this->extractValue($record, $this->keyField) => $this->extractValue($record, $this->valueField);

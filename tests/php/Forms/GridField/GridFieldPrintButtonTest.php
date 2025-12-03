@@ -287,7 +287,6 @@ class GridFieldPrintButtonTest extends SapphireTest
         );
 
         $reflectionMethod = new ReflectionMethod($component, 'getPrintColumnsForGridField');
-        $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($component, $gridField);
     }
 }

@@ -113,22 +113,18 @@ class FileSessionHandlerTest extends SapphireTest
         // Set path
         $handler = new FileSessionHandler();
         $reflectionMethod = new ReflectionMethod($handler, 'setSavePath');
-        $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($handler, $sessionSavePath);
 
         // Check baseDir
         $reflectionBaseDir = new ReflectionProperty($handler, 'baseDir');
-        $reflectionBaseDir->setAccessible(true);
         $this->assertSame($baseDir, $reflectionBaseDir->getValue($handler));
 
         // Check numSubDirs
         $reflectionNumSubDirs = new ReflectionProperty($handler, 'numSubDirs');
-        $reflectionNumSubDirs->setAccessible(true);
         $this->assertSame($numSubDirs, $reflectionNumSubDirs->getValue($handler));
 
         // Check mode
         $reflectionMode = new ReflectionProperty($handler, 'mode');
-        $reflectionMode->setAccessible(true);
         $this->assertSame($mode, $reflectionMode->getValue($handler));
     }
 
@@ -153,11 +149,9 @@ class FileSessionHandlerTest extends SapphireTest
     {
         $handler = new FileSessionHandler();
         $reflectionSetSavePath = new ReflectionMethod($handler, 'setSavePath');
-        $reflectionSetSavePath->setAccessible(true);
         $reflectionSetSavePath->invoke($handler, $savePath);
 
         $reflectionGetFilePath = new ReflectionMethod($handler, 'getFilePath');
-        $reflectionGetFilePath->setAccessible(true);
         $this->assertSame($expected, $reflectionGetFilePath->invoke($handler, $sessionID));
     }
 
@@ -196,8 +190,6 @@ class FileSessionHandlerTest extends SapphireTest
         $handler = new FileSessionHandler();
         $handler->open($savePath, 'PHPSESSID');
         $reflectionNeedsPermissionUpdate = new ReflectionMethod($handler, 'needsPermissionUpdate');
-        $reflectionNeedsPermissionUpdate->setAccessible(true);
-
         try {
             if ($createFileBeforeTest) {
                 file_put_contents($sessionFilePath, 'original content');
@@ -235,7 +227,6 @@ class FileSessionHandlerTest extends SapphireTest
             $this->withSessionExpiry($sessionFilePath, function () use ($isExpired, $sessionFilePath) {
                 $handler = new FileSessionHandler();
                 $reflectionIsSessionExpired = new ReflectionMethod($handler, 'isSessionExpired');
-                $reflectionIsSessionExpired->setAccessible(true);
                 $this->assertSame($isExpired, $reflectionIsSessionExpired->invoke($handler, $sessionFilePath));
             }, $isExpired);
         } finally {
@@ -250,8 +241,6 @@ class FileSessionHandlerTest extends SapphireTest
 
         $handler = new FileSessionHandler();
         $reflectionIsSessionExpired = new ReflectionMethod($handler, 'isSessionExpired');
-        $reflectionIsSessionExpired->setAccessible(true);
-
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Could not read modified time of session file');
         $reflectionIsSessionExpired->invoke($handler, $sessionFilePath);

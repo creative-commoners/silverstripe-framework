@@ -471,11 +471,11 @@ class ClassInfo implements Flushable
                         break;
 
                     case T_DNUMBER:
-                        $result = (double)$token[1];
+                        $result = (float) $token[1];
                         break;
 
                     case T_LNUMBER:
-                        $result = (int)$token[1];
+                        $result = (int) $token[1];
                         break;
 
                     case T_DOUBLE_ARROW:

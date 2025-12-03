@@ -156,7 +156,6 @@ class ErrorOutputHandlerTest extends SapphireTest
         bool $expected
     ) {
         $reflectionShouldShow = new ReflectionMethod(ErrorOutputHandler::class, 'shouldShowError');
-        $reflectionShouldShow->setAccessible(true);
         $reflectionDeprecation = new ReflectionClass(Deprecation::class);
 
         $cliShouldShowOrig = Deprecation::shouldShowForCli();

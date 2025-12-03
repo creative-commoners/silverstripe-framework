@@ -107,7 +107,6 @@ class KernelTest extends SapphireTest
         // Boot the database environment variables
         $reflector = new ReflectionObject($coreKernel);
         $method = $reflector->getMethod('bootDatabaseEnvVars');
-        $method->setAccessible(true);
         $method->invoke($coreKernel);
         // Assert DB config was updated
         $default = DB::getConfig(DB::CONN_PRIMARY);

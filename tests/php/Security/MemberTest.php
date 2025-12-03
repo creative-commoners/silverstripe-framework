@@ -1692,7 +1692,6 @@ class MemberTest extends FunctionalTest
 
         $ext = new MemberTest\ValidatorExtension();
         $method = new ReflectionMethod(MemberTest\ValidatorExtension::class, 'updateValidator');
-        $method->setAccessible(true);
         $method->invokeArgs($ext, [$validator]);
 
         $pass = $validator->php(

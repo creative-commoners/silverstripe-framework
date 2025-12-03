@@ -40,14 +40,14 @@ class DBInt extends DBField
         parent::setValue($value, $record, $markChanged);
         // Cast string ints if they're valid
         if (is_string($this->value) && preg_match('/^-?\d+$/', $this->value)) {
-            // Ensure we can cast to int and back without loss of precision
-            // if not, keep the original value which will fail validation later
-            $stringIntValue = (string) (int) $value;
-            if ($stringIntValue !== $value) {
-                $this->value = $value;
+            // Use filter_var to check if the string fits in a PHP integer
+            // It will return false if it overflows e.g. is "9223372036854775808"
+            // meaning it's bigger than PHP_INT_MAX on 64-bit systems
+            $intValue = filter_var($value, FILTER_VALIDATE_INT);
+            if ($intValue !== false) {
+                $this->value = $intValue;
             } else {
-                // Cast valid string ints as ints
-                $this->value = (int) $value;
+                $this->value = $value;
             }
         }
         return $this;

@@ -984,7 +984,6 @@ class FormFieldTest extends SapphireTest
             $expected = $expectedFieldValidators[$class];
             $field = $this->instantiateFormField($class);
             $method = new ReflectionMethod($class, 'getFieldValidators');
-            $method->setAccessible(true);
             $config = $method->invoke($field);
             $actual = array_map('get_class', $config);
             $this->assertSame($expected, $actual, $class);

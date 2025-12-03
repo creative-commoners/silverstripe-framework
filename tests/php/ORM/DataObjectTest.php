@@ -3032,7 +3032,6 @@ class DataObjectTest extends SapphireTest
     {
         $dataObjectClass = new DataObject();
         $method = new ReflectionMethod($dataObjectClass, 'getDatabaseBackedField');
-        $method->setAccessible(true);
         $class = new Team([]);
 
         $databaseBackedField = $method->invokeArgs($class, [$fieldPath]);

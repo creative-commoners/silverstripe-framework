@@ -176,10 +176,8 @@ class EmbedShortcodeProviderTest extends EmbedUnitTest
         $provider = new EmbedShortcodeProvider();
         $reflector = new \ReflectionClass(EmbedShortcodeProvider::class);
         $method = $reflector->getMethod('getCache');
-        $method->setAccessible(true);
         $cache = $method->invokeArgs($provider, []);
         $method = $reflector->getMethod('deriveCacheKey');
-        $method->setAccessible(true);
         $class = 'leftAlone ss-htmleditorfield-file embed';
         $width = '480';
         $height = '270';

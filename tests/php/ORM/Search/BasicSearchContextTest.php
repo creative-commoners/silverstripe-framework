@@ -138,8 +138,6 @@ class BasicSearchContextTest extends SapphireTest
     {
         $context = new BasicSearchContext(ArrayData::class);
         $reflectionApplySearchFilters = new ReflectionMethod($context, 'applySearchFilters');
-        $reflectionApplySearchFilters->setAccessible(true);
-
         if ($filters) {
             $context->setFilters($filters);
         }
@@ -178,8 +176,6 @@ class BasicSearchContextTest extends SapphireTest
     {
         $context = new BasicSearchContext(ArrayData::class);
         $reflectionGetGeneralSearchFilterTerm = new ReflectionMethod($context, 'getGeneralSearchFilterTerm');
-        $reflectionGetGeneralSearchFilterTerm->setAccessible(true);
-
         if ($fieldFilter) {
             $context->setFilters(['MyField' => $fieldFilter]);
         }

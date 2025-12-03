@@ -76,7 +76,7 @@ class CsvBulkLoader extends BulkLoader
 
         try {
             $filepath = Director::getAbsFile($filepath);
-            $csvReader = Reader::createFromPath($filepath, 'r');
+            $csvReader = Reader::from($filepath);
             $csvReader->setDelimiter($this->delimiter);
             $csvReader->skipInputBOM();
 

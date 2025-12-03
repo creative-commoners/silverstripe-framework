@@ -27,7 +27,7 @@ class CurrencyField extends TextField
             $value = 0.00;
         }
         $this->value = DBCurrency::config()->uninherited('currency_symbol')
-            . number_format((double)preg_replace('/[^0-9.\-]/', '', $value ?? ''), 2);
+            . number_format((float) preg_replace('/[^0-9.\-]/', '', $value ?? ''), 2);
         return $this;
     }
 

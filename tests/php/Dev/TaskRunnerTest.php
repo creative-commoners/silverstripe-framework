@@ -13,8 +13,6 @@ class TaskRunnerTest extends SapphireTest
     {
         $runner = new TaskRunner();
         $method = new ReflectionMethod($runner, 'taskEnabled');
-        $method->setAccessible(true);
-
         $this->assertTrue(
             $method->invoke($runner, TaskRunnerTest\TaskRunnerTest_EnabledTask::class),
             'Enabled task incorrectly marked as disabled'

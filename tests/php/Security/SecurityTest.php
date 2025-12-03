@@ -856,7 +856,6 @@ class SecurityTest extends FunctionalTest
         $security->setRequest($request);
         $reflection = new \ReflectionClass($security);
         $method = $reflection->getMethod('getResponseController');
-        $method->setAccessible(true);
         $result = $method->invoke($security, 'Page');
 
         // Ensure page shares the same controller as security

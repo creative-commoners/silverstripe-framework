@@ -59,7 +59,6 @@ class DBSchemaManagerTest extends SapphireTest
 
         $manager = $this->getConcreteSchemaManager();
         $reflectionCanCheck = new ReflectionMethod($manager, 'canCheckAndRepairTable');
-        $reflectionCanCheck->setAccessible(true);
         $result = $reflectionCanCheck->invoke($manager, $tableName);
 
         $this->assertSame($expected, $result);

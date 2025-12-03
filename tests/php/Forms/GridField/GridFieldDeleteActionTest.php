@@ -294,7 +294,6 @@ class GridFieldDeleteActionTest extends SapphireTest
 
         // Calling the method will throw an exception.
         $reflectionMethod = new ReflectionMethod($component, 'getRemoveAction');
-        $reflectionMethod->setAccessible(true);
         $reflectionMethod->invokeArgs($component, [$gridField, new ArrayData(), '']);
     }
 }

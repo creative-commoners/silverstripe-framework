@@ -97,7 +97,6 @@ class DefaultCacheFactoryTest extends SapphireTest
             $psr16Wrapper = $factory->create('test-cache', $args);
 
             $reflectionPoolProperty = new ReflectionProperty($psr16Wrapper, 'pool');
-            $reflectionPoolProperty->setAccessible(true);
             $cacheBucket = $reflectionPoolProperty->getValue($psr16Wrapper);
 
             if (!$inMemoryCacheFactory || (isset($args['useInMemoryCache']) && !$args['useInMemoryCache'])) {
@@ -106,7 +105,6 @@ class DefaultCacheFactoryTest extends SapphireTest
                 $this->assertInstanceOf(ChainAdapter::class, $cacheBucket);
 
                 $reflectionAdaptersProperty = new ReflectionProperty($cacheBucket, 'adapters');
-                $reflectionAdaptersProperty->setAccessible(true);
                 $adapters = $reflectionAdaptersProperty->getValue($cacheBucket);
 
                 $this->assertCount(2, $adapters);
@@ -132,7 +130,6 @@ class DefaultCacheFactoryTest extends SapphireTest
 
                 // Check the adapter got the right logger
                 $reflectionLoggerProperty = new ReflectionProperty($inMemoryCache, 'logger');
-                $reflectionLoggerProperty->setAccessible(true);
                 $this->assertTrue($logger === $reflectionLoggerProperty->getValue($inMemoryCache));
             }
 
@@ -144,7 +141,6 @@ class DefaultCacheFactoryTest extends SapphireTest
             }
             // Check the adapter got the right logger
             $reflectionLoggerProperty = new ReflectionProperty($filesystemCache, 'logger');
-            $reflectionLoggerProperty->setAccessible(true);
             $this->assertTrue($logger === $reflectionLoggerProperty->getValue($filesystemCache));
         } finally {
             Environment::setEnv('SS_IN_MEMORY_CACHE_FACTORY', $oldFactoryValue);

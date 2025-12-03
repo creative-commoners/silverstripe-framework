@@ -215,13 +215,12 @@ class GridFieldExportButtonTest extends SapphireTest
         );
 
         $reflectionMethod = new ReflectionMethod($component, 'getExportColumnsForGridField');
-        $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($component, $gridField);
     }
 
     protected function createReader($string)
     {
-        $reader = Reader::createFromString($string);
+        $reader = Reader::fromString($string);
 
         // Explicitly set the output BOM in league/csv 9
         if (method_exists($reader, 'getContent')) {

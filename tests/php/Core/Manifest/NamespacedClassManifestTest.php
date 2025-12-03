@@ -54,7 +54,6 @@ class NamespacedClassManifestTest extends SapphireTest
         // descendants of the core classes we want to test against - this is a limitation of the test manifest not
         // including all core classes
         $method = new ReflectionMethod($this->manifest, 'coalesceDescendants');
-        $method->setAccessible(true);
         $method->invoke($this->manifest, DataQuery::class);
         $classes = ClassInfo::subclassesFor(DataQuery::class);
         $this->assertContains(

@@ -204,7 +204,6 @@ class ModelDataTest extends SapphireTest
     public function testIsAccessibleMethod()
     {
         $reflectionMethod = new ReflectionMethod(ModelData::class, 'isAccessibleMethod');
-        $reflectionMethod->setAccessible(true);
         $object = new ModelDataTestObject();
         $modelData = new ModelData();
 
@@ -236,7 +235,6 @@ class ModelDataTest extends SapphireTest
     public function testIsAccessibleProperty()
     {
         $reflectionMethod = new ReflectionMethod(ModelData::class, 'isAccessibleProperty');
-        $reflectionMethod->setAccessible(true);
         $object = new ModelDataTestObject();
 
         $output = $reflectionMethod->invokeArgs($object, ['privateProperty']);
