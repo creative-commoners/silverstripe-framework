@@ -4,6 +4,7 @@ namespace SilverStripe\Forms\Tests;
 
 use stdClass;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\ConfirmedPasswordField;
@@ -373,30 +374,16 @@ class FieldListTest extends SapphireTest
         $this->assertNull($fields->dataFieldByName('ChildFieldManager'));
     }
 
-    public function testDataFields()
+    public static function provideDataFields(): array
     {
-        $fields = new FieldList([
-            $field1 = new TextField('Name', 'Your name'),
-            $field2 = new TextField('Name[Field]', 'Your name'),
-            new CompositeField([
-                $field3 = new TextField('Field3', 'Your name'),
-                new ChildFieldManagerField([
-                    new TextField('Field4'),
-                ]),
-            ]),
-        ]);
-
-        $expected = [
-            'Name' => $field1,
-            'Name[Field]' => $field2,
-            'Field3' => $field3,
+        return [
+            [false],
+            [true],
         ];
-
-        $dataFields = $fields->dataFields();
-        $this->assertSame($expected, $dataFields);
     }
 
-    public function testGetAllDataFields()
+    #[DataProvider('provideDataFields')]
+    public function testDataFields(bool $includeManagedFields)
     {
         $fields = new FieldList([
             $field1 = new TextField('Name', 'Your name'),
@@ -413,10 +400,12 @@ class FieldListTest extends SapphireTest
             'Name' => $field1,
             'Name[Field]' => $field2,
             'Field3' => $field3,
-            'Field4' => $field4,
         ];
+        if ($includeManagedFields) {
+            $expected['Field4'] = $field4;
+        }
 
-        $dataFields = $fields->getAllDataFields();
+        $dataFields = $fields->getDataFields($includeManagedFields);
         $this->assertSame($expected, $dataFields);
     }
 
@@ -732,7 +721,7 @@ class FieldListTest extends SapphireTest
         );
 
         $this->assertEquals(
-            array_keys($fields->dataFields() ?? []),
+            array_keys($fields->getDataFields() ?? []),
             [
             'A',
             'NewField1',

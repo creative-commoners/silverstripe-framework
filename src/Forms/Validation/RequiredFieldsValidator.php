@@ -132,7 +132,7 @@ class RequiredFieldsValidator extends Validator
                 $formField = $fields->dataFieldByName($fieldName);
                 if (!$formField) {
                     // Maybe it's a managed field.
-                    $dataFields = $fields->getAllDataFields();
+                    $dataFields = $fields->getDataFields(true);
                     $formField = $dataFields[$fieldName] ?? null;
                 }
             }

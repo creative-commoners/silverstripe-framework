@@ -225,7 +225,7 @@ class GridFieldLazyLoaderTest extends SapphireTest
     private function makeGridFieldReadonly(GridField $gridField)
     {
         $form = $gridField->getForm()->makeReadonly();
-        $fields = $form->Fields()->dataFields();
+        $fields = $form->Fields()->getDataFields();
         foreach ($fields as $field) {
             if ($field->getName() === 'testfield') {
                 return $field;

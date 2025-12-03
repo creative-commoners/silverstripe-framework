@@ -200,7 +200,7 @@ class FormTest extends FunctionalTest
         $this->assertEquals('val4', $fields->fieldByName('namespace[key3][key4]')->getValue());
         $this->assertEquals('val7', $fields->fieldByName('othernamespace[key5][key6][key7]')->getValue());
         $this->assertEquals('dot.field val', $fields->fieldByName('dot.field')->getValue());
-        $this->assertEquals('managed value', $fields->getAllDataFields()['managed']->getValue());
+        $this->assertEquals('managed value', $fields->getDataFields(true)['managed']->getValue());
     }
 
     public function testSubmitReadonlyFields()

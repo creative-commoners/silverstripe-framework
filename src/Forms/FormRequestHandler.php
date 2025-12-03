@@ -486,8 +486,8 @@ class FormRequestHandler extends RequestHandler
      */
     protected function getAllActions()
     {
-        $fields = $this->form->Fields()->dataFields();
-        $actions = $this->form->Actions()->dataFields();
+        $fields = $this->form->Fields()->getDataFields(true);
+        $actions = $this->form->Actions()->getDataFields(true);
 
         $fieldsAndActions = array_merge($fields, $actions);
         $actions = array_filter($fieldsAndActions ?? [], function ($fieldOrAction) {
