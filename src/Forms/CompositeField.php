@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Forms;
 
+use LogicException;
 use SilverStripe\Core\Validation\FieldValidation\CompositeFieldValidator;
 use SilverStripe\Dev\Debug;
 
@@ -14,6 +15,8 @@ use SilverStripe\Dev\Debug;
  */
 class CompositeField extends FormField
 {
+    use FieldSetTrait;
+
     private static array $field_validators = [
         CompositeFieldValidator::class,
     ];
@@ -40,24 +43,15 @@ class CompositeField extends FormField
      */
     protected $columnCount = null;
 
-    /**
-     * @var string custom HTML tag to render with, e.g. to produce a <fieldset>.
-     */
-    protected $tag = 'div';
-
-    /**
-     * @var string Optional description for this set of fields.
-     * If the {@link $tag} property is set to use a 'fieldset', this will be
-     * rendered as a <legend> tag, otherwise its a 'title' attribute.
-     */
-    protected $legend;
-
     protected $schemaDataType = FormField::SCHEMA_DATA_TYPE_STRUCTURAL;
 
     protected $schemaComponent = 'CompositeField';
 
     public function __construct($children = null)
     {
+        if ($this instanceof ChildFieldManager) {
+            throw new LogicException('CompositeField must not implement ChildFieldManager');
+        }
         // Normalise $children to a FieldList
         if (!$children instanceof FieldList) {
             if (!is_array($children)) {
@@ -158,43 +152,6 @@ class CompositeField extends FormField
         $this->children = $children;
         $children->setContainerField($this);
         return $this;
-    }
-
-    /**
-     * @param string $tag
-     * @return $this
-     */
-    public function setTag($tag)
-    {
-        $this->tag = $tag;
-
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getTag()
-    {
-        return $this->tag;
-    }
-
-    /**
-     * @param string $legend
-     * @return $this
-     */
-    public function setLegend($legend)
-    {
-        $this->legend = $legend;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getLegend()
-    {
-        return $this->legend;
     }
 
     public function extraClass()

@@ -1,0 +1,76 @@
+{
+  "id": "Form_TestForm",
+  "fields": [
+    {
+      "name": "Name",
+      "id": "Form_TestForm_Name",
+      "value": "awawa",
+      "message": null,
+      "data": []
+    },
+    {
+      "name": "MyHiddenField",
+      "id": "Form_TestForm_MyHiddenField",
+      "value": "ooooh",
+      "message": {
+        "value": "Some fancy message",
+        "type": "error"
+      },
+      "data": []
+    },
+    {
+      "name": "ChildFieldManager",
+      "id": "Form_TestForm_ChildFieldManager",
+      "value": null,
+      "message": null,
+      "data": []
+    },
+    {
+      "name": "NestedField",
+      "id": "NestedField",
+      "value": "I am nested!",
+      "message": {
+        "value": "This is a nested message.",
+        "type": "error"
+      },
+      "data": []
+    },
+    {
+      "name": "action_save",
+      "id": "Form_TestForm_action_save",
+      "value": null,
+      "message": null,
+      "data": []
+    },
+    {
+      "name": "action_cancel",
+      "id": "Form_TestForm_action_cancel",
+      "value": null,
+      "message": null,
+      "data": []
+    },
+    {
+      "name": "Moreoptions",
+      "id": "Form_TestForm_Moreoptions",
+      "value": "",
+      "message": null,
+      "data": []
+    },
+    {
+      "name": "action_publish",
+      "id": "Form_TestForm_action_publish",
+      "value": null,
+      "message": null,
+      "data": []
+    },
+    {
+      "name": "action_archive",
+      "id": "Form_TestForm_action_archive",
+      "value": null,
+      "message": null,
+      "data": []
+    }
+  ],
+  "messages": [],
+  "notifyUnsavedChanges": false
+}

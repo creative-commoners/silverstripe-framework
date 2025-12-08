@@ -1022,7 +1022,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
             return $this->encType;
         }
 
-        if ($fields = $this->fields->dataFields()) {
+        if ($fields = $this->fields->getDataFields(true)) {
             foreach ($fields as $field) {
                 if ($field instanceof FileField) {
                     return Form::ENC_TYPE_MULTIPART;
@@ -1370,7 +1370,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      * It will call $object->MyField to get the value of MyField.
      * If you passed an array, it will call $object[MyField].
      * Doesn't save into dataless FormFields ({@link DatalessField}),
-     * as determined by {@link FieldList->dataFields()}.
+     * as determined by {@link FieldList->getDataFields()}.
      *
      * By default, if a field isn't set (as determined by isset()),
      * its value will not be saved to the field, retaining
@@ -1432,7 +1432,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
         }
 
         // Don't include fields without data
-        $dataFields = $this->Fields()->dataFields();
+        $dataFields = $this->Fields()->getDataFields(true);
 
         if (!$dataFields) {
             return $this;
@@ -1584,7 +1584,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
 
     /**
      * Get the submitted data from this form through
-     * {@link FieldList->dataFields()}, which filters out
+     * {@link FieldList->getDataFields()}, which filters out
      * any form-specific data like form-actions.
      * Calls {@link FormField->dataValue()} on each field,
      * which returns a value suitable for insertion into a record
@@ -1594,7 +1594,7 @@ class Form extends ModelData implements HasRequestHandler, ValidationInterface
      */
     public function getData()
     {
-        $dataFields = $this->fields->dataFields();
+        $dataFields = $this->fields->getDataFields(true);
         $data = [];
 
         if ($dataFields) {

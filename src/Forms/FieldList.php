@@ -4,6 +4,7 @@ namespace SilverStripe\Forms;
 
 use InvalidArgumentException;
 use RuntimeException;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\Forms\Tab;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\Model\List\ArrayList;
@@ -90,13 +91,35 @@ class FieldList extends ArrayList
     }
 
     /**
-     * Return a sequential set of all fields that have data.  This excludes wrapper composite fields
+     * Return a sequential set of all fields that have data. This excludes wrapper composite fields
      * as well as heading / help text fields.
      *
+     * Excludes fields that are exclusively managed through a {@see ChildFieldManager}.
+     *
      * @return array<FormField>
+     * @deprecated 6.2.0 use FieldList::getDataFields() instead.
      */
     public function dataFields(): array
     {
+        Deprecation::notice('6.2.0', 'Use FieldList::getDataFields() instead.');
+        return $this->getDataFields();
+    }
+
+    /**
+     * Return a flat array of all fields that have data, optionally including fields that are exclusively managed
+     * through a {@see ChildFieldManager}.
+     * This excludes wrapper composite fields as well as heading / help text fields.
+     *
+     * @param bool $includeManagedFields whether to include fields managed through a {@see ChildFieldManager}.
+     * Passing true to this parameter is intended only for getting and setting data for these fields. It should not be
+     * used for general use cases such as replacing/removing/reordering etc. Most of the time the ChildFieldManager should be
+     * left to manage the form fields directly.
+     *
+     * @return array<FormField>
+     */
+    public function getDataFields(bool $includeManagedFields = false): array
+    {
+        // Get and cache non-managed data fields.
         if (empty($this->sequentialSet)) {
             $fields = [];
             $this->recursiveWalk(function (FormField $field) use (&$fields) {
@@ -111,7 +134,32 @@ class FieldList extends ArrayList
             });
             $this->sequentialSet = $fields;
         }
-        return $this->sequentialSet;
+        $dataFields = $this->sequentialSet;
+        if (!$includeManagedFields) {
+            return $dataFields;
+        }
+        // Recursively add managed fields.
+        // Note that we explicitly don't cache these fields because the field manager
+        // is allowed to swap out field implementations for the same named field
+        // inbetween calls to this method.
+        $addDataField = function (FormField $field) use (&$dataFields, &$addDataField) {
+            if (!is_a($field, ChildFieldManager::class)) {
+                return;
+            }
+            foreach ($field->getManagedFields() as $managedField) {
+                $addDataField($managedField);
+                if (!$managedField->hasData()) {
+                    return;
+                }
+                $name = $managedField->getName();
+                if (isset($dataFields[$name])) {
+                    $this->fieldNameError($managedField, 'getDataFields');
+                }
+                $dataFields[$name] = $managedField;
+            }
+        };
+        $this->recursiveWalk($addDataField);
+        return $dataFields;
     }
 
     /**
@@ -121,27 +169,33 @@ class FieldList extends ArrayList
     {
         if (empty($this->sequentialSaveableSet)) {
             $fields = [];
-            $this->recursiveWalk(function (FormField $field) use (&$fields) {
+            $addSaveableField = function (FormField $field) use (&$fields, &$addSaveableField) {
+                if ($field instanceof ChildFieldManager) {
+                    foreach ($field->getManagedFields() as $managedField) {
+                        $addSaveableField($managedField);
+                    }
+                }
                 if (!$field->canSubmitValue()) {
                     return;
                 }
                 $name = $field->getName();
                 if (isset($fields[$name])) {
-                    $this->fieldNameError($field, __FUNCTION__);
+                    $this->fieldNameError($field, 'saveableFields');
                 }
                 $fields[$name] = $field;
-            });
+            };
+            $this->recursiveWalk($addSaveableField);
             $this->sequentialSaveableSet = $fields;
         }
         return $this->sequentialSaveableSet;
     }
 
     /**
-     * Return array of all field names
+     * Return array of all data field names
      */
     public function dataFieldNames(): array
     {
-        return array_keys($this->dataFields() ?? []);
+        return array_keys($this->getDataFields(true) ?? []);
     }
 
     /**
@@ -478,7 +532,7 @@ class FieldList extends ArrayList
      */
     public function dataFieldByName(string $name): ?FormField
     {
-        if ($dataFields = $this->dataFields()) {
+        if ($dataFields = $this->getDataFields()) {
             foreach ($dataFields as $child) {
                 if (trim($name ?? '') == trim($child->getName() ?? '') || $name == $child->id) {
                     return $child;
@@ -612,7 +666,7 @@ class FieldList extends ArrayList
      */
     public function setValues(array $data): static
     {
-        foreach ($this->dataFields() as $field) {
+        foreach ($this->getDataFields(true) as $field) {
             $fieldName = $field->getName();
             if (isset($data[$fieldName])) {
                 $field->setValue($data[$fieldName]);
@@ -629,7 +683,7 @@ class FieldList extends ArrayList
     public function HiddenFields(): FieldList
     {
         $hiddenFields = new FieldList();
-        $dataFields = $this->dataFields();
+        $dataFields = $this->getDataFields();
 
         if ($dataFields) {
             foreach ($dataFields as $field) {
@@ -742,7 +796,7 @@ class FieldList extends ArrayList
 
         // Build a map of fields indexed by their name.  This will make the 2nd step much easier.
         $fieldMap = [];
-        foreach ($this->dataFields() as $field) {
+        foreach ($this->getDataFields() as $field) {
             $fieldMap[$field->getName()] = $field;
         }
 
@@ -780,7 +834,7 @@ class FieldList extends ArrayList
         }
 
         $i = 0;
-        foreach ($this->dataFields() as $child) {
+        foreach ($this->getDataFields() as $child) {
             if ($child->getName() == $field) {
                 return $i;
             }

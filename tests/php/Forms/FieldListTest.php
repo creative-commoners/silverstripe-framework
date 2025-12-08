@@ -4,6 +4,7 @@ namespace SilverStripe\Forms\Tests;
 
 use stdClass;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\ConfirmedPasswordField;
@@ -20,6 +21,7 @@ use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\HiddenField;
+use SilverStripe\Forms\Tests\FormTest\ChildFieldManagerField;
 
 /**
  * Tests for FieldList
@@ -88,14 +90,17 @@ class FieldListTest extends SapphireTest
             new CompositeField(
                 $day = new TextField('Day'),
                 $month = new TextField('Month'),
-                $year = new TextField('Year')
+                $year = new TextField('Year'),
+                new ChildFieldManagerField([
+                    $managed = new TextField('Managed'),
+                ]),
             ),
         ];
         $fieldList = new FieldList($fields);
 
         array_pop($fields);
         array_pop($fields);
-        array_push($fields, $day, $month, $year);
+        array_push($fields, $day, $month, $year, $managed);
 
         $this->assertEquals($fields, array_values($fieldList->saveableFields() ?? []));
     }
@@ -351,12 +356,57 @@ class FieldListTest extends SapphireTest
 
     public function testDataFieldByName()
     {
-        $fields = new FieldList();
-        $fields->push($basic = new TextField('Name', 'Your name'));
-        $fields->push($brack = new TextField('Name[Field]', 'Your name'));
+        $fields = new FieldList([
+            $field1 = new TextField('Name', 'Your name'),
+            $field2 = new TextField('Name[Field]', 'Your name'),
+            new CompositeField([
+                $field3 = new TextField('Field3', 'Your name'),
+                new ChildFieldManagerField([
+                    new TextField('Field4'),
+                ]),
+            ]),
+        ]);
 
-        $this->assertEquals($basic, $fields->dataFieldByName('Name'));
-        $this->assertEquals($brack, $fields->dataFieldByName('Name[Field]'));
+        $this->assertEquals($field1, $fields->dataFieldByName('Name'));
+        $this->assertEquals($field2, $fields->dataFieldByName('Name[Field]'));
+        $this->assertEquals($field3, $fields->dataFieldByName('Field3'));
+        $this->assertNull($fields->dataFieldByName('Field4'));
+        $this->assertNull($fields->dataFieldByName('ChildFieldManager'));
+    }
+
+    public static function provideDataFields(): array
+    {
+        return [
+            [false],
+            [true],
+        ];
+    }
+
+    #[DataProvider('provideDataFields')]
+    public function testDataFields(bool $includeManagedFields)
+    {
+        $fields = new FieldList([
+            $field1 = new TextField('Name', 'Your name'),
+            $field2 = new TextField('Name[Field]', 'Your name'),
+            new CompositeField([
+                $field3 = new TextField('Field3', 'Your name'),
+                new ChildFieldManagerField([
+                    $field4 = new TextField('Field4'),
+                ]),
+            ]),
+        ]);
+
+        $expected = [
+            'Name' => $field1,
+            'Name[Field]' => $field2,
+            'Field3' => $field3,
+        ];
+        if ($includeManagedFields) {
+            $expected['Field4'] = $field4;
+        }
+
+        $dataFields = $fields->getDataFields($includeManagedFields);
+        $this->assertSame($expected, $dataFields);
     }
 
     /**
@@ -671,7 +721,7 @@ class FieldListTest extends SapphireTest
         );
 
         $this->assertEquals(
-            array_keys($fields->dataFields() ?? []),
+            array_keys($fields->getDataFields() ?? []),
             [
             'A',
             'NewField1',
@@ -1208,5 +1258,27 @@ class FieldListTest extends SapphireTest
 
         $fieldlist->setContainerField(null);
         $this->assertNull($fieldlist->getContainerField());
+    }
+
+    public function testSetValues(): void
+    {
+        $fields = new FieldList([
+            $field1 = new TextField('FieldOne'),
+            new CompositeField([
+                $field2 = new TextField('FieldTwo'),
+                new ChildFieldManagerField([
+                    $field3 = new TextField('FieldThree')
+                ]),
+            ])
+        ]);
+
+        $fields->setValues([
+            'FieldOne' => 'val1',
+            'FieldTwo' => 'val2',
+            'FieldThree' => 'val3',
+        ]);
+        $this->assertSame('val1', $field1->getValue());
+        $this->assertSame('val2', $field2->getValue());
+        $this->assertSame('val3', $field3->getValue());
     }
 }

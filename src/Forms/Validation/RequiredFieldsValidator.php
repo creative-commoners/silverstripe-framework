@@ -130,6 +130,11 @@ class RequiredFieldsValidator extends Validator
                 $fieldName = $fieldName->getName();
             } else {
                 $formField = $fields->dataFieldByName($fieldName);
+                if (!$formField) {
+                    // Maybe it's a managed field.
+                    $dataFields = $fields->getDataFields(true);
+                    $formField = $dataFields[$fieldName] ?? null;
+                }
             }
 
             // submitted data for file upload fields come back as an array

@@ -428,14 +428,27 @@ class FormRequestHandler extends RequestHandler
      */
     public function handleField($request)
     {
-        $field = $this->form->Fields()->dataFieldByName($request->param('FieldName'));
+        $fieldName = $request->param('FieldName');
+        $fields = $this->form->Fields();
+        $field = $fields->dataFieldByName($fieldName);
 
-        if ($field) {
-            return $field;
-        } else {
-            // falling back to fieldByName, e.g. for getting tabs
-            return $this->form->Fields()->fieldByName($request->param('FieldName'));
+        if (!$field) {
+            // Falling back to non-data fields, e.g. tabs.
+            // Note we can't just use `fieldByName()` because that isn't recursive and we can't
+            // modify it to be recursive due to backwards compatibility concerns.
+            $fields->recursiveWalk(function (FormField $candidate) use ($fieldName, &$field) {
+                if ($candidate->getName() === $fieldName) {
+                    $field = $candidate;
+                }
+
+                // Handle field that is managed by a ChildFieldManager (whether it's a data field or not)
+                if (!$field && is_a($candidate, ChildFieldManager::class) && $candidate->isManagedField($fieldName)) {
+                    $field = $candidate->getManagedFieldByName($fieldName);
+                }
+            });
         }
+
+        return $field;
     }
 
     /**
@@ -473,8 +486,8 @@ class FormRequestHandler extends RequestHandler
      */
     protected function getAllActions()
     {
-        $fields = $this->form->Fields()->dataFields();
-        $actions = $this->form->Actions()->dataFields();
+        $fields = $this->form->Fields()->getDataFields(true);
+        $actions = $this->form->Actions()->getDataFields(true);
 
         $fieldsAndActions = array_merge($fields, $actions);
         $actions = array_filter($fieldsAndActions ?? [], function ($fieldOrAction) {

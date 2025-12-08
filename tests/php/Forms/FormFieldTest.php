@@ -633,6 +633,9 @@ class FormFieldTest extends SapphireTest
                 //
                 // Fields from other modules included in the kitchensink recipe
                 //
+                case \SilverStripe\Admin\Forms\DependentCompositeField::class:
+                    $args = ['Test', 'Test', [TextField::create('Test2')]];
+                    break;
                 case \SilverStripe\Blog\Admin\GridFieldFormAction::class:
                     $args = [GridField::create('GF'), 'Test', 'Test label', 'Test action name', []];
                     break;

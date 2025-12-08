@@ -10,6 +10,7 @@ use SilverStripe\Forms\Form;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Core\Validation\ValidationResult;
 use LogicException;
+use SilverStripe\Forms\ChildFieldManager;
 
 /**
  * Represents a {@link Form} as structured data which allows a frontend library to render it.
@@ -207,10 +208,16 @@ class FormSchema
     {
         $states = [];
         foreach ($fields as $field) {
-            $states[] = $field->getSchemaState();
+            $fieldState = $field->getSchemaState();
+            $states[] = $fieldState;
 
             if ($field instanceof CompositeField) {
                 $subFields = $field->FieldList();
+                $states = array_merge($states, $this->getFieldStates($subFields));
+            }
+
+            if ($field instanceof ChildFieldManager) {
+                $subFields = $field->getManagedFields();
                 $states = array_merge($states, $this->getFieldStates($subFields));
             }
         }

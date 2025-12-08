@@ -9,8 +9,11 @@ use SilverStripe\Forms\SearchableDropdownField;
 use SilverStripe\Forms\TreeDropdownField;
 use SilverStripe\Security\Group;
 use PHPUnit\Framework\Attributes\DataProvider;
+use SilverStripe\Forms\CompositeField;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\HiddenField;
+use SilverStripe\Forms\Tests\FormTest\ChildFieldManagerField;
 
 class RequiredFieldsValidatorTest extends SapphireTest
 {
@@ -449,5 +452,51 @@ class RequiredFieldsValidatorTest extends SapphireTest
         RequiredFieldsValidator::config()->set('allow_whitespace_only', false);
         $result = $validator->validate($form);
         $this->assertEquals($expected, $result->isValid());
+    }
+
+    public function testValidation()
+    {
+        $form = new Form(fields: new FieldList([
+            new TextField('FieldOne'),
+            new CompositeField([
+                new HiddenField('FieldTwo'),
+                new ChildFieldManagerField([
+                    new TextField('FieldThree'),
+                ]),
+            ]),
+            new TextField('NotRequired'),
+        ]));
+        $validator = new RequiredFieldsValidator([
+            'FieldOne',
+            'FieldTwo',
+            'FieldThree'
+        ]);
+        $validator->setForm($form);
+        // Empty values and values missing entirely both fail validation.
+        $this->assertFalse($validator->php([
+            'FieldOne' => '',
+            'FieldTwo' => '',
+            'FieldThree' => '',
+        ]));
+        $this->assertFalse($validator->php([]));
+        // Any single missing field fails validation
+        $this->assertFalse($validator->php([
+            'FieldTwo' => '1',
+            'FieldThree' => '1',
+        ]));
+        $this->assertFalse($validator->php([
+            'FieldOne' => '1',
+            'FieldThree' => '1',
+        ]));
+        $this->assertFalse($validator->php([
+            'FieldOne' => '1',
+            'FieldTwo' => '1',
+        ]));
+        // non-empty value passes required field validation
+        $this->assertTrue($validator->php([
+            'FieldOne' => '1',
+            'FieldTwo' => '1',
+            'FieldThree' => '1',
+        ]));
     }
 }
