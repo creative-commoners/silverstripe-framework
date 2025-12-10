@@ -4,12 +4,15 @@ namespace SilverStripe\i18n\TextCollection;
 
 use SilverStripe\i18n\i18n;
 use SilverStripe\TemplateEngine\SSTemplateParser;
+use SilverStripe\Core\Injector\Injectable;
 
 /**
  * Parser that scans through a template and extracts the parameters to the _t and <%t calls
  */
 class Parser extends SSTemplateParser
 {
+    use Injectable;
+
     /**
      * List of all entities
      *
@@ -110,7 +113,7 @@ class Parser extends SSTemplateParser
     public static function getTranslatables($template, $warnIfEmpty = true)
     {
         // Run the parser and throw away the result
-        $parser = new Parser($template, $warnIfEmpty);
+        $parser = Parser::create($template, $warnIfEmpty);
         if (substr($template ?? '', 0, 3) == pack("CCC", 0xef, 0xbb, 0xbf)) {
             $parser->pos = 3;
         }
