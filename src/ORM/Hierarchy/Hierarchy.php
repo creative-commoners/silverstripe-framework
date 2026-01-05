@@ -455,8 +455,10 @@ class Hierarchy extends Extension
         foreach ($parentIDs as $parentID) {
             Hierarchy::$children_for_tree_ids_cache[$baseClass][$parentID] = [];
         }
-        // Disabling sort improves performance
-        foreach ($children->sort(null) as $child) {
+        // Do not attempt to disable sort order to improves performance i.e. $children->sort(null)
+        // As this will mean that the sort order of children in the tree will be wrong after
+        // drag and drop re-ordering within siblings
+        foreach ($children as $child) {
             $childID = $child->ID;
             $parentID = $child->ParentID;
             Hierarchy::$children_for_tree_ids_cache[$baseClass][$parentID][] = $childID;
