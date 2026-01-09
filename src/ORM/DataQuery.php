@@ -4,6 +4,7 @@ namespace SilverStripe\ORM;
 
 use Exception;
 use InvalidArgumentException;
+use ReflectionException;
 use ReflectionMethod;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Config\Config;
@@ -727,30 +728,25 @@ class DataQuery implements Resettable
     /**
      * This method determines whether a subclass of DBField has overridden the DBField::addToQuery() method to
      * implement custom logic. This allows selectColumnsFromTable() to skip the relatively expensive step of
-     * building singleton objects to call the method if it will have no effect
+     * building singleton objects to call the method if it has no effect
      *
      * @param string $dbFieldSpec A string like "Varchar(255)"
-     * @return bool
+     * @throws Exception
      * @internal
      */
     private function shouldAddToQuery(string $dbFieldSpec): bool
     {
-        try {
-            [$serviceName] = ClassInfo::parse_class_spec($dbFieldSpec);
-            if (array_key_exists($serviceName, DataQuery::$shouldAddToQueryCache)) {
-                return DataQuery::$shouldAddToQueryCache[$serviceName];
-            }
-
-            $class = Injector::inst()->getServiceSpec($serviceName)['class'] ?? $serviceName;
-            $method = new ReflectionMethod($class, 'addToQuery');
-            if ($method->getDeclaringClass()->getName() === DBField::class) {
-                return DataQuery::$shouldAddToQueryCache[$serviceName] = false;
-            }
-        } catch (Exception) {
-            return true;
+        [$serviceName] = ClassInfo::parse_class_spec($dbFieldSpec);
+        if (array_key_exists($serviceName, DataQuery::$shouldAddToQueryCache)) {
+            return DataQuery::$shouldAddToQueryCache[$serviceName];
         }
 
-        return DataQuery::$shouldAddToQueryCache[$serviceName] = true;
+        $class = Injector::inst()->getServiceSpec($serviceName)['class'] ?? $serviceName;
+        $method = new ReflectionMethod($class, 'addToQuery');
+        $shouldAddToQuery = $method->getDeclaringClass()->getName() !== DBField::class;
+        DataQuery::$shouldAddToQueryCache[$serviceName] = $shouldAddToQuery;
+
+        return DataQuery::$shouldAddToQueryCache[$serviceName];
     }
 
     /**
