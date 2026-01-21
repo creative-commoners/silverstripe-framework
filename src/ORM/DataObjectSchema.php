@@ -115,6 +115,11 @@ class DataObjectSchema
     protected array $tableReadyClasses = [];
 
     /**
+     * Cache of table names for given class name and field combinations
+     */
+    protected array $tablesForFields = [];
+
+    /**
      * Clear cached table names
      */
     public function reset()
@@ -125,6 +130,7 @@ class DataObjectSchema
         $this->defaultDatabaseIndexes = [];
         $this->compositeFields = [];
         $this->tableReadyClasses = [];
+        $this->tablesForFields = [];
     }
 
     /**
@@ -935,11 +941,12 @@ class DataObjectSchema
      */
     public function tableForField($candidateClass, $fieldName)
     {
-        $class = $this->classForField($candidateClass, $fieldName);
-        if ($class) {
-            return $this->tableName($class);
+        $key = $candidateClass . '_' . $fieldName;
+        if (!array_key_exists($key, $this->tablesForFields)) {
+            $class = $this->classForField($candidateClass, $fieldName);
+            $this->tablesForFields[$key] = $class ? $this->tableName($class) : null;
         }
-        return null;
+        return $this->tablesForFields[$key];
     }
 
     /**
