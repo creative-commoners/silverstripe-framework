@@ -886,10 +886,6 @@ class DataObjectSchema
                 return false;
             }
 
-            // Extensions aren't applied until a class is instantiated for
-            // the first time, so create a singleton to ensure extensions are applied.
-            singleton($required);
-
             // if any of the tables haven't had columns added yet
             $dbFields = DB::field_list($table);
             if (empty($dbFields)) {
