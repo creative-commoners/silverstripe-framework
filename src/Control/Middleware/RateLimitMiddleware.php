@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Control\Middleware;
 
+use InvalidArgumentException;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Cache\RateLimiter;
@@ -10,7 +11,6 @@ use SilverStripe\Security\Security;
 
 class RateLimitMiddleware implements HTTPMiddleware
 {
-
     /**
      * @var string Optional extra data to add to request key generation
      */
@@ -32,6 +32,13 @@ class RateLimitMiddleware implements HTTPMiddleware
     private $rateLimiter;
 
     /**
+     * URL regex patterns to bypass rate limiting for this instance.
+     *
+     * @var string[]
+     */
+    private array $excludedUrlPatterns = [];
+
+    /**
      * @param HTTPRequest $request
      * @param callable $delegate
      * @return HTTPResponse
@@ -45,7 +52,9 @@ class RateLimitMiddleware implements HTTPMiddleware
                 $this->getDecay()
             );
         }
-        if ($limiter->canAccess()) {
+        if ($this->shouldBypassRateLimit($request)) {
+            $response = $delegate($request);
+        } elseif ($limiter->canAccess()) {
             $limiter->hit();
             $response = $delegate($request);
         } else {
@@ -164,5 +173,49 @@ class RateLimitMiddleware implements HTTPMiddleware
     public function getRateLimiter()
     {
         return $this->rateLimiter;
+    }
+
+    /**
+     * Set the excluded URL regex patterns which will bypass rate limiting.
+     * @param string[] $patterns
+     * @return $this
+     */
+    public function setExcludedURLPatterns(array $patterns): static
+    {
+        foreach ($patterns as $pattern) {
+            // The @ error suppression operator is used to check for invalid regex without PHP warnings
+            // We're explicitly testing for regex errors in RateLimitMiddlewareTest.php
+            if (@preg_match($pattern, '') === false) {
+                throw new InvalidArgumentException(sprintf(
+                    'RateLimitMiddleware.ExcludedURLPatterns contains an invalid regex pattern: %s',
+                    $pattern
+                ));
+            }
+        }
+        $this->excludedUrlPatterns = $patterns;
+        return $this;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getExcludedURLPatterns(): array
+    {
+        return $this->excludedUrlPatterns;
+    }
+
+    private function shouldBypassRateLimit(HTTPRequest $request): bool
+    {
+        $patterns = $this->getExcludedURLPatterns();
+        if (!$patterns) {
+            return false;
+        }
+        $url = $request->getURL();
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $url) === 1) {
+                return true;
+            }
+        }
+        return false;
     }
 }
