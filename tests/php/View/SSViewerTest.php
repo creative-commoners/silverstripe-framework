@@ -3,6 +3,7 @@
 namespace SilverStripe\View\Tests;
 
 use SilverStripe\Control\Controller;
+use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Injector\Injector;
@@ -250,6 +251,23 @@ class SSViewerTest extends SapphireTest
             $result,
             'SSTemplateParser should only rewrite anchor hrefs'
         );
+    }
+
+    public function testGetBaseTag()
+    {
+        Director::config()->set('alternate_base_url', 'https://example.com/');
+
+        // Enabled should return a base tag
+        SSViewer::config()->set('enable_base_tag', true);
+        $this->assertSame('<base href="https://example.com/">', SSViewer::getBaseTag());
+
+        // XHTML mode should return a self-closing base tag
+        $this->assertSame('<base href="https://example.com/" />', SSViewer::getBaseTag(true));
+
+        // Disabled should return an empty string
+        SSViewer::config()->set('enable_base_tag', false);
+        $this->assertSame('', SSViewer::getBaseTag());
+        $this->assertSame('', SSViewer::getBaseTag(true));
     }
 
     private function assertEqualIgnoringWhitespace(string $a, string $b, string $message = ''): void
