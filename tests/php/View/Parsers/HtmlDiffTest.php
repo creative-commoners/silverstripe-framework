@@ -69,6 +69,36 @@ class HtmlDiffTest extends SapphireTest
         $this->assertSame($expected, $differ->diffToArray($from, $to));
     }
 
+    public static function provideLineEndingCompatibility(): array
+    {
+        return [
+            'line endings normalized without escaping' => [
+                'from' => "<p>Line one\r\nLine two</p>",
+                'to' => "<p>Line one\nLine two</p>",
+                'escape' => false,
+                'expected' => '<p>Line one Line two</p>',
+            ],
+            'line endings normalized with escaped html' => [
+                'from' => "<p>Line one\r\nLine two</p>",
+                'to' => "<p>Line one\nLine two</p>",
+                'escape' => true,
+                'expected' => '&lt;p&gt;Line one Line two&lt;/p&gt;',
+            ],
+        ];
+    }
+
+    /**
+     * Verifies that different line ending styles (CRLF vs LF) are normalized during comparison,
+     * ensuring the algorithm doesn't treat them as content changes. Tests both with and without
+     * HTML escaping to ensure line ending normalization is consistent regardless of escaping mode.
+     */
+    #[DataProvider('provideLineEndingCompatibility')]
+    public function testLineEndingCompatibility(string $from, string $to, bool $escape, string $expected): void
+    {
+        $diff = HtmlDiff::compareHtml($from, $to, $escape);
+        $this->assertSame($this->removeWhiteSpace($expected), $this->removeWhiteSpace($diff));
+    }
+
     public static function provideCompareHtml(): array
     {
         return [
