@@ -181,16 +181,18 @@ class DBDatetime extends DBDate implements TemplateGlobalProvider
         $dateTimeFormat = $field->getDatetimeFormat();
         $locale = $field->getLocale();
 
-        // Set date formatting hints and example
-        $date = static::now()->Format($dateTimeFormat, $locale);
-        $field
-            ->setDescription(_t(
+        // Set date formatting hints and example when not using HTML5 inputs,
+        // as browsers handle format display natively for HTML5 datetime-local fields
+        $field->setAttribute('placeholder', $dateTimeFormat);
+        if (!$field->getHTML5()) {
+            $date = static::now()->Format($dateTimeFormat, $locale);
+            $field->setDescription(_t(
                 'SilverStripe\\Forms\\FormField.EXAMPLE',
                 'e.g. {format}',
                 'Example format',
                 ['format' => $date]
-            ))
-            ->setAttribute('placeholder', $dateTimeFormat);
+            ));
+        }
 
         return $field;
     }

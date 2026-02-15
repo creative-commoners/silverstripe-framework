@@ -24,6 +24,8 @@ SilverStripe\Core\Injector\Injector:
       ExtraKey: 'Security'
       MaxAttempts: 10
       Decay: 1
+      ExcludedURLPatterns:
+        - '#^Security/changepassword/ChangePasswordForm/field/Password/strength$#'
   RateLimitedSecurityController:
     class: SilverStripe\Control\Middleware\RequestHandlerMiddlewareAdapter
     properties:
