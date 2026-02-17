@@ -8,6 +8,7 @@ use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Control\Director;
+use SilverStripe\Dev\Deprecation;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use InvalidArgumentException;
@@ -60,6 +61,13 @@ class SSViewer
      * Set if hash links should be rewritten
      */
     private static bool $rewrite_hash_links = true;
+
+    /**
+     * Whether the `<% base_tag %>` template variable should output a `<base>` tag.
+     * Set to false to disable base tag output.
+     * @deprecated 6.2.0 Will be removed without equivalent functionality to replace it
+     */
+    private static bool $enable_base_tag = true;
 
     /**
      * Overridden value of $themes config
@@ -382,9 +390,16 @@ class SSViewer
      * It will be closed on an XHTML document, and unclosed on an HTML document.
      *
      * @param bool $isXhtml Whether the DOCTYPE is xhtml or not.
+     * @deprecated 6.2.0 Will be removed without equivalent functionality to replace it
      */
     public static function getBaseTag(bool $isXhtml = false): string
     {
+        if (!static::config()->get('enable_base_tag')) {
+            return '';
+        }
+
+        Deprecation::noticeWithNoReplacment('6.2.0');
+
         // Base href should always have a trailing slash
         $base = rtrim(Director::absoluteBaseURL(), '/') . '/';
 
