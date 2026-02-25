@@ -2,6 +2,7 @@
 
 namespace SilverStripe\Forms\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use SilverStripe\Forms\Tests\ListboxFieldTest\Article;
 use SilverStripe\Forms\Tests\ListboxFieldTest\Tag;
 use SilverStripe\Forms\Tests\ListboxFieldTest\TestObject;
@@ -118,6 +119,60 @@ class ListboxFieldTest extends SapphireTest
         $this->assertEquals(['a', 'c'], $field->Value());
         $field->saveInto($obj2);
         $this->assertEquals('["a","c"]', $obj2->Choices);
+    }
+
+    public static function provideSaveIntoValueScenarios(): array
+    {
+        return [
+            'mixed-values' => [
+                'input' => [null, 0, false, '123', -123, '', '0', 'ABC123'],
+                'expected' => [null, 0, false, '123', -123, '', '0', 'ABC123'],
+            ],
+            'string-values' => [
+                'input' => ['123', '0', '-123', '', 'ABC123'],
+                'expected' => ['123', '0', '-123', '', 'ABC123'],
+            ],
+            'integer-values' => [
+                'input' => [0, 123, -123],
+                'expected' => [0, 123, -123],
+            ],
+            'boolean-values' => [
+                'input' => [false, true],
+                'expected' => [false, true],
+            ],
+            'null-only' => [
+                'input' => [null],
+                'expected' => [null],
+            ],
+            'scalar-zero' => [
+                'input' => 0,
+                'expected' => [0],
+            ],
+            'scalar-string-zero' => [
+                'input' => '0',
+                'expected' => ['0'],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideSaveIntoValueScenarios
+     */
+    public function testSaveIntoPreservesValueTypes(mixed $input, array $expected): void
+    {
+        $choices = [
+            '' => 'Empty string',
+            0 => 'Zero',
+            '123' => 'String integer',
+            -123 => 'Negative integer',
+            'ABC123' => 'Alpha-numeric string',
+            'false' => 'False string',
+        ];
+        $field = new ListboxField('Choices', 'Choices', $choices);
+        $obj = new TestObject();
+        $field->setValue($input);
+        $field->saveInto($obj);
+        $this->assertSame($expected, json_decode($obj->Choices, true));
     }
 
     public function testSaveIntoManyManyRelation()
