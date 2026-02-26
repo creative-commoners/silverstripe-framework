@@ -263,6 +263,7 @@ class ListboxField extends MultiSelectField
             $replaced = [];
             foreach ($value as $item) {
                 if (!is_array($item) && is_string($item)) {
+                    // Schema listbox values can be posted as JSON strings with a Value key.
                     $trimmed = trim($item);
                     if ($trimmed !== '') {
                         $firstChar = substr($trimmed, 0, 1);

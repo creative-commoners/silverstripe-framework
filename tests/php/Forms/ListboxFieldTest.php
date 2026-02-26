@@ -150,6 +150,13 @@ class ListboxFieldTest extends SapphireTest
                 'input' => '0',
                 'expected' => ['0'],
             ],
+            'schema-json-values' => [
+                'input' => [
+                    '{"Value":"123","Title":"String integer"}',
+                    '{"Value":"ABC123","Title":"Alpha-numeric string"}',
+                ],
+                'expected' => ['123', 'ABC123'],
+            ],
         ];
     }
 
@@ -169,6 +176,41 @@ class ListboxFieldTest extends SapphireTest
         $field->setValue($input);
         $field->saveInto($obj);
         $this->assertSame($expected, json_decode($obj->Choices, true));
+    }
+
+    public function testSaveIntoPreservesNumericStringFirstChoice(): void
+    {
+        $choices = [
+            '123' => 'Numeric string',
+            'ABC123' => 'Alpha-numeric string',
+        ];
+        $field = new ListboxField('Choices', 'Choices', $choices);
+        $obj = new TestObject();
+        $field->setValue(['123', 'ABC123']);
+        $field->saveInto($obj);
+        $this->assertSame(['123', 'ABC123'], json_decode($obj->Choices, true));
+    }
+
+    public static function provideGetValueArrayMixedTypeScenarios(): array
+    {
+        return [
+            'numeric-source-mixed-values' => [
+                'source' => [
+                    1 => 'One',
+                    2 => 'Two',
+                ],
+                'input' => ['1', 2, '2', 1],
+                'expected' => ['1', 2, '2', 1],
+            ],
+        ];
+    }
+
+    #[DataProvider('provideGetValueArrayMixedTypeScenarios')]
+    public function testGetValueArrayPreservesMixedTypes(array $source, array $input, array $expected): void
+    {
+        $field = new ListboxField('Choices', 'Choices', $source);
+        $field->setValue($input);
+        $this->assertSame($expected, $field->getValueArray());
     }
 
     public function testSaveIntoManyManyRelation()
