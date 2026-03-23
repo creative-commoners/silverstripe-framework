@@ -28,7 +28,7 @@ use SilverStripe\ORM\FieldType\DBHTMLText;
  * @see DropdownField for a simple select field with a single element.
  * @see CheckboxSetField for multiple selections through checkboxes.
  * @see OptionsetField for single selections via radiobuttons.
- * @see TreeDropdownField for a rich and customizeable UI that can visualize a tree of selectable elements
+ * @see TreeDropdownField for a rich and customizable UI that can visualize a tree of selectable elements
  */
 class ListboxField extends MultiSelectField
 {
@@ -256,28 +256,31 @@ class ListboxField extends MultiSelectField
         if (empty($validValues)) {
             return [];
         }
-
-        $canary = reset($validValues);
-        $targetType = gettype($canary);
+        if (!is_array($value) && ($value === 0 || $value === '0')) {
+            $value = [$value];
+        }
         if (is_array($value) && count($value) > 0) {
-            $first = reset($value);
-            // sanity check the values - make sure strings get strings, ints get ints etc
-            if ($targetType !== gettype($first)) {
-                $replaced = [];
-                foreach ($value as $item) {
-                    if (!is_array($item)) {
-                        $item = json_decode($item ?? '', true);
-                    }
-
-                    if ($targetType === gettype($item)) {
-                        $replaced[] = $item;
-                    } elseif (isset($item['Value'])) {
-                        $replaced[] = $item['Value'];
+            $replaced = [];
+            foreach ($value as $item) {
+                if (!is_array($item) && is_string($item)) {
+                    $trimmed = trim($item);
+                    if ($trimmed !== '') {
+                        $firstChar = substr($trimmed, 0, 1);
+                        if ($firstChar === '{' || $firstChar === '[') {
+                            $decoded = json_decode($item, true);
+                            if (is_array($decoded)) {
+                                $item = $decoded;
+                            }
+                        }
                     }
                 }
-
-                $value = $replaced;
+                if (is_array($item) && array_key_exists('Value', $item)) {
+                    $replaced[] = $item['Value'];
+                } else {
+                    $replaced[] = $item;
+                }
             }
+            $value = $replaced;
         }
 
         return $this->getListValues($value);
